@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge Gateway Operations — TECH 300 IoT Demo</title>
+  <meta name="description" content="Dedicated Edge Gateway Operations Console: Broadcom BCM2711 SoC, Cypress CYW43455 BLE 5.0, BlueZ hci0, protocol translation, store-and-forward buffer, and AWS IoT Core mTLS bridge.">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Shared bus first so SimBus is available -->
+  <script src="js/sim-bus.js"></script>
+  <!-- Unified system navigation bar -->
+  <script src="js/nav-bar.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --gw-green:    #10b981;
+      --gw-green-d:  #059669;
+      --gw-cyan:     #00d4ff;
+      --gw-red:      #f87171;
+      --gw-amber:    #f59e0b;
+      --gw-purple:   #a855f7;
+      --gw-blue:     #3b82f6;
+
+      --bg-void:     #080e1a;
+      --bg-deep:     #0d1627;
+      --bg-surface:  #111e35;
+      --bg-card:     #162542;
+      --bg-card-alt: #1b2d50;
+      --bg-code:     #09111e;
+
+      --border:      rgba(16, 185, 129, 0.12);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.25);
+
+      --text-main:   #f8fafc;
+      --text-muted:  #94a3b8;
+      --text-dim:    #64748b;
+
+      --font-sans:   'Inter', -apple-system, sans-serif;
+      --font-mono:   'JetBrains Mono', monospace;
+
+      --sidebar-w:   260px;
+      --topbar-h:    60px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-void);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── Gateway Top Bar ─────────────────────────────────────────── */
+    .gw-topbar {
+      height: var(--topbar-h);
+      background: #0d1829;
+      border-bottom: 2px solid var(--gw-green);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: fixed;
+      top: 44px; /* below nav-bar */
+      left: 0; right: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    .gw-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+    .gw-brand-icon {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #10b981, #00d4ff);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 15px rgba(16,185,129,0.3);
+    }
+    .gw-brand-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gw-brand-sub {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .gw-quick-stats {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.76rem;
+      font-family: var(--font-mono);
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gw-green);
+      box-shadow: 0 0 8px var(--gw-green);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.warn {
+      background: var(--gw-amber);
+      box-shadow: 0 0 8px var(--gw-amber);
+    }
+    .status-dot.danger {
+      background: var(--gw-red);
+      box-shadow: 0 0 8px var(--gw-red);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .gw-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-green {
+      background: rgba(16,185,129,0.15);
+      border-color: rgba(16,185,129,0.4);
+      color: var(--gw-green);
+    }
+    .btn-green:hover {
+      background: rgba(16,185,129,0.25);
+      box-shadow: 0 0 10px rgba(16,185,129,0.4);
+    }
+    .btn-cyan {
+      background: rgba(0,212,255,0.15);
+      border-color: rgba(0,212,255,0.4);
+      color: var(--gw-cyan);
+    }
+    .btn-cyan:hover {
+      background: rgba(0,212,255,0.25);
+      box-shadow: 0 0 10px rgba(0,212,255,0.4);
+    }
+    .btn-amber {
+      background: rgba(245,158,11,0.15);
+      border-color: rgba(245,158,11,0.4);
+      color: var(--gw-amber);
+    }
+    .btn-amber:hover {
+      background: rgba(245,158,11,0.25);
+    }
+    .btn-danger {
+      background: rgba(248,113,113,0.15);
+      border-color: rgba(248,113,113,0.4);
+      color: var(--gw-red);
+    }
+    .btn-danger:hover {
+      background: rgba(248,113,113,0.25);
+    }
+
+    /* ── Main Layout ─────────────────────────────────────────────── */
+    .gw-layout {
+      display: flex;
+      margin-top: calc(44px + var(--topbar-h));
+      min-height: calc(100vh - 44px - var(--topbar-h));
+    }
+
+    /* Sidebar Navigation */
+    .gw-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-deep);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: calc(44px + var(--topbar-h));
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      overflow-y: auto;
+    }
+    .nav-section-title {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      padding: 16px 16px 6px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+    }
+    .nav-item.active {
+      background: rgba(16,185,129,0.08);
+      color: #fff;
+      border-left-color: var(--gw-green);
+      font-weight: 600;
+    }
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-badge {
+      background: rgba(16,185,129,0.2);
+      color: var(--gw-green);
+    }
+
+    /* Content Area */
+    .gw-content {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 24px;
+      background: var(--bg-void);
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+
+    /* View Panels */
+    .view-panel {
+      display: none;
+    }
+    .view-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Panel Header */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+    }
+    .panel-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Cards Grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .gw-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .gw-card:hover {
+      border-color: var(--border-glow);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-tag {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0,212,255,0.1);
+      color: var(--gw-cyan);
+      border: 1px solid rgba(0,212,255,0.25);
+    }
+
+    /* Spec List */
+    .spec-list {
+      list-style: none;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+    .spec-list li {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(255,255,255,0.05);
+      padding: 4px 0;
+    }
+    .spec-label { color: var(--text-dim); }
+    .spec-val {
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Metric Value Box */
+    .metric-hero {
+      font-size: 2.2rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #fff;
+      letter-spacing: -0.03em;
+      margin: 8px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .metric-hero-unit {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Chip Map Graphic */
+    .chip-map-container {
+      background: #08111e;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .chip-map-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .board-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 16px;
+    }
+    .board-chip-box {
+      background: rgba(19, 34, 61, 0.8);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+    }
+    .board-chip-box.soc {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 27, 48, 0.9));
+    }
+    .board-chip-box.wireless {
+      border-color: rgba(0, 212, 255, 0.4);
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(15, 27, 48, 0.9));
+    }
+    .board-chip-box.io {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 27, 48, 0.9));
+    }
+    .chip-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chip-details {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* Terminal Console */
+    .terminal-container {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      margin-top: 16px;
+    }
+    .terminal-head {
+      background: rgba(255,255,255,0.03);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+    .terminal-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .terminal-body {
+      padding: 12px 14px;
+      height: 280px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+    .log-line {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .log-time { color: var(--text-dim); flex-shrink: 0; }
+    .log-tag {
+      font-weight: 600;
+      padding: 0 4px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+    }
+    .tag-ble   { background: rgba(0,212,255,0.15); color: var(--gw-cyan); }
+    .tag-trans { background: rgba(168,85,247,0.15); color: var(--gw-purple); }
+    .tag-mqtt  { background: rgba(255,153,0,0.15); color: var(--gw-amber); }
+    .tag-buff  { background: rgba(16,185,129,0.15); color: var(--gw-green); }
+    .tag-act   { background: rgba(248,113,113,0.15); color: var(--gw-red); }
+    .log-msg   { color: #e2e8f0; word-break: break-all; }
+
+    /* Protocol Translation Stepper */
+    .pipe-step-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .pipe-step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .code-preview {
+      background: #060b14;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Pinout Grid */
+    .pinout-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.74rem;
+      font-family: var(--font-mono);
+      margin-top: 10px;
+    }
+    .pinout-table th, .pinout-table td {
+      padding: 6px 10px;
+      border: 1px solid var(--border-subtle);
+      text-align: left;
+    }
+    .pinout-table th {
+      background: rgba(255,255,255,0.03);
+      color: var(--gw-cyan);
+    }
+    .pin-active {
+      color: var(--gw-green);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Gateway Top Bar -->
+  <header class="gw-topbar">
+    <a class="gw-brand" href="index.html">
+      <div class="gw-brand-icon">📟</div>
+      <div>
+        <div class="gw-brand-title">
+          <span>TECH 300 Edge Gateway</span>
+          <span style="font-size:0.65rem; background:rgba(16,185,129,0.15); color:var(--gw-green); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">ONLINE</span>
+        </div>
+        <div class="gw-brand-sub">gw-pi4-tech300.local · BCM2711 · BlueZ 5.66+ · CYW43455</div>
+      </div>
+    </a>
+
+    <!-- Quick Stats -->
+    <div class="gw-quick-stats">
+      <div class="stat-pill">
+        <div class="status-dot" id="dot-ble"></div>
+        <span>BLE: <strong style="color:var(--gw-cyan)" id="bar-ble-count">3 Nodes</strong></span>
+      </div>
+      <div class="stat-pill">
+        <div class="status-dot" id="dot-wan"></div>
+        <span>WAN: <strong style="color:var(--gw-green)" id="bar-wan-status">Connected</strong></span>
+      </div>
+      <div class="stat-pill">
+        <span>MQTT: <strong style="color:var(--gw-amber)">QoS 1 (TLS 8883)</strong></span>
+      </div>
+      <div class="stat-pill">
+        <span>Buffer: <strong style="color:var(--gw-green)" id="bar-buffer-count">0 items</strong></span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="gw-actions">
+      <button class="btn btn-amber" id="btn-toggle-wan" title="Simulate WAN network failure to test store-and-forward buffer">
+        🔌 <span id="lbl-toggle-wan">Simulate WAN Cut</span>
+      </button>
+      <button class="btn btn-green" id="btn-relay-test" title="Toggle physical GPIO 22 AC actuator relay">
+        ⚡ <span>Relay GPIO22 Test</span>
+      </button>
+      <button class="btn btn-cyan" id="btn-ble-rescan" title="Force BLE HCI scanner re-scan">
+        🔄 <span>Scan BLE</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Layout -->
+  <div class="gw-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="gw-sidebar">
+      <div class="nav-section-title">Edge Hardware &amp; OS</div>
+      <div class="nav-item active" data-target="panel-hardware">
+        <span>🖥 Chipset &amp; Port Topology</span>
+        <span class="nav-badge">BCM2711</span>
+      </div>
+      <div class="nav-item" data-target="panel-southbound">
+        <span>📡 Southbound BLE Link</span>
+        <span class="nav-badge">hci0</span>
+      </div>
+
+      <div class="nav-section-title">Middleware &amp; Data Pipeline</div>
+      <div class="nav-item" data-target="panel-translation">
+        <span>⚙️ Protocol Translation</span>
+        <span class="nav-badge">JSON</span>
+      </div>
+      <div class="nav-item" data-target="panel-buffer">
+        <span>💾 Store-and-Forward Buffer</span>
+        <span class="nav-badge" id="nav-buffer-badge">0 items</span>
+      </div>
+
+      <div class="nav-section-title">Cloud Backhaul &amp; Control</div>
+      <div class="nav-item" data-target="panel-northbound">
+        <span>☁️ Northbound MQTT Link</span>
+        <span class="nav-badge">mTLS</span>
+      </div>
+      <div class="nav-item" data-target="panel-actuation">
+        <span>⚡ Reverse Actuation Bridge</span>
+        <span class="nav-badge">GPIO22</span>
+      </div>
+      <div class="nav-item" data-target="panel-console">
+        <span>📜 System Daemon Console</span>
+        <span class="nav-badge">Logs</span>
+      </div>
+
+      <div style="margin-top:auto; padding:16px; border-top:1px solid var(--border-subtle); font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">
+        <div>RPi OS Lite 64-bit</div>
+        <div>Kernel: 6.6.20-v8+</div>
+        <div>IP: 192.168.1.100</div>
+      </div>
+    </aside>
+
+    <!-- Content Views -->
+    <main class="gw-content">
+
+      <!-- ================================================================ -->
+      <!-- VIEW 1: CHIPSET & PORT TOPOLOGY -->
+      <!-- ================================================================ -->
+      <section id="panel-hardware" class="view-panel active">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🖥 Hardware Chipset &amp; Physical Port Architecture</h2>
+            <div class="panel-subtitle">Comprehensive breakdown of gateway compute SoC, RF chipsets, network PHYs, and peripheral I/O interfaces.</div>
+          </div>
+          <span class="btn btn-cyan" style="pointer-events:none;">Raspberry Pi 4 Model B (4GB) Reference Gateway</span>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="card-grid">
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">SoC Compute Core</span>
+              <span class="card-tag">ARMv8-A</span>
+            </div>
+            <div class="metric-hero">1.50 <span class="metric-hero-unit">GHz</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Broadcom BCM2711 · Quad-core Cortex-A72 · 4GB LPDDR4</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Radio Controller</span>
+              <span class="card-tag">CYW43455</span>
+            </div>
+            <div class="metric-hero">BLE 5.0 <span class="metric-hero-unit">+ 5GHz Wi-Fi</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Cypress Combo Chip via SDIO/UART · BlueZ Linux Subsystem</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Northbound Uplink</span>
+              <span class="card-tag">BCM54213PE</span>
+            </div>
+            <div class="metric-hero">1,000 <span class="metric-hero-unit">Mbps GbE</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Gigabit Ethernet RJ-45 + IEEE 802.11ac dual-band fallback</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Thermal &amp; Load</span>
+              <span class="card-tag" id="tag-cpu-temp">42.8°C</span>
+            </div>
+            <div class="metric-hero" id="metric-cpu-load">12.4 <span class="metric-hero-unit">% Load</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Memory: 1.18 GB / 3.84 GB (30.7%) · Uptime: 18d 04h</div>
+          </div>
+        </div>
+
+        <!-- Board Chip & Port Layout Map -->
+        <div class="chip-map-container">
+          <div class="chip-map-header">
+            <h3 style="font-size:1rem; color:#fff;">Physical Chip &amp; Port Layout Schematic</h3>
+            <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--gw-green);">PCB Revision 1.4 · 85mm × 56mm</span>
+          </div>
+
+          <div class="board-layout">
+            <!-- SoC Box -->
+            <div class="board-chip-box soc">
+              <div class="chip-name">
+                <span>Broadcom BCM2711 SoC</span>
+                <span class="card-tag" style="color:var(--gw-green); border-color:var(--gw-green);">Compute Core</span>
+              </div>
+              <div class="chip-details">
+                • 4× ARM Cortex-A72 cores @ 1.5 GHz<br>
+                • 4GB LPDDR4-3200 SDRAM PoP package<br>
+                • VideoCore VI 3D GPU (Headless mode)<br>
+                • Linux 6.6 LTS aarch64 kernel runtime
+              </div>
+            </div>
+
+            <!-- Wireless Box -->
+            <div class="board-chip-box wireless">
+              <div class="chip-name">
+                <span>Cypress CYW43455</span>
+                <span class="card-tag">RF Subsystem</span>
+              </div>
+              <div class="chip-details">
+                • Dual-Band 2.4 / 5 GHz Wi-Fi (802.11ac)<br>
+                • Bluetooth 5.0 BLE host controller (<code>hci0</code>)<br>
+                • Onboard PCB trace ceramic antenna<br>
+                • LE 2M PHY &amp; Star Topology support
+              </div>
+            </div>
+
+            <!-- I/O Controller Box -->
+            <div class="board-chip-box io">
+              <div class="chip-name">
+                <span>VIA VL805 &amp; BCM54213</span>
+                <span class="card-tag" style="color:var(--gw-amber); border-color:var(--gw-amber);">I/O Bridges</span>
+              </div>
+              <div class="chip-details">
+                • VIA VL805 PCIe USB 3.0 Host (4 ports)<br>
+                • Broadcom BCM54213PE Gigabit PHY<br>
+                • 40-Pin GPIO Header (UART/I²C/SPI)<br>
+                • USB-C 5V/3A DC power management
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 40-Pin Pinout Reference Table -->
+        <div class="gw-card">
+          <div class="card-head">
+            <span class="card-title">40-Pin Header Configuration (GPIO &amp; Serial Buses)</span>
+            <span class="card-tag">Wiring Reference</span>
+          </div>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">
+            Physical pin assignments used by the gateway for reverse relay actuation and optional serial debugging.
+          </p>
+          <table class="pinout-table">
+            <thead>
+              <tr>
+                <th>Pin #</th>
+                <th>Header Name</th>
+                <th>Function / Signal</th>
+                <th>Target Peripheral</th>
+                <th>Current State</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:rgba(16,185,129,0.06);">
+                <td class="pin-active">Pin 15</td>
+                <td class="pin-active">GPIO 22</td>
+                <td>Active-High Digital Output</td>
+                <td>Field AC Actuator Relay / Relay Board</td>
+                <td class="pin-active" id="pin-22-state">LOW (0V / Standby)</td>
+              </tr>
+              <tr>
+                <td>Pin 8</td>
+                <td>GPIO 14 (TXD0)</td>
+                <td>UART Serial Transmit (115200 bps)</td>
+                <td>Hardware Debug Console / Diagnostic TTL</td>
+                <td>Active Serial</td>
+              </tr>
+              <tr>
+                <td>Pin 10</td>
+                <td>GPIO 15 (RXD0)</td>
+                <td>UART Serial Receive (115200 bps)</td>
+                <td>Hardware Debug Console / Diagnostic TTL</td>
+                <td>Active Serial</td>
+              </tr>
+              <tr>
+                <td>Pin 3</td>
+                <td>GPIO 2 (SDA1)</td>
+                <td>I²C Data Bus (100/400 kHz)</td>
+                <td>Optional Onboard Local BME280 Sensor</td>
+                <td>Pull-up 3.3V</td>
+              </tr>
+              <tr>
+                <td>Pin 5</td>
+                <td>GPIO 3 (SCL1)</td>
+                <td>I²C Clock Bus</td>
+                <td>Optional Onboard Local BME280 Sensor</td>
+                <td>Pull-up 3.3V</td>
+              </tr>
+              <tr>
+                <td>Pin 2 / 4</td>
+                <td>5V Rails</td>
+                <td>Direct 5V 3.0A Power Rail</td>
+                <td>Optoisolated Relay Board VCC</td>
+                <td>5.02V Active</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 2: SOUTHBOUND BLE LINK -->
+      <!-- ================================================================ -->
+      <section id="panel-southbound" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📡 Southbound Wireless Network (BLE 5.0 GATT)</h2>
+            <div class="panel-subtitle">Linux BlueZ subsystem, HCI controller status, and active perception node telemetry.</div>
+          </div>
+          <span class="btn btn-green" id="btn-hci-reset">HCI Controller: hci0 UP RUNNING</span>
+        </div>
+
+        <div class="card-grid">
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">HCI Host Controller</span>
+              <span class="card-tag">hci0</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Chipset:</span> <span class="spec-val">Cypress CYW43455</span></li>
+              <li><span class="spec-label">BD_ADDR:</span> <span class="spec-val">DC:A6:32:8A:4F:1B</span></li>
+              <li><span class="spec-label">Bus Type:</span> <span class="spec-val">UART (ttyAMA0 @ 3Mbps)</span></li>
+              <li><span class="spec-label">LE Support:</span> <span class="spec-val">LE 2M PHY, Ext Adv</span></li>
+            </ul>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Link Metrics</span>
+              <span class="card-tag">Real-Time</span>
+            </div>
+            <div class="metric-hero" id="metric-ble-pps">3.2 <span class="metric-hero-unit">pkts/sec</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Frame Loss: 0.02% · Average RSSI: -68 dBm · AES-128 CCM</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Polling Strategy</span>
+              <span class="card-tag">Duty-Cycle Aware</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Scan Window:</span> <span class="spec-val">80 ms / 100 ms interval</span></li>
+              <li><span class="spec-label">GATT Client:</span> <span class="spec-val">bleak (Python 3.12 asyncio)</span></li>
+              <li><span class="spec-label">Deep Sleep Sync:</span> <span class="spec-val">Cached Characteristic</span></li>
+              <li><span class="spec-label">Encryption:</span> <span class="spec-val">AES-128 CCM Link Key</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 3 Connected Node Cards -->
+        <h3 style="font-size:1.05rem; color:#fff; margin-bottom:14px;">Active Southbound Peripheral Nodes (BLE GATT Star Topology)</h3>
+        <div class="card-grid" id="ble-node-cards">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 3: PROTOCOL TRANSLATION -->
+      <!-- ================================================================ -->
+      <section id="panel-translation" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">⚙️ Protocol Translation Engine (Binary GATT ➔ JSON)</h2>
+            <div class="panel-subtitle">Asynchronous edge parser converting raw hex telemetry into normalized cloud payloads.</div>
+          </div>
+          <span class="card-tag" style="padding:6px 12px; font-size:0.75rem;">Throughput: ~1,200 msg/min</span>
+        </div>
+
+        <div class="pipe-step-box">
+          <div class="pipe-step-header">
+            <span style="color:var(--gw-cyan);">Step 1: Southbound Ingest</span>
+            <span style="font-size:0.72rem; color:var(--text-dim);">Raw BLE GATT Characteristic Byte Stream (Node 01)</span>
+          </div>
+          <div class="code-preview" id="preview-raw-hex">
+1b ff 75 00 01 18 92 01 f4 00 00 03 f6 5e 2a 6e 09 c4 2a 6f 14 50
+[UUID: 0x2A6E (Temp)] [Bytes: 09 C4 ➔ 25.00°C] | [UUID: 0x2A6F (Hum)] [Bytes: 14 50 ➔ 52.00%]
+          </div>
+        </div>
+
+        <div class="pipe-step-box">
+          <div class="pipe-step-header">
+            <span style="color:var(--gw-purple);">Step 2: Python Byte Unpacker (`struct.unpack`)</span>
+            <span style="font-size:0.72rem; color:var(--text-dim);">Parser Logic executing in async event loop</span>
+          </div>
+          <div class="code-preview">
+temp_raw, hum_raw, batt_raw = struct.unpack("&lt;HHB", payload_bytes[14:19])
+temp_celsius = temp_raw / 100.0   # 2500 -> 25.00 °C
+humidity_pct = hum_raw / 100.0   # 5200 -> 52.00 %
+battery_pct  = batt_raw          # 94%
+          </div>
+        </div>
+
+        <div class="pipe-step-box">
+          <div class="pipe-step-header">
+            <span style="color:var(--gw-green);">Step 3: Normalized JSON Document</span>
+            <span style="font-size:0.72rem; color:var(--text-dim);">Enriched with ISO timestamp, gateway metadata, and RSSI</span>
+          </div>
+          <div class="code-preview" id="preview-json" style="color:#a7f3d0;">
+{
+  "device_id": "sensor_node_01",
+  "gateway_id": "gw_pi4_bcm2711_01",
+  "temp": 24.85,
+  "humidity": 52.4,
+  "pressure": 1013.25,
+  "battery": 94,
+  "rssi": -64,
+  "timestamp": 1789076000,
+  "protocol": "BLE_5.0_GATT",
+  "status": "NORMAL"
+}
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 4: STORE-AND-FORWARD BUFFER -->
+      <!-- ================================================================ -->
+      <section id="panel-buffer" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">💾 Edge Store-and-Forward Buffer (Offline Resilience)</h2>
+            <div class="panel-subtitle">Local SQLite and in-memory queue protecting against WAN disconnects without telemetry loss.</div>
+          </div>
+          <button class="btn btn-amber" id="btn-test-buffer">Simulate Network Drop</button>
+        </div>
+
+        <div class="card-grid">
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Queue Backlog</span>
+              <span class="card-tag" id="tag-buffer-status">NORMAL</span>
+            </div>
+            <div class="metric-hero" id="metric-queue-depth">0 <span class="metric-hero-unit">records queued</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Max Buffer Capacity: 250,000 records (~72 hours offline)</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Drain Throughput</span>
+              <span class="card-tag">Burst Mode</span>
+            </div>
+            <div class="metric-hero">250 <span class="metric-hero-unit">records/sec</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Auto-recovery drain speed upon reconnection</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Database Storage</span>
+              <span class="card-tag">SQLite 3.42</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">File:</span> <span class="spec-val">/var/log/tech300/buffer.db</span></li>
+              <li><span class="spec-label">Sync Mode:</span> <span class="spec-val">WAL (Write-Ahead-Log)</span></li>
+              <li><span class="spec-label">Disk Free:</span> <span class="spec-val">24.2 GB / 32 GB SD</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gw-card">
+          <div class="card-head">
+            <span class="card-title">Fault Tolerance Simulation &amp; Stress Testing</span>
+            <span class="card-tag">Verification</span>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.6; margin-bottom:12px;">
+            Click <strong>"Simulate WAN Cut"</strong> in the header to simulate a wide-area network failure. The gateway switches into offline caching mode, accumulating all incoming BLE frames safely on local storage. Once WAN is restored, the queue flushes automatically into AWS IoT Core with zero packet loss.
+          </p>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-amber" onclick="simulateWanToggle()">Toggle WAN State</button>
+            <button class="btn btn-cyan" onclick="injectBurstData()">Inject 50 Test Records</button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 5: NORTHBOUND MQTT LINK -->
+      <!-- ================================================================ -->
+      <section id="panel-northbound" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">☁️ Northbound MQTT Backhaul (AWS IoT Core)</h2>
+            <div class="panel-subtitle">mTLS port 8883 connection, X.509 certificate validation, and pub/sub routing.</div>
+          </div>
+          <span class="card-tag" style="background:rgba(255,153,0,0.15); color:var(--gw-amber); border-color:rgba(255,153,0,0.4); padding:6px 12px;">
+            AWS IoT Core · us-east-1
+          </span>
+        </div>
+
+        <div class="card-grid">
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Connection Parameters</span>
+              <span class="card-tag">mTLS 8883</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Endpoint:</span> <span class="spec-val" style="font-size:0.68rem;">a1b2c3d4efgh5i.iot.us-east-1.amazonaws.com</span></li>
+              <li><span class="spec-label">Client ID:</span> <span class="spec-val">Gateway_Pi4_Demo</span></li>
+              <li><span class="spec-label">Protocol:</span> <span class="spec-val">MQTT v3.1.1 over TLS 1.3</span></li>
+              <li><span class="spec-label">TCP RTT:</span> <span class="spec-val" id="val-rtt">24 ms</span></li>
+            </ul>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Mutual TLS Security</span>
+              <span class="card-tag">X.509 RSA</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Device Cert:</span> <span class="spec-val">Gateway_Pi4.cert.pem</span></li>
+              <li><span class="spec-label">Private Key:</span> <span class="spec-val">2048-bit RSA Private</span></li>
+              <li><span class="spec-label">CA Anchor:</span> <span class="spec-val">AmazonRootCA1.pem</span></li>
+              <li><span class="spec-label">Cipher:</span> <span class="spec-val">TLS_AES_256_GCM_SHA384</span></li>
+            </ul>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Topic Architecture</span>
+              <span class="card-tag">Namespaced</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Publish:</span> <span class="spec-val">tech300/telemetry/{id}</span></li>
+              <li><span class="spec-label">Subscribe:</span> <span class="spec-val">tech300/commands/{id}</span></li>
+              <li><span class="spec-label">Shadow:</span> <span class="spec-val">$aws/things/.../shadow</span></li>
+              <li><span class="spec-label">QoS Policy:</span> <span class="spec-val">Level 1 (At Least Once)</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 6: REVERSE ACTUATION BRIDGE -->
+      <!-- ================================================================ -->
+      <section id="panel-actuation" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">⚡ Reverse Actuation Bridge (Cloud ➔ Edge ➔ Field Actuator)</h2>
+            <div class="panel-subtitle">Dual-dispatch engine translating incoming cloud actuation commands to BLE GATT writes or physical GPIO relays.</div>
+          </div>
+          <button class="btn btn-green" id="btn-toggle-relay-main">Toggle AC Relay (GPIO22)</button>
+        </div>
+
+        <div class="card-grid">
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Relay State (GPIO 22)</span>
+              <span class="card-tag" id="relay-badge">STANDBY</span>
+            </div>
+            <div class="metric-hero" id="relay-state-text" style="color:var(--text-dim);">OFF</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Wired to Pin 15 (Active-High 3.3V Drive with Optoisolation)</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Actuation Latency</span>
+              <span class="card-tag">&lt; 50ms</span>
+            </div>
+            <div class="metric-hero">38 <span class="metric-hero-unit">ms RTT</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">MQTT Ingestion ➔ Edge Dispatch ➔ Physical Pin Transition</div>
+          </div>
+
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">Dispatch Targets</span>
+              <span class="card-tag">Dual-Path</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Local Physical:</span> <span class="spec-val">GPIO 22 Relay Drive</span></li>
+              <li><span class="spec-label">Wireless BLE:</span> <span class="spec-val">GATT Char 0xFFE1 Write</span></li>
+              <li><span class="spec-label">Acknowledge:</span> <span class="spec-val">PUB tech300/actuator/ack</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 7: SYSTEM DAEMON CONSOLE -->
+      <!-- ================================================================ -->
+      <section id="panel-console" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📜 Edge Daemon Console (`tech300-gateway.service`)</h2>
+            <div class="panel-subtitle">Real-time systemd journal log feed from the Python async gateway engine.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-cyan" id="btn-clear-logs">Clear</button>
+            <button class="btn btn-green" id="btn-pause-logs">Pause</button>
+          </div>
+        </div>
+
+        <div class="terminal-container">
+          <div class="terminal-head">
+            <span>root@gw-pi4-tech300:/var/log# journalctl -u tech300-gateway.service -f</span>
+            <div class="terminal-controls">
+              <span style="color:var(--gw-green)">● active (running)</span>
+            </div>
+          </div>
+          <div class="terminal-body" id="log-feed">
+            <!-- Log rows populated dynamically -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Gateway Simulation Controller Script -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Navigation switching
+      const navItems = document.querySelectorAll('.nav-item');
+      const panels = document.querySelectorAll('.view-panel');
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          navItems.forEach(i => i.classList.remove('active'));
+          panels.forEach(p => p.classList.remove('active'));
+
+          item.classList.add('active');
+          const target = item.getAttribute('data-target');
+          const panel = document.getElementById(target);
+          if (panel) panel.classList.add('active');
+        });
+      });
+
+      // State
+      let isWanConnected = true;
+      let isRelayActive = false;
+      let bufferCount = 0;
+      let logPaused = false;
+
+      const logFeed = document.getElementById('log-feed');
+
+      function addLog(tag, msg, tagClass) {
+        if (logPaused) return;
+        const now = new Date().toTimeString().split(' ')[0];
+        const row = document.createElement('div');
+        row.className = 'log-line';
+        row.innerHTML = `
+          <span class="log-time">[${now}]</span>
+          <span class="log-tag ${tagClass}">${tag}</span>
+          <span class="log-msg">${msg}</span>
+        `;
+        logFeed.appendChild(row);
+        if (logFeed.children.length > 80) {
+          logFeed.removeChild(logFeed.firstChild);
+        }
+        logFeed.scrollTop = logFeed.scrollHeight;
+      }
+
+      // Populate initial logs
+      addLog('SYSTEM', 'Linux gw-pi4-tech300 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 12 (Bookworm)', 'tag-ble');
+      addLog('BLUEZ', 'Bluetooth daemon 5.66 initialized. Controller hci0 UP RUNNING.', 'tag-ble');
+      addLog('BLEAK', 'Async GATT client scanning on BLE 5.0 (channels 37, 38, 39)...', 'tag-ble');
+      addLog('MQTT', 'Connected to AWS IoT Core endpoint over TLS 1.3 port 8883 (QoS 1).', 'tag-mqtt');
+      addLog('READY', 'Edge Gateway protocol translation engine running.', 'tag-trans');
+
+      // Periodic Live Generator if SimBus has no active master
+      setInterval(() => {
+        if (!logPaused) {
+          const temp = (23 + Math.random() * 3).toFixed(2);
+          const hum = (50 + Math.random() * 8).toFixed(1);
+          const nodeIdx = Math.floor(Math.random() * 3) + 1;
+          const nodeId = `sensor_node_0${nodeIdx}`;
+
+          addLog('BLE-INGEST', `GATT read from ${nodeId}: temp=${temp}°C, hum=${hum}% (RSSI -${60 + Math.floor(Math.random()*15)}dBm)`, 'tag-ble');
+          
+          if (isWanConnected) {
+            addLog('TRANSLATE', `Decoded 16 bytes ➔ JSON (132 bytes). Pub to tech300/telemetry/${nodeId}`, 'tag-trans');
+            addLog('MQTT-ACK', `PUBACK received from aws-iot-core (MID: ${1000 + Math.floor(Math.random()*9000)}, RTT: ${20 + Math.floor(Math.random()*12)}ms)`, 'tag-mqtt');
+          } else {
+            bufferCount++;
+            updateBufferUI();
+            addLog('BUFFER', `WAN offline. Enqueued record to SQLite buffer (Depth: ${bufferCount})`, 'tag-buff');
+          }
+        }
+      }, 3500);
+
+      // Connect to SimBus if active
+      if (window.SimBus && typeof window.SimBus.subscribe === 'function') {
+        window.SimBus.subscribe(msg => {
+          if (msg.type === 'telemetry') {
+            const d = msg.data;
+            addLog('SIMBUS', `Cross-tab telemetry from ${d.nodeId}: ${d.temp}°C, ${d.humidity}%`, 'tag-ble');
+          }
+          if (msg.type === 'actuationAck') {
+            const ack = msg.data;
+            addLog('ACTUATION', `Reverse Actuator ACK from ${ack.nodeId}: AC ${ack.state}`, 'tag-act');
+            if (ack.state === 'ON') {
+              setRelay(true);
+            } else if (ack.state === 'OFF') {
+              setRelay(false);
+            }
+          }
+        });
+      }
+
+      // UI Helpers
+      function updateBufferUI() {
+        const barBuffer = document.getElementById('bar-buffer-count');
+        const metricQueue = document.getElementById('metric-queue-depth');
+        const navBadge = document.getElementById('nav-buffer-badge');
+        const tagStatus = document.getElementById('tag-buffer-status');
+
+        if (barBuffer) barBuffer.textContent = `${bufferCount} items`;
+        if (metricQueue) metricQueue.innerHTML = `${bufferCount} <span class="metric-hero-unit">records queued</span>`;
+        if (navBadge) navBadge.textContent = `${bufferCount} items`;
+        if (tagStatus) {
+          tagStatus.textContent = bufferCount > 0 ? 'BUFFERING' : 'NORMAL';
+          tagStatus.style.color = bufferCount > 0 ? 'var(--gw-amber)' : 'var(--gw-green)';
+        }
+      }
+
+      function setRelay(active) {
+        isRelayActive = active;
+        const badge = document.getElementById('relay-badge');
+        const txt = document.getElementById('relay-state-text');
+        const pinState = document.getElementById('pin-22-state');
+        if (badge) {
+          badge.textContent = active ? 'ACTIVE (CLOSED)' : 'STANDBY (OPEN)';
+          badge.style.color = active ? 'var(--gw-green)' : 'var(--text-dim)';
+        }
+        if (txt) {
+          txt.textContent = active ? 'ON' : 'OFF';
+          txt.style.color = active ? 'var(--gw-green)' : 'var(--text-dim)';
+        }
+        if (pinState) {
+          pinState.textContent = active ? 'HIGH (3.3V / Driven)' : 'LOW (0V / Standby)';
+          pinState.style.color = active ? 'var(--gw-green)' : 'var(--text-dim)';
+        }
+      }
+
+      window.simulateWanToggle = function() {
+        isWanConnected = !isWanConnected;
+        const btn = document.getElementById('btn-toggle-wan');
+        const lbl = document.getElementById('lbl-toggle-wan');
+        const dotWan = document.getElementById('dot-wan');
+        const barWan = document.getElementById('bar-wan-status');
+
+        if (!isWanConnected) {
+          if (lbl) lbl.textContent = 'Restore WAN Connection';
+          if (dotWan) { dotWan.className = 'status-dot danger'; }
+          if (barWan) { barWan.textContent = 'Offline'; barWan.style.color = 'var(--gw-red)'; }
+          addLog('WAN-STATUS', 'WAN connection dropped! Switched to local SQLite store-and-forward buffer.', 'tag-buff');
+        } else {
+          if (lbl) lbl.textContent = 'Simulate WAN Cut';
+          if (dotWan) { dotWan.className = 'status-dot'; }
+          if (barWan) { barWan.textContent = 'Connected'; barWan.style.color = 'var(--gw-green)'; }
+          addLog('WAN-STATUS', 'WAN connection restored! Draining stored records to AWS IoT Core in burst mode...', 'tag-mqtt');
+          // Drain buffer
+          const draining = setInterval(() => {
+            if (bufferCount > 0) {
+              const chunk = Math.min(10, bufferCount);
+              bufferCount -= chunk;
+              updateBufferUI();
+              addLog('DRAIN', `Drained ${chunk} records to DynamoDB via MQTT QoS 1. Remaining: ${bufferCount}`, 'tag-trans');
+            } else {
+              clearInterval(draining);
+              updateBufferUI();
+              addLog('DRAIN-DONE', 'Buffer completely drained. Zero telemetry records lost.', 'tag-buff');
+            }
+          }, 300);
+        }
+      };
+
+      window.injectBurstData = function() {
+        bufferCount += 50;
+        updateBufferUI();
+        addLog('BURST', 'Injected 50 simulated telemetry packets into local buffer test queue.', 'tag-buff');
+      };
+
+      // Wire buttons
+      const btnToggleWan = document.getElementById('btn-toggle-wan');
+      if (btnToggleWan) btnToggleWan.addEventListener('click', window.simulateWanToggle);
+
+      const btnTestBuffer = document.getElementById('btn-test-buffer');
+      if (btnTestBuffer) btnTestBuffer.addEventListener('click', window.simulateWanToggle);
+
+      const btnRelayTest = document.getElementById('btn-relay-test');
+      if (btnRelayTest) {
+        btnRelayTest.addEventListener('click', () => {
+          setRelay(!isRelayActive);
+          addLog('MANUAL-ACT', `Manual test: GPIO 22 AC Relay toggled to ${isRelayActive ? 'ON' : 'OFF'}`, 'tag-act');
+          if (window.SimBus && typeof window.SimBus.publish === 'function') {
+            window.SimBus.publish({
+              type: 'actuationAck',
+              data: { nodeId: 'sensor_node_01', state: isRelayActive ? 'ON' : 'OFF' }
+            });
+          }
+        });
+      }
+
+      const btnToggleRelayMain = document.getElementById('btn-toggle-relay-main');
+      if (btnToggleRelayMain) {
+        btnToggleRelayMain.addEventListener('click', () => {
+          setRelay(!isRelayActive);
+          addLog('ACTUATION', `Reverse Actuator switch: GPIO 22 set to ${isRelayActive ? 'ON' : 'OFF'}`, 'tag-act');
+        });
+      }
+
+      const btnClearLogs = document.getElementById('btn-clear-logs');
+      if (btnClearLogs) btnClearLogs.addEventListener('click', () => { logFeed.innerHTML = ''; });
+
+      const btnPauseLogs = document.getElementById('btn-pause-logs');
+      if (btnPauseLogs) {
+        btnPauseLogs.addEventListener('click', () => {
+          logPaused = !logPaused;
+          btnPauseLogs.textContent = logPaused ? 'Resume' : 'Pause';
+        });
+      }
+
+      // Render 3 Peripheral Node cards in Southbound view
+      const bleContainer = document.getElementById('ble-node-cards');
+      if (bleContainer) {
+        const nodes = [
+          {
+            id: 'sensor_node_01',
+            name: 'Node 01: Living Room',
+            sensor: 'DHT22 Environmental',
+            actuator: 'AC Compressor Relay (GPIO 22)',
+            mac: 'AA:BB:CC:11:22:33',
+            rssi: '-64 dBm',
+            duty: 'RTC Sleep (30s interval)',
+            gatt: '0x2A6E (Temp), 0x2A6F (Hum), 0xFFE1 (Relay)'
+          },
+          {
+            id: 'sensor_node_02',
+            name: 'Node 02: Server Rack',
+            sensor: 'BME280 Precision Multi-Sensor',
+            actuator: 'Chassis Exhaust Fan',
+            mac: 'AA:BB:CC:44:55:66',
+            rssi: '-72 dBm',
+            duty: 'RTC Sleep (30s interval)',
+            gatt: '0x2A6E (Temp), 0x2A6D (Pressure)'
+          },
+          {
+            id: 'sensor_node_03',
+            name: 'Node 03: HVAC Duct',
+            sensor: 'DHT22 Airflow Monitor',
+            actuator: 'Damper Servo Actuator',
+            mac: 'AA:BB:CC:77:88:99',
+            rssi: '-69 dBm',
+            duty: 'RTC Sleep (45s interval)',
+            gatt: '0x2A6E (Temp), 0x2A6F (Hum)'
+          }
+        ];
+
+        bleContainer.innerHTML = nodes.map(n => `
+          <div class="gw-card">
+            <div class="card-head">
+              <span class="card-title">${n.name}</span>
+              <span class="card-tag" style="color:var(--gw-green); border-color:rgba(16,185,129,0.3);">CONNECTED</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Hardware MAC:</span> <span class="spec-val">${n.mac}</span></li>
+              <li><span class="spec-label">Sensor:</span> <span class="spec-val">${n.sensor}</span></li>
+              <li><span class="spec-label">Actuator:</span> <span class="spec-val" style="color:var(--gw-cyan);">${n.actuator}</span></li>
+              <li><span class="spec-label">RSSI Strength:</span> <span class="spec-val" style="color:var(--gw-green);">${n.rssi}</span></li>
+              <li><span class="spec-label">Duty Cycling:</span> <span class="spec-val">${n.duty}</span></li>
+              <li><span class="spec-label">GATT Chars:</span> <span class="spec-val" style="font-size:0.65rem;">${n.gatt}</span></li>
+            </ul>
+          </div>
+        `).join('');
+      }
+
+    })();
+  </script>
+</body>
+</html>

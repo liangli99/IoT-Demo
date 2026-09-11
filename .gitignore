@@ -1,0 +1,4 @@
+# Archives and temp files
+*.zip
+.tempmediaStorage/
+scratch/

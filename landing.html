@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TECH 300 IoT Demo — Westcliff University</title>
+  <meta name="description" content="End-to-End IoT Demonstration System. ESP32 sensors → BLE 5.0 → Edge Gateway → AWS IoT Core → Real-time Dashboard & Mobile App. Course project by Professor Liang Li, TECH 300, Westcliff University.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg-void:    #060b16;
+      --bg-dark:    #0a1222;
+      --bg-surface: #0f1a30;
+      --bg-card:    #142340;
+      --bg-elevated:#1a2c50;
+
+      --cyan:    #00d4ff;
+      --cyan-dim:#0096b8;
+      --emerald: #10b981;
+      --rose:    #f43f5e;
+      --amber:   #f59e0b;
+      --purple:  #a855f7;
+      --indigo:  #6366f1;
+
+      --border:      rgba(0,212,255,0.10);
+      --border-glow: rgba(0,212,255,0.20);
+      --border-card: rgba(99,120,170,0.14);
+
+      --text-main:  #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim:   #64748b;
+
+      --font-sans: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(ellipse 110% 80% at 50% -10%, #0d1a33 0%, #081124 50%, #050a16 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Particle Canvas Background ────────────────────────────────────── */
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.32;
+    }
+
+    /* ── Global layout helpers ──────────────────────────────────────────── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Top Navigation ─────────────────────────────────────────────────── */
+    nav.topnav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(5,8,16,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-logo {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+    }
+    .nav-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .nav-name { font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .nav-tag  { font-size: 0.62rem; color: var(--text-dim); font-family: var(--font-mono); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-link {
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-cta {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ── Hero Section ───────────────────────────────────────────────────── */
+    section.hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 24px 80px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid var(--border-glow);
+      border-radius: 20px;
+      padding: 5px 16px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--cyan);
+      letter-spacing: 0.08em;
+      margin-bottom: 28px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .eyebrow-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 20px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero-title .grad {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--indigo) 50%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.65;
+      margin: 0 auto 32px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    /* ── Prominent Demo Designer Showcase Banner ───────────────────────── */
+    .hero-designer-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(135deg, rgba(15, 26, 48, 0.95) 0%, rgba(20, 35, 64, 0.95) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      border-radius: 20px;
+      padding: 12px 26px;
+      margin: 0 auto 40px;
+      box-shadow: 0 0 32px rgba(245, 158, 11, 0.24), 0 8px 32px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      animation: fadeUp 0.7s 0.25s ease both;
+      position: relative;
+      overflow: hidden;
+      max-width: 92vw;
+      text-align: left;
+    }
+    .hero-designer-banner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.18), transparent);
+      animation: designerShine 4.5s infinite;
+      pointer-events: none;
+    }
+    @keyframes designerShine {
+      0% { left: -100%; }
+      22%, 100% { left: 100%; }
+    }
+    .hdb-crest {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .hdb-crest:hover {
+      border-color: #fbbf24;
+      transform: scale(1.06);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+    }
+    .hdb-crest img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .hdb-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .hdb-tagline {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .hdb-lead {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hdb-role {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      letter-spacing: -0.01em;
+    }
+    .hdb-name {
+      font-size: 1.4rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fef08a 0%, #fbbf24 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+      filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.45));
+    }
+    .hdb-affiliation {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+      border-radius: 999px;
+      padding: 5px 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-left: 12px;
+      flex-shrink: 0;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+    .hdb-affiliation:hover {
+      background: rgba(0, 212, 255, 0.25);
+      border-color: var(--cyan);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+    }
+    @media (max-width: 640px) {
+      .hero-designer-banner { flex-direction: column; text-align: center; gap: 10px; }
+      .hdb-lead { justify-content: center; }
+      .hdb-affiliation { margin-left: 0; }
+    }
+
+    .hero-cta-group {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    .btn-primary-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 40px rgba(14,165,233,0.3);
+      text-decoration: none;
+    }
+    .btn-primary-hero:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(14,165,233,0.45);
+    }
+    .btn-primary-hero:active { transform: translateY(-1px); }
+
+    .btn-secondary-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-main);
+      border: 1.5px solid var(--border-card);
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s, border-color 0.2s;
+      text-decoration: none;
+    }
+    .btn-secondary-hero:hover {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.09);
+      border-color: var(--border-glow);
+    }
+
+    /* ── Architecture flow strip ────────────────────────────────────────── */
+    .arch-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      row-gap: 12px;
+      padding: 20px 0;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+
+    .arch-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 90px;
+    }
+    .arch-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      border: 1px solid;
+      position: relative;
+    }
+    .arch-label {
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .arch-arrow {
+      font-size: 1.1rem;
+      color: var(--text-dim);
+      padding: 0 4px;
+      margin-bottom: 26px;
+    }
+
+    .arch-icon.t1 { background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.3); }
+    .arch-icon.t2 { background: rgba(0,212,255,0.10); border-color: rgba(0,212,255,0.3); }
+    .arch-icon.t3 { background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.3); }
+    .arch-icon.t4 { background: rgba(168,85,247,0.10); border-color: rgba(168,85,247,0.3); }
+    .arch-icon.t5 { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); }
+
+    /* Animated dot on each arch-icon */
+    .arch-icon::after {
+      content: '';
+      position: absolute;
+      top: -3px; right: -3px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--emerald);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Live stats ribbon ──────────────────────────────────────────────── */
+    .stats-ribbon {
+      background: linear-gradient(90deg, rgba(14,165,233,0.08) 0%, rgba(99,102,241,0.08) 100%);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 0;
+      position: relative;
+      z-index: 1;
+    }
+    .stats-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .stat-item { text-align: center; }
+    .stat-number {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Feature cards grid ─────────────────────────────────────────────── */
+    section.features {
+      padding: 100px 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-eyebrow {
+      text-align: center;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 56px;
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: linear-gradient(145deg, var(--bg-card), var(--bg-elevated));
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1),
+                  border-color 0.25s,
+                  box-shadow 0.25s;
+      cursor: default;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-glow);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(0,212,255,0.06);
+    }
+
+    /* Top gradient line on hover */
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card.fc-cyan::before   { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+    .feature-card.fc-emerald::before{ background: linear-gradient(90deg, transparent, var(--emerald), transparent); }
+    .feature-card.fc-purple::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+    .feature-card.fc-amber::before  { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+    .feature-card.fc-rose::before   { background: linear-gradient(90deg, transparent, var(--rose), transparent); }
+    .feature-card.fc-indigo::before { background: linear-gradient(90deg, transparent, var(--indigo), transparent); }
+
+    /* Background glow blob */
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; right: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.08;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover::after { opacity: 0.14; }
+    .feature-card.fc-cyan::after   { background: var(--cyan); }
+    .feature-card.fc-emerald::after{ background: var(--emerald); }
+    .feature-card.fc-purple::after { background: var(--purple); }
+    .feature-card.fc-amber::after  { background: var(--amber); }
+    .feature-card.fc-rose::after   { background: var(--rose); }
+    .feature-card.fc-indigo::after { background: var(--indigo); }
+
+    .fc-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .fc-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .fc-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .fc-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .fc-tag {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .fc-tag.cyan   { background: rgba(0,212,255,0.12); color: var(--cyan); }
+    .fc-tag.emerald{ background: rgba(16,185,129,0.12); color: var(--emerald); }
+    .fc-tag.purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .fc-tag.amber  { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .fc-tag.rose   { background: rgba(244,63,94,0.12); color: var(--rose); }
+    .fc-tag.indigo { background: rgba(99,102,241,0.12); color: var(--indigo); }
+
+    /* ── App preview section ────────────────────────────────────────────── */
+    section.app-preview {
+      padding: 80px 24px 100px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .preview-flex {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      flex-wrap: wrap;
+    }
+
+    .preview-info { flex: 1; min-width: 300px; }
+    .preview-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .preview-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 28px;
+    }
+
+    .preview-bullets { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 10px; }
+    .preview-bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .bullet-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+    .bullet-dot.c { background: rgba(0,212,255,0.15); color: var(--cyan); }
+    .bullet-dot.e { background: rgba(16,185,129,0.15); color: var(--emerald); }
+    .bullet-dot.a { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .bullet-dot.p { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+    /* Simulated phone preview */
+    .preview-phone {
+      flex-shrink: 0;
+      width: 280px;
+      height: 580px;
+      background: #0a0e1a;
+      border-radius: 36px;
+      border: 1.5px solid rgba(0,212,255,0.2);
+      box-shadow:
+        0 0 0 5px #060c18,
+        0 0 60px rgba(0,212,255,0.15),
+        0 40px 80px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-phone::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 90px; height: 24px;
+      background: #04080f;
+      border-radius: 0 0 14px 14px;
+      z-index: 10;
+    }
+
+    .pph-appbar {
+      height: 52px;
+      background: rgba(10,14,26,0.9);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      padding-top: 24px;
+      flex-shrink: 0;
+    }
+    .pph-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+    }
+    .pph-title { font-size: 0.85rem; font-weight: 700; color: #fff; }
+
+    .pph-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Mini gauge in preview */
+    .pph-gauge {
+      background: linear-gradient(145deg, #141f33, #1a2a44);
+      border: 1px solid rgba(0,200,255,0.2);
+      border-radius: 18px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .pph-temp {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--cyan);
+      font-family: var(--font-mono);
+    }
+    .pph-temp-lbl { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
+    .pph-gauge-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .pph-gauge-fill {
+      height: 100%;
+      width: 70%;
+      background: linear-gradient(90deg, var(--emerald), var(--cyan));
+      border-radius: 2px;
+      animation: widthPulse 3s ease-in-out infinite;
+    }
+    @keyframes widthPulse {
+      0%,100%{width:65%} 50%{width:75%}
+    }
+
+    .pph-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .pph-card {
+      background: rgba(17,31,53,0.8);
+      border: 1px solid rgba(99,120,170,0.15);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .pph-card-val  { font-size: 1rem; font-weight: 800; }
+    .pph-card-lbl  { font-size: 0.55rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Mini AC card in preview */
+    .pph-ac {
+      background: linear-gradient(145deg, #0f1c32, #162036);
+      border: 1px solid rgba(0,200,255,0.2);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pph-ac-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(99,102,241,0.2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      animation: acGlow 2s ease-in-out infinite;
+    }
+    @keyframes acGlow {
+      0%,100%{box-shadow:0 0 8px rgba(6,182,212,0.3)}
+      50%{box-shadow:0 0 20px rgba(6,182,212,0.6)}
+    }
+    .pph-ac-info { flex: 1; }
+    .pph-ac-val  { font-size: 0.8rem; font-weight: 700; color: var(--cyan); }
+    .pph-ac-lbl  { font-size: 0.6rem; color: var(--text-dim); }
+
+    .pph-bottomnav {
+      height: 56px;
+      background: rgba(5,8,16,0.9);
+      border-top: 1px solid rgba(99,120,170,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      flex-shrink: 0;
+    }
+    .pph-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 1.1rem;
+      opacity: 0.4;
+    }
+    .pph-nav-item.active { opacity: 1; }
+    .pph-nav-lbl { font-size: 0.5rem; color: var(--cyan); font-weight: 700; }
+
+    /* ── Pipeline section ───────────────────────────────────────────────── */
+    section.pipeline {
+      padding: 80px 24px 100px;
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(180deg, transparent, rgba(14,165,233,0.03) 50%, transparent);
+    }
+
+    .pipeline-flow {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      row-gap: 20px;
+    }
+
+    .pipeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 160px;
+    }
+
+    .pipeline-icon-box {
+      width: 72px; height: 72px;
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      border: 1px solid;
+      position: relative;
+      transition: transform 0.2s;
+    }
+    .pipeline-icon-box:hover { transform: scale(1.08); }
+
+    .ps1 { background:rgba(244,63,94,0.12); border-color:rgba(244,63,94,0.3); }
+    .ps2 { background:rgba(0,212,255,0.10); border-color:rgba(0,212,255,0.3); }
+    .ps3 { background:rgba(16,185,129,0.10);border-color:rgba(16,185,129,0.3); }
+    .ps4 { background:rgba(168,85,247,0.10);border-color:rgba(168,85,247,0.3); }
+    .ps5 { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.3); }
+
+    .pipeline-step-title { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .pipeline-step-sub   { font-size: 0.62rem; color: var(--text-dim); line-height: 1.4; }
+
+    .pipeline-arrow {
+      font-size: 1.4rem;
+      color: var(--text-dim);
+      padding: 0 4px;
+      margin-bottom: 44px;
+      flex-shrink: 0;
+      animation: arrowPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes arrowPulse {
+      0%,100%{opacity:0.3;transform:translateX(0)}
+      50%{opacity:0.8;transform:translateX(4px)}
+    }
+
+    /* ── CTA Section ────────────────────────────────────────────────────── */
+    section.cta-section {
+      padding: 80px 24px 100px;
+      position: relative;
+      z-index: 1;
+    }
+    .cta-card {
+      max-width: 900px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(99,102,241,0.12) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      padding: 60px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -80px; left: 50%;
+      transform: translateX(-50%);
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    .cta-desc {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+    .cta-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .footer-text {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-link {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--cyan); }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .preview-phone { display: none; }
+      .arch-arrow, .pipeline-arrow { display: none; }
+      .arch-strip { gap: 12px; }
+      .cta-card { padding: 40px 24px; }
+    }
+
+    /* ── Scroll reveal animation ─────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Particle canvas background -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ═══════════════════ TOP NAV ═══════════════════════════════════════ -->
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="nav-logo">
+        <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo" class="nav-logo-img">
+      </div>
+      <div>
+        <div class="nav-name">IoT Demo System</div>
+        <div class="nav-tag"><span style="color:#94a3b8;">TECH 300 · Westcliff University</span> · <span style="color:#fbbf24; font-weight:700;">Demo Designer: Prof. Liang Li</span></div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link" href="#features">Features</a>
+      <a class="nav-link" href="#pipeline">Architecture</a>
+      <a class="nav-link" href="gateway.html">Edge Gateway</a>
+      <a class="nav-link" href="aws-cloud.html">AWS Cloud</a>
+      <a class="nav-link" href="index.html">Dashboard</a>
+      <a class="nav-cta" href="index.html">Open Dashboard →</a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ HERO ══════════════════════════════════════════ -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      TECH 300 · WESTCLIFF UNIVERSITY · LIVE DEMO
+    </div>
+
+    <h1 class="hero-title">
+      End-to-End<br>
+      <span class="grad">IoT Pipeline</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      A full-stack IoT demonstration spanning five tiers — from constrained ESP32 sensor nodes
+      through BLE 5.0, a Raspberry Pi Edge Gateway, AWS IoT Core, all the way to a real-time
+      dashboard and Android-style mobile app with <strong style="color:#fff">AC auto-control</strong>.
+    </p>
+
+    <!-- ── Prominent Demo Designer Showcase Banner ── -->
+    <div class="hero-designer-banner">
+      <a href="https://www.westcliff.edu" target="_blank" rel="noopener noreferrer" class="hdb-crest" title="Visit Westcliff University (www.westcliff.edu)">
+        <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Emblem">
+      </a>
+      <div class="hdb-details">
+        <div class="hdb-tagline">Course Architecture &amp; System Engineering</div>
+        <div class="hdb-lead">
+          <span class="hdb-role">Demo Designer:</span>
+          <span class="hdb-name">Prof. Liang Li</span>
+        </div>
+      </div>
+      <a href="https://www.westcliff.edu" target="_blank" rel="noopener noreferrer" class="hdb-affiliation" title="Visit Westcliff University (www.westcliff.edu)">
+        Westcliff University ↗
+      </a>
+    </div>
+
+    <div class="hero-cta-group">
+      <a href="index.html" class="btn-primary-hero">
+        🖥️ Open Full Dashboard
+      </a>
+    </div>
+
+    <!-- Architecture strip -->
+    <div class="arch-strip">
+      <div class="arch-node">
+        <div class="arch-icon t1">🎛️</div>
+        <div class="arch-label">Tier 1<br>ESP32 Sensor</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <div class="arch-icon t2">📶</div>
+        <div class="arch-label">Tier 2<br>BLE 5.0</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <div class="arch-icon t3">🖥️</div>
+        <div class="arch-label">Tier 3<br>Edge Gateway</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <div class="arch-icon t4">☁️</div>
+        <div class="arch-label">Tier 4<br>AWS IoT Core</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node">
+        <div class="arch-icon t5">📱</div>
+        <div class="arch-label">Tier 5<br>Dashboard</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ STATS RIBBON ═════════════════════════════════ -->
+  <div class="stats-ribbon">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <div class="stat-number">5</div>
+        <div class="stat-label">System Tiers</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Sensor Nodes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">4</div>
+        <div class="stat-label">Sensor Types</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">&lt;200<span style="font-size:1.4rem;vertical-align:middle;"> ms</span></div>
+        <div class="stat-label">Round-Trip Latency</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">mTLS</div>
+        <div class="stat-label">End-to-End Security</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ FEATURES ═════════════════════════════════════ -->
+  <section class="features" id="features">
+    <div class="section-eyebrow">What's Inside</div>
+    <h2 class="section-title">All Five Tiers, Live & Interactive</h2>
+    <p class="section-desc">Every component of the production IoT stack is simulated and visualized in real time — from constrained edge firmware to cloud rules engine.</p>
+
+    <div class="features-grid">
+
+      <div class="feature-card fc-rose reveal">
+        <span class="fc-icon">🎛️</span>
+        <div class="fc-title">Perception Layer — ESP32 Sensors</div>
+        <div class="fc-desc">Simulates ESP32-WROOM-32 sensor nodes running a 4-phase RTC duty cycle (SLEEP → WAKE → SAMPLE → BROADCAST). Reads DHT22 temperature/humidity, BME280 pressure, and MPU6050 6-axis vibration — all with realistic noise and drift.</div>
+        <div class="fc-tags">
+          <span class="fc-tag rose">ESP32</span>
+          <span class="fc-tag rose">DHT22</span>
+          <span class="fc-tag rose">MPU6050</span>
+          <span class="fc-tag rose">Deep-Sleep</span>
+        </div>
+      </div>
+
+      <div class="feature-card fc-cyan reveal">
+        <span class="fc-icon">📶</span>
+        <div class="fc-title">Proximity Network — BLE 5.0</div>
+        <div class="fc-desc">Displays live BLE 5.0 advertisement packets (ADV_IND) from each node, with MAC addresses, RSSI signal strength, and service UUID 0x181A (Environmental Sensing). AES-128 CCM link encryption simulated.</div>
+        <div class="fc-tags">
+          <span class="fc-tag cyan">BLE 5.0</span>
+          <span class="fc-tag cyan">IEEE 802.15.1</span>
+          <span class="fc-tag cyan">AES-128 CCM</span>
+        </div>
+      </div>
+
+      <div class="feature-card fc-emerald reveal">
+        <span class="fc-icon">🖥️</span>
+        <div class="fc-title">Edge Gateway — Raspberry Pi 4</div>
+        <div class="fc-desc">The Raspberry Pi 4 gateway translates raw BLE GATT frames into structured MQTT JSON payloads. Features store-and-forward: packets are cached in local SQLite during WAN outages and bulk-flushed on reconnect.</div>
+        <div class="fc-tags">
+          <span class="fc-tag emerald">Raspberry Pi 4</span>
+          <span class="fc-tag emerald">bleak + paho</span>
+          <span class="fc-tag emerald">Store-Forward</span>
+        </div>
+      </div>
+
+      <div class="feature-card fc-purple reveal">
+        <span class="fc-icon">☁️</span>
+        <div class="fc-title">AWS IoT Cloud — Rules, Lambda & DynamoDB</div>
+        <div class="fc-desc">Live IoT Rules Engine SQL evaluation, least-privilege X.509 IAM policies, DynamoDB time-series persistence, and AWS Lambda alerts dispatched via SNS when temperature exceeds 30 °C. Full data inspector included.</div>
+        <div class="fc-tags">
+          <span class="fc-tag purple">AWS IoT Core</span>
+          <span class="fc-tag purple">DynamoDB</span>
+          <span class="fc-tag purple">Lambda</span>
+          <span class="fc-tag purple">SNS</span>
+        </div>
+      </div>
+
+      <div class="feature-card fc-amber reveal">
+        <span class="fc-icon">❄️</span>
+        <div class="fc-title">AC Auto-Control — Temperature-Driven</div>
+        <div class="fc-desc">A fully autonomous AC controller monitors sensor temperature and automatically activates the relay actuator (AC compressor) when temp ≥ 26 °C, and disengages at ≤ 24 °C. Configurable thresholds and manual override supported.</div>
+        <div class="fc-tags">
+          <span class="fc-tag amber">Auto-Control</span>
+          <span class="fc-tag amber">Hysteresis</span>
+          <span class="fc-tag amber">SSR Relay</span>
+          <span class="fc-tag amber">PWM Fan</span>
+        </div>
+      </div>
+
+      <div class="feature-card fc-indigo reveal">
+        <span class="fc-icon">📱</span>
+        <div class="fc-title">Mobile App — Android-Style Dashboard</div>
+        <div class="fc-desc">A full Android-style single-page app with radial SVG temperature gauge, sensor metric cards, AC control panel with threshold sliders, alert feed, and bottom navigation — styled as a native Material dark-theme app.</div>
+        <div class="fc-tags">
+          <span class="fc-tag indigo">Material Design</span>
+          <span class="fc-tag indigo">SVG Gauge</span>
+          <span class="fc-tag indigo">Bottom Nav</span>
+          <span class="fc-tag indigo">Live Charts</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════ MOBILE APP PREVIEW ════════════════════════════ -->
+  <section class="app-preview" id="app">
+    <div class="preview-flex">
+
+      <div class="preview-info reveal">
+        <div class="section-eyebrow" style="text-align:left;">Mobile App</div>
+        <h2 class="preview-title">Android-Style<br>Sensor Dashboard</h2>
+        <p class="preview-desc">Monitor all sensor readings in a sleek app interface that looks and feels like a native Android application — dark Material theme, radial gauges, and real-time data updates.</p>
+
+        <ul class="preview-bullets">
+          <li>
+            <span class="bullet-dot c">✓</span>
+            <span><strong style="color:#fff">Live Temperature Gauge</strong> — radial SVG arc with color-coded zones (green → cyan → amber → red)</span>
+          </li>
+          <li>
+            <span class="bullet-dot e">✓</span>
+            <span><strong style="color:#fff">AC Auto-Control Panel</strong> — automatic compressor control with configurable hysteresis thresholds and manual override</span>
+          </li>
+          <li>
+            <span class="bullet-dot a">✓</span>
+            <span><strong style="color:#fff">Multi-Node Support</strong> — switch between all 3 sensor nodes with chip selector</span>
+          </li>
+          <li>
+            <span class="bullet-dot p">✓</span>
+            <span><strong style="color:#fff">Alert Feed</strong> — Lambda high-temperature alerts appear in real time with node badges</span>
+          </li>
+        </ul>
+
+        <a href="app.html" class="btn-primary-hero" style="text-decoration:none;display:inline-flex;font-size:0.95rem;padding:14px 28px;">
+          📱 Launch Mobile App →
+        </a>
+      </div>
+
+      <!-- Simulated phone mockup -->
+      <div class="preview-phone reveal">
+        <div class="pph-appbar">
+          <div class="pph-icon">🌡️</div>
+          <div class="pph-title">IoT Sense</div>
+        </div>
+        <div class="pph-content">
+          <div class="pph-gauge">
+            <div class="pph-temp" id="prev-temp">24.2°C</div>
+            <div class="pph-temp-lbl">Ambient Temperature · sensor_node_01</div>
+            <div class="pph-gauge-bar">
+              <div class="pph-gauge-fill"></div>
+            </div>
+          </div>
+          <div class="pph-grid">
+            <div class="pph-card">
+              <div class="pph-card-val" style="color:var(--cyan)" id="prev-hum">52.8%</div>
+              <div class="pph-card-lbl">💧 Humidity</div>
+            </div>
+            <div class="pph-card">
+              <div class="pph-card-val" style="color:var(--purple)" id="prev-pres">1013 hPa</div>
+              <div class="pph-card-lbl">⏲️ Pressure</div>
+            </div>
+            <div class="pph-card">
+              <div class="pph-card-val" style="color:var(--amber)" id="prev-vib">0.041 g</div>
+              <div class="pph-card-lbl">📳 Vibration</div>
+            </div>
+            <div class="pph-card">
+              <div class="pph-card-val" style="color:var(--emerald)" id="prev-batt">94%</div>
+              <div class="pph-card-lbl">🔋 Battery</div>
+            </div>
+          </div>
+          <div class="pph-ac">
+            <div class="pph-ac-icon">❄️</div>
+            <div class="pph-ac-info">
+              <div class="pph-ac-val" id="prev-ac">AC: STANDBY</div>
+              <div class="pph-ac-lbl">Auto-mode active · threshold 26°C</div>
+            </div>
+          </div>
+        </div>
+        <div class="pph-bottomnav">
+          <div class="pph-nav-item active">🏠<div class="pph-nav-lbl">Home</div></div>
+          <div class="pph-nav-item">❄️<div class="pph-nav-lbl">Control</div></div>
+          <div class="pph-nav-item">🚨<div class="pph-nav-lbl">Alerts</div></div>
+          <div class="pph-nav-item">⚙️<div class="pph-nav-lbl">Settings</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════ PIPELINE ═════════════════════════════════════ -->
+  <section class="pipeline" id="pipeline">
+    <div class="section-eyebrow">System Architecture</div>
+    <h2 class="section-title">Five-Tier End-to-End Pipeline</h2>
+    <p class="section-desc">Every telemetry packet traverses all five layers — from constrained hardware through the cloud to your screen.</p>
+
+    <div class="pipeline-flow">
+      <div class="pipeline-step reveal">
+        <div class="pipeline-icon-box ps1">🎛️</div>
+        <div class="pipeline-step-title">Perception Layer</div>
+        <div class="pipeline-step-sub">ESP32-WROOM-32<br>DHT22 / MPU6050<br>BLE Advertising</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step reveal">
+        <div class="pipeline-icon-box ps2">📶</div>
+        <div class="pipeline-step-title">Proximity Network</div>
+        <div class="pipeline-step-sub">BLE 5.0 (2.4 GHz)<br>IEEE 802.15.1<br>AES-128 CCM</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step reveal">
+        <div class="pipeline-icon-box ps3">🖥️</div>
+        <div class="pipeline-step-title">Edge Gateway</div>
+        <div class="pipeline-step-sub">Raspberry Pi 4<br>bleak + paho-mqtt<br>Store-and-Forward</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step reveal">
+        <div class="pipeline-icon-box ps4">☁️</div>
+        <div class="pipeline-step-title">AWS IoT Cloud</div>
+        <div class="pipeline-step-sub">IoT Core mTLS<br>Rules Engine SQL<br>DynamoDB + Lambda</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step reveal">
+        <div class="pipeline-icon-box ps5">📱</div>
+        <div class="pipeline-step-title">Presentation Layer</div>
+        <div class="pipeline-step-sub">WebSockets + REST<br>Live Charts<br>AC Auto-Control</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ CTA SECTION ══════════════════════════════════ -->
+  <section class="cta-section">
+    <div class="cta-card reveal">
+      <h2 class="cta-title">Ready to Explore the Demo?</h2>
+      <p class="cta-desc">Dive into the full 5-tier interactive dashboard to test live operations, inject real-time faults, and inspect telemetry across all layers.</p>
+      <div class="cta-btns">
+        <a href="index.html" class="btn-primary-hero">
+          🖥️ Open Full Dashboard
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FOOTER ════════════════════════════════════════ -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="nav-logo" style="width:36px;height:36px;border-radius:8px;padding:3px;border-color:rgba(245,158,11,0.35);">
+          <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo" class="nav-logo-img">
+        </div>
+        <div class="footer-text">
+          <strong style="color:#fff;">TECH 300: IoT Demo System</strong><br>
+          <span style="color:#fbbf24; font-weight:700;">Demo Designer: Prof. Liang Li</span> · <span style="color:#94a3b8; font-weight:600;">Westcliff University</span> · v1.0
+        </div>
+      </div>
+      <div class="footer-links">
+        <a class="footer-link" href="index.html">Dashboard</a>
+        <a class="footer-link" href="app.html">Mobile App</a>
+        <a class="footer-link" href="index.html#tab-bom">BOM Reference</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════ SCRIPTS ═══════════════════════════════════════ -->
+  <script src="js/simulation.js"></script>
+  <script>
+  (() => {
+    // ── Particle background ──────────────────────────────────────────────
+    const canvas = document.getElementById('particle-canvas');
+    const ctx    = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function createParticles(n) {
+      particles = [];
+      for (let i = 0; i < n; i++) {
+        particles.push({
+          x:  Math.random() * canvas.width,
+          y:  Math.random() * canvas.height,
+          r:  Math.random() * 1.5 + 0.3,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          opacity: Math.random() * 0.6 + 0.1
+        });
+      }
+    }
+    createParticles(120);
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 140) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0,212,255,${(1 - dist / 140) * 0.07})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw dots
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,212,255,${p.opacity})`;
+        ctx.fill();
+
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+      });
+
+      requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
+
+    // ── Scroll reveal ────────────────────────────────────────────────────
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer  = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => observer.observe(el));
+
+    // ── Live phone preview using simulation engine ────────────────────────
+    const sim = new IoTSimulationEngine();
+    const NODE = 'sensor_node_01';
+
+    sim.on('telemetry', (record) => {
+      if (record.device_id !== NODE) return;
+      const t = document.getElementById('prev-temp');
+      const h = document.getElementById('prev-hum');
+      const p = document.getElementById('prev-pres');
+      const v = document.getElementById('prev-vib');
+      const b = document.getElementById('prev-batt');
+
+      if (t) {
+        t.textContent = `${record.temp.toFixed(1)}°C`;
+        t.style.color = record.temp > 30 ? '#f43f5e' : record.temp > 26 ? '#f59e0b' : '#00d4ff';
+      }
+      if (h) h.textContent = `${record.humidity.toFixed(1)}%`;
+      if (p) p.textContent = `${record.pressure.toFixed(0)} hPa`;
+      if (v) v.textContent = `${(record.vibration||0).toFixed(3)} g`;
+      if (b) b.textContent = `${record.battery.toFixed(0)}%`;
+
+      // AC state based on temp
+      const acEl = document.getElementById('prev-ac');
+      if (acEl) {
+        if (record.temp >= 26) {
+          acEl.textContent = '❄️ AC: COOLING ACTIVE';
+          acEl.style.color = '#00d4ff';
+        } else {
+          acEl.textContent = 'AC: STANDBY';
+          acEl.style.color = '#64748b';
+        }
+      }
+    });
+
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+TECH 300
+End-to-End IoT Demo System
+Technical Design Document
+A Comprehensive Hands-On Course Project
+Building an End-to-End IoT Demo System — Sensors → Gateway → AWS Cloud → Mobile App
+Course
+TECH 300 – Internet of Things
+Institution
+Westcliff University
+Instructor
+Professor Liang Li
+Document Type
+Technical Design Document (Instructor Reference Guide)
+Related Milestone
+Week 7–8 Hands-On Project & Summative Assessment
+Version
+1.0
+Date
+September 2026
+Table of Contents
+1. Introduction and Project Objectives
+This document is the technical design reference for the TECH 300 hands-on course project: a working, end-to-end Internet of Things (IoT) demonstration system that students design, build, and operate over the course of the term. Rather than treating IoT as a single technology, the project is deliberately scoped to touch every tier of a production IoT stack — embedded firmware, short-range wireless networking, edge computing, cloud services, and a native mobile client — so that students leave the course with practical, integration-level experience rather than isolated, single-layer knowledge.
+The system to be built captures environmental and kinetic telemetry from one or more battery-powered sensor nodes, relays it through a local edge gateway into Amazon Web Services (AWS), and exposes it to an Android application that can both visualize live data and issue control (actuation) commands back down to the hardware. The project therefore exercises sensing, networking, cloud architecture, security, and mobile development within a single, coherent build.
+1.1 Learning Objectives
+Select and justify appropriate microcontroller, sensor, and power hardware for a constrained IoT end device.
+Evaluate short-range wireless protocols (BLE, Wi-Fi, Zigbee, LoRaWAN) against the power, range, and throughput needs of a real application.
+Implement an edge gateway that performs protocol translation between a local wireless network and a secure, internet-facing MQTT connection.
+Configure AWS IoT Core, including device provisioning, X.509 certificate-based mutual TLS, and rules-based message routing to storage and compute.
+Build a native Android client that consumes both real-time (MQTT/WebSocket) and historical (REST) data paths, and can issue reverse-control commands to the field hardware.
+Reason about IoT security end to end: link-layer encryption, transport-layer mutual TLS, and least-privilege cloud authorization.
+Document Purpose
+This guide consolidates the architecture, hardware/software bill of materials, protocol decisions, security model, and demo verification procedure used to deliver the Week 7–8 hands-on project and summative assessment. It is intended as a build reference for students and a grading/verification reference for instructors.
+2. System Architecture Overview
+The system follows a standard five-tier IoT reference architecture. Data originates at the physical sensor and flows, tier by tier, toward the presentation layer; control commands flow in the opposite direction. Each tier exists to solve a specific constraint — power, range, protocol compatibility, or security — that the tier below it cannot solve on its own.
+Figure 1. High-level system topology — sensor/actuator nodes communicate over a short-range wireless link to a gateway, which bridges to the internet cloud and, from there, to mobile and desktop clients.
+Tier
+Name
+Responsibility
+1
+Perception Layer
+Low-power sensor/actuator nodes capture environmental and kinetic telemetry.
+2
+Proximity Network
+Short-range wireless link (BLE 5.0 or Wi-Fi 802.11 b/g/n) connecting nodes to a local sink.
+3
+Edge Gateway Layer
+Protocol conversion, local (edge) execution, and secure upstream delivery to the cloud.
+4
+Cloud Layer
+AWS IoT Core message broker, serverless processing, and time-series data persistence.
+5
+Presentation Layer
+Android mobile application providing real-time telemetry visualization and reverse control.
+Design Rationale — Why a Gateway Tier Is Required
+Low-power end devices (Tier 1) generally lack the RAM, flash, and CPU headroom to run a standard TCP/IP stack with TLS 1.2/1.3 handshakes directly to a cloud endpoint. The Edge Gateway tier is therefore not a convenience but an architectural necessity: it terminates the lightweight local protocol (BLE) on one side and the secure internet protocol (mTLS/MQTT) on the other, absorbing the cryptographic and networking cost that the sensor node cannot afford.
+3. Perception Layer — End-Device Hardware and Sensors
+The perception layer consists of one or more constrained end devices: physical sensor/actuator nodes built around a low-cost microcontroller unit (MCU). Hardware selection is driven by three criteria, in priority order: power efficiency (for multi-month battery operation), unit cost (to allow multiple nodes per team), and sufficient real-time performance to service a BLE radio stack and one or two sensor peripherals.
+3.1 Recommended Bill of Materials
+Component
+Recommended Part(s)
+Notes
+Microcontroller (MCU)
+ESP32-WROOM-32 or Nordic nRF52840
+Low cost, highly reliable BLE 5.0 capability; either board is a suitable end-device platform.
+Environmental sensor
+DHT22 or BME280
+Temperature, humidity, and (BME280) barometric pressure via I²C or SPI.
+Motion sensor
+LSM6DSV16X or MPU6050
+6-axis accelerometer + gyroscope; detects motion and vibration events.
+Power supply
+3.7V LiPo battery + TP4056 charge controller, or a CR2032 coin cell
+Sized to the duty cycle in Section 5; coin cell is viable only under aggressive deep-sleep duty cycling.
+End-device types in this project are limited to constrained physical sensors and actuators — for example, environmental monitoring nodes or a smart-irrigation-style actuator end node — rather than general-purpose computing endpoints. This keeps the perception layer representative of real deployed IoT hardware, where memory and power headroom are the binding constraints on design.
+Figure 2. ESP32-WROOM-32 development board — physical reference dimensions used for enclosure and breadboard layout planning.
+Figure 3. Prototype end-device assembly on a breadboard, shown here wired to an environmental (water-level) sensor for bring-up testing.
+4. Local Wireless Network Protocol Selection
+Four candidate short-range wireless technologies were evaluated for the proximity network that links end devices to the edge gateway. The comparison below focuses on the four attributes that matter most for a battery-powered sensor node: standard, frequency band, achievable data rate, expected battery life, and network topology.
+Protocol
+Standard
+Frequency Band
+Data Rate
+Battery Life
+Topology
+BLE 5.0
+IEEE 802.15.1
+2.4 GHz ISM
+1–2 Mbps
+Months–Years
+Star / Mesh
+Wi-Fi 4/5
+IEEE 802.11 b/g/n
+2.4 / 5 GHz
+54–433 Mbps
+Days–Weeks
+Star (AP)
+Zigbee 3.0
+IEEE 802.15.4
+2.4 GHz
+250 kbps
+Years
+Mesh
+LoRaWAN
+Proprietary Chirp
+Sub-GHz (915 MHz)
+0.3–50 kbps
+5–10 Years
+Star-of-Stars
+Demo Protocol Decision
+The project standardizes on BLE 5.0 GATT / Advertising for sensor end-nodes. This maximizes end-device battery longevity by keeping the radio duty cycle extremely low, and deliberately delegates all long-range, IP-based communication responsibility to the Gateway tier rather than the sensor node.
+5. End-Device Firmware Design
+5.1 Development Stack and Radio Configuration
+Firmware is developed in either C++ (using the ESP-IDF or Arduino core) or MicroPython, depending on team preference and performance needs; C++/ESP-IDF is preferred where the tightest power budget is required. The device is configured as a BLE Peripheral / Server exposing a custom GATT (Generic Attribute Profile) service, and can operate either by periodically broadcasting GATT service attributes or in a pure low-energy advertisement mode when no active connection is needed.
+5.2 Power Optimization — Duty Cycle Strategy
+Because the end device is battery-powered, firmware is built around a deep-sleep duty cycle rather than continuous operation. The microcontroller's internal RTC timer wakes the device on a fixed interval, after which it performs a short burst of work and immediately returns to sleep. Active current draw is approximately 80 mA; deep-sleep current draw drops below 10 μA — roughly four orders of magnitude lower, which is what makes multi-month battery life achievable.
+Wake from Deep Sleep via the internal RTC timer (e.g., every 30 seconds).
+Power up sensors via a GPIO switch, take sample readings over I²C, and format the payload.
+Broadcast the data via a BLE Non-Connectable Advertisement or a GATT Notification.
+Re-enter Deep Sleep Mode to minimize average power consumption.
+6. Southbound Network — the Proximity Link
+In multi-tier IoT architecture terminology, the Southbound Network (also called the Field-Area Network or Perception Tier link) is the local, short-range connection between constrained end devices and the Edge Gateway. It is optimized for local reliability and low power, not for global range — that responsibility belongs to the Northbound link described in Section 8.
+6.1 Why the Edge/Gateway Pattern Is Necessary
+End devices with serial-only interfaces or minimal RAM cannot terminate a direct connection to the cloud. Concretely, devices such as the ESP32, nRF52840, or an STMicroelectronics SensorTile cannot run a standard TCP/IP stack or perform resource-heavy mTLS cryptographic handshakes within their power and memory limits. The gateway's Southbound adapter instead ingests raw BLE frames locally and bridges them to the Northbound IP network on the device's behalf. The pattern solves three concrete problems:
+Protocol Bridge — translates specialized or local-only protocols (e.g., Modbus/RS-485, Zigbee2MQTT, raw BLE GATT) into web-compatible protocols such as MQTT.
+Edge Processing — filters noise and processes data locally, which reduces upstream bandwidth and improves end-to-end responsiveness.
+Local Survivability — keeps critical local behavior running even if the wide-area cloud connection is temporarily unavailable.
+6.2 Southbound BLE Communication Patterns
+The gateway's BLE host adapter can interact with field nodes using one of two patterns, each with distinct power, reliability, and security trade-offs:
+Connectionless Advertising — passive beacon ingestion for unidirectional, low-power telemetry and broadcasting; no connection state is maintained.
+Connected GATT Services — an active, bidirectional connection used for reliable data exchange and device control, at a higher power and complexity cost.
+Figure 4. Comparative analysis of passive BLE broadcasting versus connected GATT operation across reliability, power draw, security, bandwidth, and implementation complexity. (Course reference material, Professor Liang Li, TECH 300.)
+The Edge Gateway exposes its Southbound interface through an onboard physical Bluetooth adapter acting as the Central Node / Host — typically exposed via BlueZ on Linux through a controller such as /dev/ttyHCI0, or a direct USB/UART BLE controller.
+7. Edge Gateway Architecture
+7.1 Gateway Hardware and OS Stack
+Option
+Hardware
+Operating System
+A (default)
+Raspberry Pi 4 Model B (4GB)
+Raspberry Pi OS Lite (64-bit, Headless) or Ubuntu Server 22.04 LTS
+B (industrial)
+Advantech UNO-220 Industrial Gateway
+Ubuntu Server 22.04 LTS
+Figure 5a. Raspberry Pi 4 Model B — primary reference gateway hardware.
+Figure 5b. Advantech UNO-220 — industrial-grade alternative gateway.
+7.2 Software Stack and Purpose
+The gateway runs a custom Python engine built on two libraries: bleak, an async BLE client for the Southbound link, and paho-mqtt, an MQTT client for the Northbound link. Functionally, the gateway performs protocol translation — converting raw BLE GATT bytes into structured JSON carried over TCP/IP via MQTT — and acts as an operational buffer that can continue logging locally during an internet outage.
+7.3 Interfaces
+Interface
+Direction
+Technology
+Southbound
+Gateway ↔ End Devices
+Onboard Bluetooth 5.0 BLE host adapter (BLE, hci0)
+Northbound
+Gateway ↔ AWS IoT Core
+Dual-band Wi-Fi (802.11ac) or Gigabit Ethernet WAN uplink
+8. Northbound Communication — MQTT, Security, and AWS IoT Core
+The Northbound interface is the wide-area backhaul (uplink) that moves data from the gateway to the cloud, typically over Wi-Fi, Ethernet, cellular, or fiber depending on deployment. AWS IoT Core acts as the “front door” of the cloud: every connection is standardized on mutual TLS (mTLS) over port 8883 to guarantee that both the device and the cloud service authenticate one another before any data is accepted.
+8.1 Protocol, Port, and Quality of Service
+Parameter
+Value
+Protocol
+MQTT v3.1.1 / v5.0 over TCP/IP
+Port
+8883 (MQTT secured over TLS)
+QoS Policy
+QoS 1 (At Least Once) — guaranteed delivery via TCP ACK
+8.2 Security
+mTLS: bidirectional cryptographic authentication between the gateway and AWS IoT Core.
+Encryption: 2048-bit RSA keys, or ECC using curve SECP256R1.
+Certificates: a per-device Device Certificate, a Private Key, and the Amazon Root CA 1 trust anchor.
+8.3 Edge Runtime
+Where local rules execution, store-and-forward caching during network loss, or on-device ML inference is required, the gateway can additionally run AWS IoT Greengrass v2 on a Java OpenJDK 11 environment, extending cloud-managed logic down to the edge.
+8.4 AWS IoT Core Functional Modules
+Module
+Function
+Message Broker
+Lightweight publish/subscribe messaging using MQTT 3.1.1/5 over TCP/IP.
+Device Registry
+Manages authorized, unique device identities, authenticated via X.509 certificates.
+Rules Engine
+SQL-like logic layer that routes incoming messages to trigger notifications or storage based on defined conditions.
+Device Shadow
+A persistent JSON “digital twin” of each device's last-known state, enabling offline-tolerant state management.
+Figure 6. Reference AWS IoT pattern showing how device telemetry flows into the IoT Gateway, is mirrored into Device Shadows, evaluated by an IoT Rule, and routed through Lambda to DynamoDB and, for alert conditions, to a push notification. (Generalized AWS IoT example — the mechanism shown applies directly to the project's telemetry and alerting pipeline in Section 11.)
+Figure 7. Anatomy of an AWS IoT Rule: a SQL SELECT statement extracts fields from the incoming MQTT message, a topic filter scopes which messages the rule applies to, and a rule action (e.g., DynamoDB, Lambda, SNS, S3) determines what happens next.
+9. Gateway Provisioning Procedure (AWS IoT)
+Before the gateway can publish telemetry, it must be registered with AWS IoT Core as a uniquely identifiable “Thing” and issued credentials scoped to only the actions it needs to perform. The provisioning sequence used in this project is as follows:
+Provision the AWS IoT Thing — in the AWS IoT Core Console, navigate to All devices → Things → Create Thing, and name it (e.g., Gateway_Pi4_Demo).
+Generate certificates — create and download the Device Certificate (Gateway_Pi4.cert.pem), the Private Key (Gateway_Pi4.private.key), and the Amazon Root CA 1 (AmazonRootCA1.pem).
+Bind a security policy — attach an IAM/IoT policy that restricts the Thing's publish and subscribe actions to the project's designated MQTT topic namespace only.
+9.1 Provisioned Credential Files
+Device Certificate — xxx.cert.pem
+Private Key — xxx.private.pem.key
+Amazon Root CA 1 — AmazonRootCA1.pem
+9.2 Least-Privilege IoT Policy
+The policy below is scoped to the tech300/* topic namespace and to the connecting Thing's own client identity, following the principle of least privilege — the gateway can connect, publish, and subscribe, but only within the project's topic space.
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": "arn:aws:iot:*:*:client/${iot:Connection.Thing.ThingName}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Subscribe"],
+      "Resource": "arn:aws:iot:*:*:topic/tech300/*"
+    }
+  ]
+}
+10. Gateway Application Software
+On the Raspberry Pi, a Python process establishes a mutually authenticated MQTT connection to AWS IoT Core using the certificates issued in Section 9, then publishes each sensor reading as a JSON payload. The excerpt below illustrates the connection setup and a single telemetry publish call using the AWS IoT Device SDK for Python v2.
+import asyncio, json
+from awscrt import io, mqtt
+from awsiot import mqtt_connection_builder
+ 
+# Configure mTLS Connection to AWS IoT Core
+mqtt_conn = mqtt_connection_builder.mtls_from_path(
+    endpoint="a1xxxxxxxxxxx-ats.iot.us-east-1.amazonaws.com",
+    cert_filepath="Gateway_Pi4.cert.pem",
+    pri_key_filepath="Gateway_Pi4.private.key",
+    ca_filepath="AmazonRootCA1.pem",
+    client_id="Gateway_Pi4_Demo"
+)
+mqtt_conn.connect().result()
+ 
+# Sensor Data Ingestion & MQTT Publish
+payload = {"device_id": "sensor_node_01", "temp": 24.5, "humidity": 58.2, "timestamp": 1775736000}
+mqtt_conn.publish(
+    topic="tech300/telemetry/node_01",
+    payload=json.dumps(payload),
+    qos=mqtt.QoS.AT_LEAST_ONCE
+)
+Note that the MQTT topic follows the tech300/telemetry/<node_id> convention, which keeps every team's traffic uniquely namespaced and matches the topic scope granted by the IoT policy in Section 9.2.
+11. AWS Cloud Backend Architecture
+Once telemetry reaches AWS IoT Core, two parallel channels carry it to the Android application: a real-time push channel for live updates, and a historical pull channel for queried, time-ranged data.
+11.1 Real-Time Push Channel
+The Android application maintains an open channel — either an AWS AppSync (GraphQL) subscription or a direct AWS IoT Core WebSockets bridge — for instant telemetry updates and alert notifications, without needing to poll.
+11.2 Storage and Compute
+Storage: time-series telemetry is persisted in Amazon DynamoDB, with bulk or archival data optionally written to Amazon S3.
+Compute: AWS Lambda functions handle API requests and trigger (alerting) logic.
+11.3 Historical Data Pipeline (Pull Channel)
+Amazon API Gateway exposes an HTTPS REST endpoint (GET /telemetry/history). A request to this endpoint triggers an AWS Lambda function (Python 3.12), which queries the DynamoDB time-series table and returns the result as a JSON payload to the requesting client.
+11.4 IoT Rules Engine — Routing Logic
+An AWS IoT Rule continuously evaluates incoming telemetry using a SQL-like statement over the MQTT topic space, and routes matching messages to one or more target actions.
+SELECT device_id, temp, humidity, timestamp
+FROM 'tech300/telemetry/+'
+WHERE temp > 0
+11.5 Target Actions
+Target
+Service
+Configuration
+1 — Cloud Storage
+Amazon DynamoDB
+Table: SensorTelemetry. Partition key: device_id (String). Sort key: timestamp (Number).
+2 — Alerting Engine
+AWS Lambda
+Evaluates each payload in real time; trigger condition temp > 30.0°C dispatches an immediate push notification.
+Figure 8. Extended AWS IoT reference pipeline (Ingest → Transform → Insights). The project's core path — IoT Core → Rule → Lambda → DynamoDB → AppSync — corresponds to the left/center of this pattern; teams pursuing extension work can add Kinesis, Redshift, SageMaker, or OpenSearch as shown here for scaled analytics.
+12. Android Mobile Application Architecture
+12.1 Development Environment
+Item
+Choice
+Target SDK
+34+
+IDE & Language
+Android Studio, Kotlin / Java
+SDK Libraries
+AWS Mobile SDK, OkHttp, Retrofit, Paho MQTT
+12.2 Core Modules
+Module
+Role
+Retrofit & OkHttp
+HTTP client used for REST API consumption (historical data pull).
+AWS SDK & Paho MQTT
+Maintains live WebSocket/MQTT subscriptions for real-time updates.
+MPAndroidChart
+Renders dynamic, real-time line charts from incoming JSON telemetry.
+12.3 UI Components and Core Pages
+Page
+Function
+1. Device Discovery & Fleet Status
+Shows active/offline status of sensor nodes by querying DynamoDB through API Gateway.
+2. Real-Time Visualization Dashboard
+Connects to the AWS IoT MQTT broker via WebSockets/MQTT with Cognito authentication for live telemetry graphing.
+3. Actuation / Control Page
+Sends command packets (e.g., a fan/relay toggle) via AWS IoT Core down to the target BLE end device (e.g., the ESP32 node).
+Figure 9. Representative dashboard and device-control UI pattern (status cards, live toggle, and setpoint control) used as a styling reference for the Status Dashboard and Actuator Switch components; each team implements its own screens against the project's data model.
+13. End-to-End Data Flow and Hands-On Demo Walkthrough
+13.1 Implementation Blueprint
+Publish — the ESP32/BLE node captures data; the Gateway publishes it to the sensors/data MQTT topic.
+Process — the AWS IoT Core Rules Engine matches the message and triggers a Lambda function that updates DynamoDB.
+Display — the Android app fetches historical data via the REST API and listens for real-time updates over MQTT/WebSocket.
+13.2 Demo Setup Sequence
+Power on the ESP32 sensor node — a green LED indicates BLE advertising mode is active.
+Start the Gateway Python script — the Raspberry Pi connects, reads temperature data, and logs it to the console.
+Cloud verification — open the AWS IoT Console MQTT Test Client and subscribe to sensors/telemetry.
+Mobile display — open the Android app, verify live readings are updating, and tap “Control Switch” to toggle the relay/LED.
+13.3 Phased System Bring-Up (Week 7 Summary)
+Phase
+Focus
+Verification
+1
+Hardware & BLE
+Power on the ESP32 node; confirm BLE advertising using a mobile scanning tool such as nRF Connect.
+2
+Gateway Ingestion
+Run the gateway script on the Raspberry Pi; verify console logs show incoming BLE GATT data.
+3
+AWS Cloud
+Subscribe to tech300/# on the MQTT Test Client for JSON telemetry; confirm DynamoDB tables append with timestamps.
+4
+Mobile App
+Launch the Android app to confirm live chart plotting; toggle the relay to confirm the hardware LED state updates instantly.
+14. Consolidated Bill of Materials
+Category
+Item(s)
+Purpose
+End-device MCU
+ESP32-WROOM-32 or Nordic nRF52840
+Sensor node compute + BLE 5.0 radio.
+Environmental sensor
+DHT22 / BME280
+Temperature, humidity, pressure.
+Motion sensor
+LSM6DSV16X / MPU6050
+Motion / vibration detection.
+End-device power
+3.7V LiPo + TP4056, or CR2032
+Multi-month battery operation under deep-sleep duty cycling.
+Gateway hardware
+Raspberry Pi 4 Model B (4GB), or Advantech UNO-220
+Southbound BLE / Northbound MQTT protocol bridge.
+Gateway OS
+Raspberry Pi OS Lite (64-bit) or Ubuntu Server 22.04 LTS
+Headless gateway runtime.
+Gateway software
+Python, bleak, paho-mqtt (optionally AWS IoT Greengrass v2)
+BLE ingestion and MQTT publication.
+Cloud platform
+AWS IoT Core, Lambda, DynamoDB, API Gateway, AppSync/WebSockets, S3
+Ingestion, routing, storage, and real-time/historical delivery.
+Mobile platform
+Android (SDK 34+), Kotlin/Java, Retrofit, Paho MQTT, MPAndroidChart
+Live telemetry visualization and reverse control.
+15. Security Summary
+Security is layered end to end rather than concentrated at a single tier: link-layer protection on the Southbound network, transport-layer mutual authentication on the Northbound link, and least-privilege authorization within AWS.
+Layer
+Mechanism
+Detail
+Southbound (BLE, connected mode)
+Link-layer encryption
+Pairing/Bonding with AES-128 CCM encryption on the GATT link.
+Northbound transport
+Mutual TLS (mTLS)
+Bidirectional authentication over MQTT port 8883.
+Cryptography
+2048-bit RSA or ECC
+ECC curve SECP256R1 as the lighter-weight alternative to RSA.
+Device identity
+X.509 certificates
+Per-device Device Certificate + Private Key, validated against Amazon Root CA 1.
+Cloud authorization
+Least-privilege IoT policy
+IAM/IoT policy scopes each Thing to iot:Connect on its own client ID and iot:Publish/Subscribe on the tech300/* topic namespace only.
+Mobile app authentication
+Amazon Cognito
+Authenticates the Android app for MQTT/WebSocket subscriptions and API Gateway calls.
+Appendix A — AWS IoT Least-Privilege Policy (Full)
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": "arn:aws:iot:*:*:client/${iot:Connection.Thing.ThingName}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Subscribe"],
+      "Resource": "arn:aws:iot:*:*:topic/tech300/*"
+    }
+  ]
+}
+Appendix B — Gateway Publisher Script (Python, AWS IoT Device SDK v2)
+import asyncio, json
+from awscrt import io, mqtt
+from awsiot import mqtt_connection_builder
+ 
+# Configure mTLS Connection to AWS IoT Core
+mqtt_conn = mqtt_connection_builder.mtls_from_path(
+    endpoint="a1xxxxxxxxxxx-ats.iot.us-east-1.amazonaws.com",
+    cert_filepath="Gateway_Pi4.cert.pem",
+    pri_key_filepath="Gateway_Pi4.private.key",
+    ca_filepath="AmazonRootCA1.pem",
+    client_id="Gateway_Pi4_Demo"
+)
+mqtt_conn.connect().result()
+ 
+# Sensor Data Ingestion & MQTT Publish
+payload = {"device_id": "sensor_node_01", "temp": 24.5, "humidity": 58.2, "timestamp": 1775736000}
+mqtt_conn.publish(
+    topic="tech300/telemetry/node_01",
+    payload=json.dumps(payload),
+    qos=mqtt.QoS.AT_LEAST_ONCE
+)
+Appendix C — AWS IoT Rule: Telemetry Routing SQL
+SELECT device_id, temp, humidity, timestamp
+FROM 'tech300/telemetry/+'
+WHERE temp > 0
+Appendix D — Wireless Protocol Comparison (Reference Copy)
+Protocol
+Standard
+Frequency Band
+Data Rate
+Battery Life
+Topology
+BLE 5.0
+IEEE 802.15.1
+2.4 GHz ISM
+1–2 Mbps
+Months–Years
+Star / Mesh
+Wi-Fi 4/5
+IEEE 802.11 b/g/n
+2.4 / 5 GHz
+54–433 Mbps
+Days–Weeks
+Star (AP)
+Zigbee 3.0
+IEEE 802.15.4
+2.4 GHz
+250 kbps
+Years
+Mesh
+LoRaWAN
+Proprietary Chirp
+Sub-GHz (915 MHz)
+0.3–50 kbps
+5–10 Years
+Star-of-Stars

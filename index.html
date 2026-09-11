@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TECH 300: End-to-End IoT Demo System | Westcliff University</title>
+  <meta name="description" content="End-to-End IoT Demonstration System - Sensors, BLE 5.0, Edge Gateway, AWS IoT Core, and Presentation Layer. Course reference by Professor Liang Li.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Shared bus first so SimBus is available when sim engine auto-connects -->
+  <script src="js/sim-bus.js"></script>
+  <!-- Unified system nav bar -->
+  <script src="js/nav-bar.js"></script>
+</head>
+<body>
+
+  <!-- Top Application Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo">
+        </div>
+        <div class="brand-info">
+          <h1>
+            TECH 300: IoT Demo System 
+            <span class="badge">v1.0 LIVE</span>
+          </h1>
+          <div class="brand-subtitle">
+            <span class="univ-tag">Westcliff University</span>
+            <span class="sep">•</span>
+            <span class="prof-badge">Course Director &amp; Lead Architect: <strong>Prof. Liang Li</strong></span>
+          </div>
+        </div>
+        <!-- Quick navigation to other app pages -->
+        <div style="display:flex; gap:6px; margin-left:16px; flex-shrink:0;">
+          <a href="gateway.html"
+             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
+                    background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);
+                    border-radius:8px; font-size:0.75rem; color:var(--emerald);
+                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
+             onmouseover="this.style.background='rgba(16,185,129,0.2)'"
+             onmouseout="this.style.background='rgba(16,185,129,0.1)'">
+            📟 Edge Gateway
+          </a>
+          <a href="aws-cloud.html"
+             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
+                    background:rgba(255,153,0,0.1); border:1px solid rgba(255,153,0,0.3);
+                    border-radius:8px; font-size:0.75rem; color:#ff9900;
+                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
+             onmouseover="this.style.background='rgba(255,153,0,0.2)'"
+             onmouseout="this.style.background='rgba(255,153,0,0.1)'">
+            ☁️ AWS Cloud
+          </a>
+          <a href="landing.html"
+             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
+                    background:rgba(255,255,255,0.06); border:1px solid rgba(99,120,160,0.25);
+                    border-radius:8px; font-size:0.75rem; color:var(--text-muted);
+                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
+             onmouseover="this.style.borderColor='rgba(0,229,255,0.4)';this.style.color='var(--cyan)'"
+             onmouseout="this.style.borderColor='rgba(99,120,160,0.25)';this.style.color='var(--text-muted)'">
+            🏠 Home
+          </a>
+          <a href="app.html"
+             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
+                    background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.3);
+                    border-radius:8px; font-size:0.75rem; color:var(--cyan);
+                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
+             onmouseover="this.style.background='rgba(14,165,233,0.2)'"
+             onmouseout="this.style.background='rgba(14,165,233,0.1)'">
+            📱 Mobile App
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick System Telemetry Strip -->
+      <div class="system-status-strip">
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span class="status-label">BROKER:</span>
+          <span class="status-val">AWS IoT Core (mTLS 8883)</span>
+        </div>
+        <div class="status-pill">
+          <span class="status-dot pulsing-blue"></span>
+          <span class="status-label">NODES:</span>
+          <span class="status-val">3 Active</span>
+        </div>
+        <div class="status-pill">
+          <span class="status-label">INGESTED:</span>
+          <span id="stat-total-ingested" class="status-val" style="color:var(--cyan);">1,248</span>
+        </div>
+        <div class="status-pill">
+          <span class="status-label">TIME:</span>
+          <span id="realtime-clock" class="status-val" style="color:var(--amber);">--:--:--</span>
+        </div>
+      </div>
+
+      <!-- Simulation Toolbar -->
+      <div class="sim-controls">
+        <button id="btn-toggle-sim" class="btn btn-primary" title="Pause/Resume telemetry generation">
+          ⏸ Pause Stream
+        </button>
+        <select id="speed-select" class="speed-select" title="Simulation Clock Multiplier">
+          <option value="1">Speed: 1x</option>
+          <option value="2">Speed: 2x</option>
+          <option value="5">Speed: 5x</option>
+        </select>
+        <button id="btn-inject-anomaly" class="btn btn-danger" title="Inject temp spike >30°C to trigger AWS Lambda">
+          ⚠️ Inject Temp Spike
+        </button>
+        <button id="btnClearAnomaly" id="btn-clear-anomaly" class="btn" title="Reset to normal baseline">
+          ↺ Reset
+        </button>
+        <button id="btn-toggle-gateway" class="btn" title="Simulate edge store-and-forward caching">
+          🌐 Disconnect WAN
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-navigation">
+      <button class="tab-btn active" data-tab="pipeline">
+        <span>🔄 5-Tier Architecture &amp; Tests</span>
+        <span class="tab-badge">Interactive</span>
+      </button>
+      <button class="tab-btn" data-tab="fleet">
+        <span>📊 Fleet Telemetry &amp; Charts</span>
+        <span class="tab-badge">Real-Time</span>
+      </button>
+      <button class="tab-btn" data-tab="actuation">
+        <span>🕹 Reverse Actuation &amp; Control</span>
+        <span class="tab-badge">Bi-Directional</span>
+      </button>
+      <button class="tab-btn" data-tab="aws">
+        <span>☁ AWS IoT Cloud &amp; Rules</span>
+        <span class="tab-badge">DynamoDB</span>
+      </button>
+      <button class="tab-btn" data-tab="diagnostics">
+        <span>⏱️ Latency &amp; Diagnostics</span>
+        <span class="tab-badge">Benchmarks</span>
+      </button>
+      <a href="design.html" class="tab-btn tab-link-nav" style="text-decoration:none; color:var(--text-muted); border-left:1px solid rgba(255,255,255,0.1); margin-left:6px; padding-left:12px;" title="View Technical Design Document & BOM">
+        <span>📖 Technical Design</span>
+        <span class="tab-badge" style="background:rgba(0,212,255,0.15); color:var(--cyan);">Doc ↗</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="main-content">
+
+    <!-- ========================================================
+         TAB 1: 5-TIER PIPELINE ARCHITECTURE & DIGITAL TWIN
+         ======================================================== -->
+    <section id="tab-pipeline" class="tab-panel active">
+      
+      <!-- Interactive Demo Operation & Testing Switchboard -->
+      <div class="demo-switchboard-card" style="background:linear-gradient(135deg, rgba(14,22,38,0.95), rgba(20,32,54,0.9)); border:1px solid rgba(0,212,255,0.25); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; margin-bottom:1.5rem; box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(99,102,241,0.3)); border:1px solid var(--cyan); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+              ⚡
+            </div>
+            <div>
+              <div style="font-weight:700; color:#fff; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                <span>Live Demo Operation &amp; Scenario Test Center</span>
+                <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border:1px solid rgba(16,185,129,0.3); font-size:0.7rem;">Active</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">
+                Inject hardware faults, simulate network disconnects, test throughput bursts, and observe real-time cloud rule evaluation.
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <a href="design.html" class="btn" style="border-color:rgba(0,212,255,0.3); color:var(--cyan); text-decoration:none; font-size:0.78rem;" title="Open complete technical documentation & BOM">
+              📖 Technical Design &amp; BOM ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="test-action-buttons-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem;">
+          <button id="sb-btn-temp-spike" class="btn btn-danger" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Inject abnormal temperature >30°C to trigger AWS Lambda rule and SNS alert">
+            🚨 Inject Temp Spike (&gt;30°C)
+          </button>
+          <button id="sb-btn-toggle-relay" class="btn btn-primary" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Dispatch reverse command down through AWS IoT Core and Edge Gateway to ESP32 relay">
+            ⚡ Toggle Relay (GPIO 23)
+          </button>
+          <button id="sb-btn-wan-toggle" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; border-color:rgba(245,158,11,0.4); color:var(--amber);" title="Simulate WAN network partition: edge stores frames in SQLite buffer and flushes on reconnect">
+            🔌 Toggle Gateway WAN
+          </button>
+          <button id="sb-btn-burst-test" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; border-color:rgba(168,85,247,0.4); color:var(--purple);" title="Inject high-speed 50-packet burst to benchmark ingestion throughput">
+            🌊 50-Pkt Burst Ingest
+          </button>
+          <button id="sb-btn-reset-baseline" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
+            🔄 Reset Normal Baseline
+          </button>
+          <button id="sb-btn-guided-demo" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(16,185,129,0.2)); border-color:var(--emerald); color:#fff;" title="Start 5-step automated guided demo tour">
+            ▶️ Run Guided Demo
+          </button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>
+            <span>Five-Tier End-to-End IoT Pipeline</span>
+            <span class="badge" style="font-size:0.75rem; background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 8px; border-radius:12px;">Live Flow</span>
+          </h2>
+          <div class="section-desc">
+            Visualizing physical data telemetry traversing from the constrained ESP32 sensor node through BLE 5.0, Edge Gateway, AWS IoT Core, down to user presentation.
+          </div>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-dim); font-family:var(--font-mono);">
+          Active Focus: <strong class="active-node-name" style="color:var(--cyan);">Environmental Lab Node</strong> (<span class="active-node-id">sensor_node_01</span>)
+        </div>
+      </div>
+
+      <!-- 5-Tier Flow Columns Grid -->
+      <div class="pipeline-flow-container">
+        
+        <!-- Tier 1: Perception Layer -->
+        <div class="tier-column">
+          <div class="tier-header">
+            <div>
+              <span class="tier-num">Tier 1</span>
+              <div class="tier-title">Perception Layer</div>
+              <div class="tier-subtitle">Constrained End Device</div>
+            </div>
+            <span style="font-size:1.4rem;">🎛</span>
+          </div>
+
+          <div class="device-hardware-box">
+            <div class="hw-row">
+              <span class="hw-label">MCU Platform:</span>
+              <span class="hw-val">ESP32-WROOM-32</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Sensors:</span>
+              <span class="hw-val">DHT22 + MPU6050</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Power Source:</span>
+              <span id="t1-battery-volts" class="hw-val">3.95V (94%)</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Current Draw:</span>
+              <span id="t1-power-draw" class="hw-val" style="color:var(--emerald);">65.0 mA</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Duty State:</span>
+              <span id="t1-node-state" class="hw-val" style="color:var(--amber);">SAMPLE</span>
+            </div>
+          </div>
+
+          <!-- RTC Duty Cycle Indicator -->
+          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
+            RTC DEEP-SLEEP DUTY CYCLE:
+          </div>
+          <div class="duty-cycle-bar">
+            <div id="duty-step-sleep" class="duty-step">SLEEP<br><span style="font-size:0.55rem">&lt;10µA</span></div>
+            <div id="duty-step-wake" class="duty-step">WAKE<br><span style="font-size:0.55rem">45mA</span></div>
+            <div id="duty-step-sample" class="duty-step active">SAMPLE<br><span style="font-size:0.55rem">68mA</span></div>
+            <div id="duty-step-broadcast" class="duty-step">BROADCAST<br><span style="font-size:0.55rem">84mA</span></div>
+          </div>
+
+          <!-- Live Sampled Telemetry -->
+          <div style="margin-top:1rem; background:rgba(0,0,0,0.4); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+            <div style="font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">LATEST SENSOR BUFFER</div>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+              <span>TEMP: <strong id="t1-temp" style="color:var(--rose);">24.2 °C</strong></span>
+              <span>HUM: <strong id="t1-humidity" style="color:var(--cyan);">52.8 %</strong></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono); margin-top:4px;">
+              <span>PRES: <strong id="t1-pressure" style="color:var(--purple);">1013.4 hPa</strong></span>
+              <span>VIB: <strong style="color:var(--emerald);">0.041 g</strong></span>
+            </div>
+          </div>
+
+          <div style="margin-top:0.75rem; text-align:center;">
+            <a href="perception.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(6,182,212,0.3); color:#06b6d4;">
+              🎛️ Firmware &amp; Sensors Console ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Tier 2: Proximity Network -->
+        <div class="tier-column">
+          <div class="tier-header">
+            <div>
+              <span class="tier-num">Tier 2</span>
+              <div class="tier-title">Proximity Network</div>
+              <div class="tier-subtitle">Southbound Field Link</div>
+            </div>
+            <span style="font-size:1.4rem;">📶</span>
+          </div>
+
+          <div class="device-hardware-box">
+            <div class="hw-row">
+              <span class="hw-label">Protocol:</span>
+              <span class="hw-val">BLE 5.0 (2.4 GHz)</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Standard:</span>
+              <span class="hw-val">IEEE 802.15.1</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Topology:</span>
+              <span class="hw-val">Star (Point-to-Multipoint)</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Link Security:</span>
+              <span class="hw-val" style="color:var(--emerald);">AES-128 CCM</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">RSSI Signal:</span>
+              <span class="hw-val" style="color:var(--cyan);">-62 dBm (Strong)</span>
+            </div>
+          </div>
+
+          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
+            BLE 5.0 PACKET SNIFFER (hci0):
+          </div>
+          <div id="t2-ble-packet" class="packet-box">
+            ADV_IND [MAC: C4:4F:33:18:A2:9B] RSSI: -62dBm
+            UUID: 0x181A (Env Sensing)
+            RAW: 02 01 06 05 16 1A 18 09 74 14 02 F5
+          </div>
+
+          <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+            💡 <em>Design Rationale:</em> Low radio duty cycle preserves battery for months; IP stack is offloaded to Tier 3.
+          </div>
+        </div>
+
+        <!-- Tier 3: Edge Gateway Layer -->
+        <div class="tier-column">
+          <div class="tier-header">
+            <div>
+              <span class="tier-num">Tier 3</span>
+              <div class="tier-title">Edge Gateway</div>
+              <div class="tier-subtitle">Protocol Bridge & Cache</div>
+            </div>
+            <span style="font-size:1.4rem;">🖥️</span>
+          </div>
+
+          <div class="device-hardware-box">
+            <div class="hw-row">
+              <span class="hw-label">Hardware:</span>
+              <span class="hw-val">Raspberry Pi 4 (4GB)</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">OS:</span>
+              <span class="hw-val">Raspberry Pi OS 64-bit</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Engine:</span>
+              <span class="hw-val">Python bleak + paho</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">WAN Status:</span>
+              <span id="gw-wan-text" class="hw-val" style="color:var(--emerald);">CONNECTED</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Edge Buffer:</span>
+              <span id="gw-buffer-count" class="hw-val">0 cached</span>
+            </div>
+          </div>
+
+          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
+            TRANSLATED MQTT JSON PAYLOAD:
+          </div>
+          <div id="t3-mqtt-packet" class="packet-box" style="color:#10b981; border-color:rgba(16,185,129,0.25);">
+{
+  "device_id": "sensor_node_01",
+  "temp": 24.5,
+  "humidity": 58.2,
+  "timestamp": 1775736000
+}
+          </div>
+
+          <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+            ⚡ Performs BLE GATT-to-JSON serialization and provides store-and-forward persistence during WAN outages.
+          </div>
+        </div>
+
+        <!-- Tier 4: Cloud Layer (AWS IoT Core) -->
+        <div class="tier-column">
+          <div class="tier-header">
+            <div>
+              <span class="tier-num">Tier 4</span>
+              <div class="tier-title">AWS IoT Cloud</div>
+              <div class="tier-subtitle">Broker, Storage & Rules</div>
+            </div>
+            <span style="font-size:1.4rem;">☁️</span>
+          </div>
+
+          <div class="device-hardware-box">
+            <div class="hw-row">
+              <span class="hw-label">Message Broker:</span>
+              <span class="hw-val">AWS IoT Core (8883)</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Security:</span>
+              <span class="hw-val" style="color:var(--cyan);">mTLS X.509 RSA-2048</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Rules Engine:</span>
+              <span class="hw-val" style="color:var(--emerald);">SQL Active</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Persistence:</span>
+              <span class="hw-val">Amazon DynamoDB</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Alert Engine:</span>
+              <span class="hw-val" style="color:var(--rose);">AWS Lambda (>30°C)</span>
+            </div>
+          </div>
+
+          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
+            SQL RULE EVALUATION:
+          </div>
+          <div class="packet-box" style="color:#e2e8f0; border-color:rgba(168,85,247,0.25);">
+            <span style="color:#f43f5e">SELECT</span> device_id, temp, humidity<br>
+            <span style="color:#f43f5e">FROM</span> <span style="color:#10b981">'tech300/telemetry/+'</span><br>
+            <span style="color:#f43f5e">WHERE</span> temp &gt; 0<br>
+            <span style="color:#64748b">-- Action 1: DynamoDB PutItem</span><br>
+            <span style="color:#64748b">-- Action 2: Lambda temp &gt; 30°C</span>
+          </div>
+
+          <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+            🔒 Scoped to <code style="color:var(--cyan);">tech300/*</code> topic namespace following strict least-privilege IAM policies.
+          </div>
+        </div>
+
+        <!-- Tier 5: Presentation & Actuation -->
+        <div class="tier-column">
+          <div class="tier-header">
+            <div>
+              <span class="tier-num">Tier 5</span>
+              <div class="tier-title">Presentation Layer</div>
+              <div class="tier-subtitle">Visualization & Control</div>
+            </div>
+            <span style="font-size:1.4rem;">📱</span>
+          </div>
+
+          <div class="device-hardware-box">
+            <div class="hw-row">
+              <span class="hw-label">Channels:</span>
+              <span class="hw-val">WebSockets + REST</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Chart Engine:</span>
+              <span class="hw-val">Canvas 60fps Stream</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Reverse Control:</span>
+              <span class="hw-val" style="color:var(--emerald);">Bidirectional MQTT</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Round-Trip:</span>
+              <span class="hw-val" style="color:var(--cyan);">~148 ms</span>
+            </div>
+            <div class="hw-row">
+              <span class="hw-label">Security:</span>
+              <span class="hw-val">Cognito Auth</span>
+            </div>
+          </div>
+
+          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
+            QUICK ACTUATOR STATUS:
+          </div>
+          <div style="background:rgba(0,0,0,0.4); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle); font-size:0.8rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>Cooling Fan:</span>
+              <strong style="color:var(--cyan);">PWM 60% (ACTIVE)</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>Relay Switch:</span>
+              <strong style="color:var(--emerald);">ENGAGED</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>Hardware LED:</span>
+              <strong style="color:var(--amber);">SOLID BLUE</strong>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem; text-align:center;">
+            <button class="btn btn-primary" onclick="document.querySelector('[data-tab=actuation]').click()" style="width:100%; justify-content:center;">
+              🎮 Open Actuation Console
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 2: FLEET TELEMETRY & LIVE CHARTS DASHBOARD
+         ======================================================== -->
+    <section id="tab-fleet" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>
+            <span>Fleet Telemetry & Real-Time Visualization</span>
+            <span class="badge" style="font-size:0.75rem; background:rgba(16,185,129,0.15); color:var(--emerald); border:1px solid var(--border-accent); padding:2px 8px; border-radius:12px;">Streaming</span>
+          </h2>
+          <div class="section-desc">
+            Continuous real-time sensor streams from deployed end nodes. Select a node card to view and inspect dynamic telemetry.
+          </div>
+        </div>
+        <div>
+          <button id="btn-export-csv" class="btn btn-primary">
+            📥 Export Telemetry Dataset (CSV)
+          </button>
+        </div>
+      </div>
+
+      <!-- Fleet Device Selector Cards Grid -->
+      <div class="fleet-cards-grid">
+        
+        <!-- Node 1 -->
+        <div class="node-card selected" data-node-id="sensor_node_01">
+          <div class="node-top-bar">
+            <div class="node-name">
+              <span>📍</span> Environmental Lab Node
+            </div>
+            <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">node_01</span>
+          </div>
+          <div class="node-location">Engineering Hall Lab 204 • ESP32-WROOM-32 + DHT22/MPU6050</div>
+
+          <div class="telemetry-metrics-strip">
+            <div class="metric-badge">
+              <div class="m-label">🌡️ Temperature</div>
+              <div class="m-val metric-temp-val" style="color:var(--rose);">24.2<span class="m-unit">°C</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">💧 Humidity</div>
+              <div class="m-val metric-hum-val" style="color:var(--cyan);">52.8<span class="m-unit">%</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">⏲️ Pressure</div>
+              <div class="m-val metric-press-val" style="color:var(--purple);">1013.4<span class="m-unit">hPa</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">🔋 Battery</div>
+              <div class="m-val metric-batt-val" style="color:var(--emerald);">94<span class="m-unit">%</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-dim); margin-top:0.5rem; border-top:1px dashed var(--border-subtle); padding-top:0.5rem;">
+            <span>State: <strong class="node-state-badge" style="color:var(--emerald);">SAMPLE</strong></span>
+            <span>Link: BLE 5.0 (-62 dBm)</span>
+          </div>
+        </div>
+
+        <!-- Node 2 -->
+        <div class="node-card" data-node-id="sensor_node_02">
+          <div class="node-top-bar">
+            <div class="node-name">
+              <span>🏢</span> Server Room Rack Node
+            </div>
+            <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">node_02</span>
+          </div>
+          <div class="node-location">DC Rack Row B-04 • ESP32-WROOM-32 + BME280</div>
+
+          <div class="telemetry-metrics-strip">
+            <div class="metric-badge">
+              <div class="m-label">🌡️ Temperature</div>
+              <div class="m-val metric-temp-val" style="color:var(--rose);">22.8<span class="m-unit">°C</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">💧 Humidity</div>
+              <div class="m-val metric-hum-val" style="color:var(--cyan);">41.5<span class="m-unit">%</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">⏲️ Pressure</div>
+              <div class="m-val metric-press-val" style="color:var(--purple);">1014.1<span class="m-unit">hPa</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">🔋 Battery</div>
+              <div class="m-val metric-batt-val" style="color:var(--emerald);">100<span class="m-unit">%</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-dim); margin-top:0.5rem; border-top:1px dashed var(--border-subtle); padding-top:0.5rem;">
+            <span>State: <strong class="node-state-badge" style="color:var(--text-dim);">SLEEP</strong></span>
+            <span>Link: BLE 5.0 (-58 dBm)</span>
+          </div>
+        </div>
+
+        <!-- Node 3 -->
+        <div class="node-card" data-node-id="sensor_node_03">
+          <div class="node-top-bar">
+            <div class="node-name">
+              <span>🌱</span> Smart Agriculture Node
+            </div>
+            <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">node_03</span>
+          </div>
+          <div class="node-location">Research Greenhouse #3 • Nordic nRF52840 + Probe</div>
+
+          <div class="telemetry-metrics-strip">
+            <div class="metric-badge">
+              <div class="m-label">🌡️ Temperature</div>
+              <div class="m-val metric-temp-val" style="color:var(--rose);">26.7<span class="m-unit">°C</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">💧 Humidity</div>
+              <div class="m-val metric-hum-val" style="color:var(--cyan);">68.4<span class="m-unit">%</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">⏲️ Pressure</div>
+              <div class="m-val metric-press-val" style="color:var(--purple);">1011.8<span class="m-unit">hPa</span></div>
+            </div>
+            <div class="metric-badge">
+              <div class="m-label">🔋 Battery</div>
+              <div class="m-val metric-batt-val" style="color:var(--emerald);">82<span class="m-unit">%</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-dim); margin-top:0.5rem; border-top:1px dashed var(--border-subtle); padding-top:0.5rem;">
+            <span>State: <strong class="node-state-badge" style="color:var(--text-dim);">SLEEP</strong></span>
+            <span>Link: BLE 5.0 (-74 dBm)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-Time Telemetry Charts Grid -->
+      <div class="charts-grid">
+        
+        <!-- Chart 1: Temperature -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span style="color:var(--rose);">●</span> Ambient Temperature (°C)
+              <span style="font-size:0.7rem; color:var(--rose); background:rgba(244,63,94,0.15); padding:1px 6px; border-radius:4px; font-family:var(--font-mono);">ALERT THRESHOLD: 30°C</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
+              <span class="active-node-id">sensor_node_01</span>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-temp"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Humidity -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span style="color:var(--cyan);">●</span> Relative Humidity (%)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
+              <span class="active-node-id">sensor_node_01</span>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-humidity"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Pressure -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span style="color:var(--purple);">●</span> Barometric Pressure (hPa)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
+              <span class="active-node-id">sensor_node_01</span>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-pressure"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Vibration / Acceleration -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span style="color:var(--emerald);">●</span> 6-Axis Vibration / Motion Index (g RMS)
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
+              <span class="active-node-id">sensor_node_01</span>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-vibration"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 3: REVERSE ACTUATION & CONTROL SWITCHBOARD
+         ======================================================== -->
+    <section id="tab-actuation" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>
+            <span>Bidirectional Actuation & Remote Control</span>
+            <span class="badge" style="font-size:0.75rem; background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 8px; border-radius:12px;">Reverse Control Loop</span>
+          </h2>
+          <div class="section-desc">
+            Dispatches actuation commands back down the stack: Web Client → AWS IoT Core (MQTT) → Edge Gateway → BLE GATT Write → Field Hardware (ESP32).
+          </div>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-dim); font-family:var(--font-mono);">
+          Targeting: <strong class="active-node-name" style="color:var(--cyan);">Environmental Lab Node</strong> (<span class="active-node-id">sensor_node_01</span>)
+        </div>
+      </div>
+
+      <div class="actuation-grid">
+        
+        <!-- Control Panel -->
+        <div class="control-panel-card">
+          <h3 style="font-size:1.15rem; color:#fff; margin-bottom:1.25rem; display:flex; align-items:center; gap:0.5rem;">
+            <span>🎛️</span> Hardware Actuator Switches
+          </h3>
+
+          <!-- Actuator 1: Cooling Fan Power -->
+          <div class="actuator-row">
+            <div class="actuator-desc">
+              <div class="actuator-title">
+                <span>💨</span> Forced-Air Cooling Fan
+              </div>
+              <div class="actuator-sub">
+                Actuates 5V PWM fan connected to ESP32 GPIO 18 via MOSFET driver.
+              </div>
+              <!-- PWM slider -->
+              <div class="pwm-slider-wrap">
+                <span style="font-size:0.75rem; color:var(--text-dim);">PWM Duty:</span>
+                <input type="range" id="range-fan-pwm" class="pwm-range" min="10" max="100" value="60">
+                <span id="pwm-val-display" class="pwm-val-display">60%</span>
+              </div>
+            </div>
+            <div>
+              <label class="switch">
+                <input type="checkbox" id="switch-fan">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actuator 2: Solid State Relay -->
+          <div class="actuator-row">
+            <div class="actuator-desc">
+              <div class="actuator-title">
+                <span>🔌</span> Solid-State Circuit Relay (SSR)
+              </div>
+              <div class="actuator-sub">
+                Toggles AC/DC load relay connected to GPIO 23 with opto-isolation.
+              </div>
+            </div>
+            <div>
+              <label class="switch">
+                <input type="checkbox" id="switch-relay">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actuator 3: Hardware Beacon LED -->
+          <div class="actuator-row">
+            <div class="actuator-desc">
+              <div class="actuator-title">
+                <span>💡</span> Visual Diagnostic LED Mode
+              </div>
+              <div class="actuator-sub">
+                Sets onboard status LED state for field locating and physical debugging.
+              </div>
+            </div>
+            <div>
+              <select id="select-led-mode" class="speed-select" style="padding:0.5rem 0.8rem; font-size:0.85rem;">
+                <option value="OFF">OFF</option>
+                <option value="BLINK">PULSING BLINK</option>
+                <option value="SOLID">SOLID ON</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Actuator 4: RTC Duty Cycle Interval -->
+          <div class="actuator-row">
+            <div class="actuator-desc">
+              <div class="actuator-title">
+                <span>⏱️</span> RTC Deep Sleep Interval Setpoint
+              </div>
+              <div class="actuator-sub">
+                Configures how long ESP32 stays in ultra-low-power sleep between bursts.
+              </div>
+            </div>
+            <div>
+              <select id="select-rtc-interval" class="speed-select" style="padding:0.5rem 0.8rem; font-size:0.85rem;">
+                <option value="5">5 Seconds (Testing)</option>
+                <option value="10">10 Seconds (Standard)</option>
+                <option value="30">30 Seconds (Eco Mode)</option>
+                <option value="60">60 Seconds (Ultra-Eco)</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Actuation Confirmation Terminal -->
+        <div class="control-panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="font-size:1.05rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+              <span>📟</span> Downlink Execution Stream
+            </h3>
+            <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">
+              RTT Latency: ~148ms
+            </span>
+          </div>
+
+          <div id="actuation-terminal-log" class="actuation-terminal">
+            <div class="term-line cmd-sent">[SYSTEM READY] Listening for reverse actuation commands on tech300/commands/#</div>
+            <div class="term-line gateway-ack">[BLE GATT] Central host adapter (hci0) initialized and bonded.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 4: AWS IOT CLOUD, RULES & DYNAMODB INSPECTOR
+         ======================================================== -->
+    <section id="tab-aws" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>
+            <span>AWS Cloud Infrastructure & Data Ingestion</span>
+            <span class="badge" style="font-size:0.75rem; background:rgba(168,85,247,0.15); color:var(--purple); border:1px solid var(--border-glow); padding:2px 8px; border-radius:12px;">Cloud Tier</span>
+          </h2>
+          <div class="section-desc">
+            Inspection of AWS IoT Core rules routing, X.509 device policies, Lambda alerting execution, and DynamoDB persistent time-series tables.
+          </div>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <select id="ddb-node-filter" class="speed-select">
+            <option value="all">Filter Table: All Nodes</option>
+            <option value="sensor_node_01">sensor_node_01 (Lab)</option>
+            <option value="sensor_node_02">sensor_node_02 (Server)</option>
+            <option value="sensor_node_03">sensor_node_03 (Agri)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="aws-dashboard-grid">
+        
+        <!-- AWS IoT Rule SQL Editor / Viewer -->
+        <div class="code-editor-card">
+          <div class="editor-header">
+            <div class="editor-title">
+              <span>📜</span> AWS IoT Rule: TelemetryRoutingRule
+            </div>
+            <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">Active</span>
+          </div>
+          <div class="code-body">
+<span class="sql-comment">-- Tech 300 Telemetry Routing SQL Statement</span>
+<span class="sql-keyword">SELECT</span> 
+  <span class="sql-field">device_id</span>,
+  <span class="sql-field">temp</span>,
+  <span class="sql-field">humidity</span>,
+  <span class="sql-field">pressure</span>,
+  <span class="sql-field">timestamp</span>
+<span class="sql-keyword">FROM</span> <span class="sql-str">'tech300/telemetry/+'</span>
+<span class="sql-keyword">WHERE</span> <span class="sql-field">temp</span> &gt; 0;
+
+<span class="sql-comment">-- Action 1: PutRecord to Amazon DynamoDB</span>
+<span class="sql-comment">-- Table: SensorTelemetry (PK: device_id, SK: timestamp)</span>
+<span class="sql-comment">-- Action 2: Trigger AWS Lambda if temp &gt; 30.0°C</span>
+          </div>
+        </div>
+
+        <!-- Least-Privilege IAM Policy Viewer -->
+        <div class="code-editor-card">
+          <div class="editor-header">
+            <div class="editor-title">
+              <span>🔒</span> AWS IoT Least-Privilege Policy: Tech300GatewayPolicy
+            </div>
+            <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">X.509 Attached</span>
+          </div>
+          <div class="code-body">
+{
+  <span class="sql-str">"Version"</span>: <span class="sql-str">"2012-10-17"</span>,
+  <span class="sql-str">"Statement"</span>: [
+    {
+      <span class="sql-str">"Effect"</span>: <span class="sql-str">"Allow"</span>,
+      <span class="sql-str">"Action"</span>: <span class="sql-str">"iot:Connect"</span>,
+      <span class="sql-str">"Resource"</span>: <span class="sql-str">"arn:aws:iot:*:*:client/${iot:Connection.Thing.ThingName}"</span>
+    },
+    {
+      <span class="sql-str">"Effect"</span>: <span class="sql-str">"Allow"</span>,
+      <span class="sql-str">"Action"</span>: [<span class="sql-str">"iot:Publish"</span>, <span class="sql-str">"iot:Subscribe"</span>],
+      <span class="sql-str">"Resource"</span>: <span class="sql-str">"arn:aws:iot:*:*:topic/tech300/*"</span>
+    }
+  ]
+}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DynamoDB Table Viewer -->
+      <div class="table-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-size:1.05rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+            <span>🗄️</span> Amazon DynamoDB: <code>SensorTelemetry</code> Table
+          </h3>
+          <span style="font-size:0.78rem; color:var(--text-dim); font-family:var(--font-mono);">
+            Partition Key: <code>device_id (S)</code> | Sort Key: <code>timestamp (N)</code>
+          </span>
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>device_id (PK)</th>
+                <th>timestamp (SK)</th>
+                <th>temp (°C)</th>
+                <th>humidity (%)</th>
+                <th>pressure (hPa)</th>
+                <th>vibration (g)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dynamodb-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lambda High-Temperature Alert Log -->
+      <div class="table-card" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-size:1.05rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+            <span>🚨</span> AWS Lambda Alert Log: <code>temp &gt; 30.0°C</code> Dispatches
+          </h3>
+          <span style="font-size:0.78rem; color:var(--rose); font-family:var(--font-mono);">
+            Trigger: SNS Push Notification Dispatch
+          </span>
+        </div>
+
+        <div class="data-table-wrap" style="max-height:220px;">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Execution ID</th>
+                <th>Target Node</th>
+                <th>Value</th>
+                <th>Alert Payload Message</th>
+                <th>Action</th    <!-- ========================================================
+         TAB 5: SYSTEM HEALTH, LATENCY & PIPELINE BENCHMARKS
+         ======================================================== -->
+    <section id="tab-diagnostics" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>
+            <span>End-to-End Latency Benchmarking &amp; System Health Diagnostics</span>
+            <span class="badge" style="font-size:0.75rem; background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--border-glow); padding:2px 8px; border-radius:12px;">Live Telemetry RTT</span>
+          </h2>
+          <div class="section-desc">
+            Granular round-trip latency profiling and health metrics measuring packet propagation through all 5 tiers: Sensor Node → BLE 5.0 → Raspberry Pi Gateway → AWS IoT Core → Presentation Client.
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <button id="btn-run-latency-probe" class="btn btn-primary" style="font-size:0.8rem;">
+            ⚡ Ping End-to-End Latency Probe
+          </button>
+        </div>
+      </div>
+
+      <!-- Reference Callout Banner to Dedicated Design Page -->
+      <div style="background:linear-gradient(135deg, rgba(0,212,255,0.08), rgba(99,102,241,0.08)); border:1px solid rgba(0,212,255,0.2); border-radius:var(--radius-md); padding:1rem 1.25rem; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:1.5rem;">📖</span>
+          <div>
+            <strong style="color:#fff; font-size:0.92rem;">Technical Design Document &amp; Hardware BOM Reference</strong>
+            <p style="color:var(--text-muted); font-size:0.82rem; margin:2px 0 0;">
+              The full 10-section course engineering reference guide, schematics (Figures 1, 1a, 2–8, 9a–c), protocol comparison matrices, and complete Bill of Materials have been organized into a dedicated standalone page.
+            </p>
+          </div>
+        </div>
+        <a href="design.html" class="btn btn-primary" style="font-size:0.8rem; text-decoration:none; white-space:nowrap;">
+          <span>Open Technical Design (design.html)</span>
+          <span>→</span>
+        </a>
+      </div>
+
+      <!-- 4 Real-Time Latency Metric Cards -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem; margin-bottom:1.5rem;">
+        
+        <div class="stat-box" style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Tier 1 ➔ Tier 2</span>
+            <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); font-size:0.7rem;">BLE 5.0 2M PHY</span>
+          </div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--cyan); font-family:var(--font-mono);" id="metric-ble-latency">18.4 ms</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">
+            Sensor Sample &amp; Southbound BLE Transmission (Adv payload 0x181A)
+          </div>
+        </div>
+
+        <div class="stat-box" style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Tier 2 ➔ Tier 3</span>
+            <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); font-size:0.7rem;">BCM2711 BlueZ</span>
+          </div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--emerald); font-family:var(--font-mono);" id="metric-gw-latency">23.8 ms</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">
+            Edge Gateway Ingestion, BLE-to-JSON Translation &amp; Local Buffering
+          </div>
+        </div>
+
+        <div class="stat-box" style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Tier 3 ➔ Tier 4</span>
+            <span class="badge" style="background:rgba(255,153,0,0.15); color:#ff9900; font-size:0.7rem;">mTLS 8883 / DynamoDB</span>
+          </div>
+          <div style="font-size:1.8rem; font-weight:800; color:#ff9900; font-family:var(--font-mono);" id="metric-aws-latency">84.2 ms</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">
+            WAN Backhaul, AWS IoT Broker Routing &amp; DynamoDB PutItem write
+          </div>
+        </div>
+
+        <div class="stat-box" style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Full Closed-Loop</span>
+            <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); font-size:0.7rem;">Reverse Control RTT</span>
+          </div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--purple); font-family:var(--font-mono);" id="metric-rtt-latency">148.6 ms</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">
+            Presentation Command ➔ Cloud ➔ Gateway ➔ ESP32 Actuator ACK
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Latency Cascade Bar & Live Probe Terminal -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+        
+        <!-- Visual Latency Cascade -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <h3 style="font-size:1.05rem; color:#fff; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+            <span>⏱️</span> Pipeline Latency Breakdown (Stacked Propagation)
+          </h3>
+          <div style="display:flex; flex-direction:column; gap:0.85rem; font-size:0.82rem;">
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:var(--font-mono);">
+                <span>1. Sensor Sampling &amp; BLE Frame Tx</span>
+                <span style="color:var(--cyan);">18 ms (12.1%)</span>
+              </div>
+              <div style="height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;">
+                <div style="width:12.1%; height:100%; background:var(--cyan); border-radius:4px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:var(--font-mono);">
+                <span>2. Raspberry Pi Ingestion &amp; Protocol Bridge</span>
+                <span style="color:var(--emerald);">24 ms (16.2%)</span>
+              </div>
+              <div style="height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;">
+                <div style="width:16.2%; height:100%; background:var(--emerald); border-radius:4px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:var(--font-mono);">
+                <span>3. AWS IoT Core MQTT mTLS Transit</span>
+                <span style="color:var(--amber);">48 ms (32.3%)</span>
+              </div>
+              <div style="height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;">
+                <div style="width:32.3%; height:100%; background:var(--amber); border-radius:4px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:var(--font-mono);">
+                <span>4. DynamoDB PutItem &amp; Rules Evaluation</span>
+                <span style="color:#ff9900;">36 ms (24.2%)</span>
+              </div>
+              <div style="height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;">
+                <div style="width:24.2%; height:100%; background:#ff9900; border-radius:4px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:var(--font-mono);">
+                <span>5. WebSocket / Presentation Render Loop</span>
+                <span style="color:var(--purple);">22 ms (15.2%)</span>
+              </div>
+              <div style="height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden;">
+                <div style="width:15.2%; height:100%; background:var(--purple); border-radius:4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Probe Execution Log -->
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+          <h3 style="font-size:1.05rem; color:#fff; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+            <span>📡</span> Live Probe Execution Log
+          </h3>
+          <div id="latency-probe-log" style="background:#09111e; border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.85rem; height:180px; overflow-y:auto; font-family:var(--font-mono); font-size:0.75rem; line-height:1.6; color:#94a3b8;">
+            <div style="color:var(--text-dim);">// Click 'Ping End-to-End Latency Probe' above to dispatch a real-time probe packet across the full 5-tier stack.</div>
+            <div style="color:var(--emerald);">[14:55:02.114] PROBE_INIT: Injected ping packet probe_8921 to sensor_node_01</div>
+            <div style="color:var(--cyan);">[14:55:02.132] HOP 1 (BLE 5.0): Adv packet arrived at gateway hci0 (+18.2ms)</div>
+            <div style="color:#a5b4fc);">[14:55:02.156] HOP 2 (Edge): JSON serialized &amp; dispatched to mTLS 8883 (+23.9ms)</div>
+            <div style="color:var(--amber);">[14:55:02.240] HOP 3 (AWS IoT): Rule evaluated; DynamoDB ACK received (+84.1ms)</div>
+            <div style="color:#34d399; font-weight:700;">[14:55:02.262] PROBE_COMPLETE: Presentation client received stream event. Total RTT: 147.8ms [PASS]</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Reliability & Error Rate Matrix -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
+        <h3 style="font-size:1.05rem; color:#fff; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+          <span>🛡️</span> System Reliability, Error Rates &amp; Link Health Matrix
+        </h3>
+        <table class="bom-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Subsystem Metric</th>
+              <th>Target SLA</th>
+              <th>Observed Demo Value</th>
+              <th>Health Status</th>
+              <th>Diagnostics / Mitigation Mechanism</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">Southbound Packet Loss (BLE 5.0)</td>
+              <td>&lt; 1.0%</td>
+              <td style="font-family:var(--font-mono); color:var(--emerald);">0.02% (3 / 15,200 pkts)</td>
+              <td><span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">NOMINAL</span></td>
+              <td>Redundant non-connectable advertising bursts across channels 37, 38, and 39.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">BLE CRC-24 Checksum Pass Rate</td>
+              <td>&gt; 99.5%</td>
+              <td style="font-family:var(--font-mono); color:var(--emerald);">99.98% valid frames</td>
+              <td><span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">NOMINAL</span></td>
+              <td>Hardware bit-level CRC rejection in Cypress CYW43455 baseband.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">Edge Gateway Buffer Queue Depth</td>
+              <td>0 (normal) / &lt; 50k (outage)</td>
+              <td style="font-family:var(--font-mono);" id="metric-table-buffer">0 cached frames</td>
+              <td><span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">CLEARED</span></td>
+              <td>Automatic SQLite persistence spooling during WAN failure with bulk replay upon reconnect.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">AWS IoT Core MQTT Delivery (QoS 1)</td>
+              <td>&gt; 99.9%</td>
+              <td style="font-family:var(--font-mono); color:var(--emerald);">100.0% PUBACK confirmation</td>
+              <td><span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">OPTIMAL</span></td>
+              <td>Client retry backoff with exponential jitter on unacknowledged packets.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">AWS Lambda Anomaly Execution Time</td>
+              <td>&lt; 50 ms</td>
+              <td style="font-family:var(--font-mono); color:var(--cyan);">12.4 ms avg duration</td>
+              <td><span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">LOW LATENCY</span></td>
+              <td>Lightweight Python 3.12 runtime with provisioned concurrency for high-temp alerts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Image Lightbox Modal for Course Figures -->
+  <div id="img-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modal-lightbox-close" class="modal-close">&times;</button>
+      <img id="modal-lightbox-img" src="" alt="Course Diagram" class="modal-img">
+      <div id="modal-lightbox-caption" class="modal-caption"></div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="js/simulation.js"></script>
+  <script src="js/ac_controller.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+  <!-- Demo mode: reads window.sim exposed by app.js -->
+  <script src="js/demo-mode.js"></script>
+  <script>
+    // Wire DemoMode to the live simulation engine created by app.js
+    document.addEventListener('DOMContentLoaded', () => {
+      // app.js exposes window._tech300Sim after DOMContentLoaded
+      setTimeout(() => {
+        if (window._tech300Sim && window.DemoMode) {
+          // DemoMode will auto-start if demo flag is set in localStorage
+          window.DemoMode._sim = window._tech300Sim;
+        }
+      }, 500);
+    });
+  </script>
+</body>
+</html>

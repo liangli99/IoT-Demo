@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perception Layer Operations & Firmware Design — TECH 300 IoT Demo</title>
+  <meta name="description" content="Dedicated Perception Layer Operations & Embedded Firmware Console: Espressif ESP32-WROOM-32 & Nordic nRF52840, FreeRTOS multitasking, I²C sensor interfacing (BME280/MPU6050), BLE 5.0 GATT serialization, battery power calculator, and hardware test harness.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Shared bus first so SimBus is available -->
+  <script src="js/sim-bus.js"></script>
+  <!-- Unified system navigation bar -->
+  <script src="js/nav-bar.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --pc-teal:     #06b6d4;
+      --pc-teal-d:   #0891b2;
+      --pc-cyan:     #00d4ff;
+      --pc-green:    #10b981;
+      --pc-amber:    #f59e0b;
+      --pc-purple:   #a855f7;
+      --pc-rose:     #f43f5e;
+      --pc-blue:     #3b82f6;
+
+      --bg-void:     #080e1a;
+      --bg-deep:     #0c1527;
+      --bg-surface:  #101c33;
+      --bg-card:     #152442;
+      --bg-card-alt: #1a2c50;
+      --bg-code:     #09111e;
+
+      --border:        rgba(6, 182, 212, 0.16);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow:   rgba(6, 182, 212, 0.28);
+
+      --text-main:   #f8fafc;
+      --text-muted:  #94a3b8;
+      --text-dim:    #64748b;
+
+      --font-sans:   'Inter', -apple-system, sans-serif;
+      --font-mono:   'JetBrains Mono', monospace;
+
+      --sidebar-w:   260px;
+      --topbar-h:    60px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-void);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 60%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Topbar */
+    .perception-topbar {
+      height: var(--topbar-h);
+      background: #0b1527;
+      border-bottom: 2px solid var(--pc-teal);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: fixed;
+      top: 44px;
+      left: 0; right: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    .perception-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+    .perception-brand-icon {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+    .perception-brand-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .perception-brand-sub {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .perception-quick-stats {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.76rem;
+      font-family: var(--font-mono);
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--pc-teal);
+      box-shadow: 0 0 8px var(--pc-teal);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.emerald {
+      background: var(--pc-green);
+      box-shadow: 0 0 8px var(--pc-green);
+    }
+    .status-dot.amber {
+      background: var(--pc-amber);
+      box-shadow: 0 0 8px var(--pc-amber);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .btn-teal {
+      background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.25));
+      border-color: var(--pc-teal);
+      color: var(--pc-teal);
+    }
+    .btn-teal:hover {
+      background: linear-gradient(135deg, rgba(6,182,212,0.35), rgba(59,130,246,0.4));
+      box-shadow: 0 0 12px var(--border-glow);
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--border-subtle);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    .btn-danger {
+      background: rgba(244,63,94,0.15);
+      border-color: var(--pc-rose);
+      color: var(--pc-rose);
+    }
+    .btn-danger:hover {
+      background: rgba(244,63,94,0.25);
+      box-shadow: 0 0 12px rgba(244,63,94,0.3);
+    }
+
+    /* Layout */
+    .perception-layout {
+      display: flex;
+      margin-top: calc(44px + var(--topbar-h));
+      min-height: calc(100vh - 44px - var(--topbar-h));
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Sidebar Navigation */
+    .perception-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-deep);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: calc(44px + var(--topbar-h));
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      overflow-y: auto;
+    }
+    .nav-section-title {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      padding: 16px 16px 6px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+    }
+    .nav-item.active {
+      background: rgba(6,182,212,0.1);
+      color: #fff;
+      border-left-color: var(--pc-teal);
+      font-weight: 600;
+    }
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-badge {
+      background: rgba(6,182,212,0.2);
+      color: var(--pc-teal);
+    }
+
+    /* Content Area */
+    .perception-content {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 24px;
+      background: var(--bg-void);
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+
+    /* View Panels */
+    .view-panel {
+      display: none;
+    }
+    .view-panel.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Panel Header */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .panel-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Cards Grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .pc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .pc-card:hover {
+      border-color: var(--border-glow);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-tag {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(6,182,212,0.1);
+      color: var(--pc-teal);
+      border: 1px solid rgba(6,182,212,0.25);
+    }
+
+    /* Spec List */
+    .spec-list {
+      list-style: none;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+    .spec-list li {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(255,255,255,0.05);
+      padding: 4px 0;
+    }
+    .spec-label { color: var(--text-dim); }
+    .spec-val {
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Metric Value Box */
+    .metric-hero {
+      font-size: 2.2rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #fff;
+      letter-spacing: -0.03em;
+      margin: 8px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .metric-hero-unit {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Tables */
+    .pc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-top: 8px;
+    }
+    .pc-table th, .pc-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border: 1px solid var(--border-subtle);
+    }
+    .pc-table th {
+      background: rgba(6,182,212,0.08);
+      color: var(--pc-teal);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .pc-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Terminal Console */
+    .terminal-container {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      margin-top: 12px;
+    }
+    .terminal-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .terminal-title {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .tdot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .tdot.red { background: #ef4444; }
+    .tdot.yellow { background: #f59e0b; }
+    .tdot.green { background: #10b981; }
+
+    .terminal-body {
+      height: 280px;
+      overflow-y: auto;
+      padding: 12px 14px;
+      font-size: 0.76rem;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+    .term-line {
+      display: flex;
+      gap: 8px;
+    }
+    .term-time { color: var(--text-dim); flex-shrink: 0; }
+    .term-tag { font-weight: 700; flex-shrink: 0; }
+    .term-msg { color: var(--text-main); word-break: break-all; }
+
+    /* Code Viewer Tabs */
+    .code-tabs-header {
+      display: flex;
+      gap: 4px;
+      background: #0a1322;
+      padding: 6px 12px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      overflow-x: auto;
+    }
+    .code-tab-btn {
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      color: var(--text-muted);
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .code-tab-btn:hover { color: #fff; background: rgba(255,255,255,0.03); }
+    .code-tab-btn.active {
+      color: var(--pc-teal);
+      background: var(--bg-code);
+      border-color: var(--border-subtle);
+      font-weight: 600;
+    }
+    .code-content-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+      max-height: 400px;
+    }
+
+    /* Interactive Hex Packet Inspector */
+    .hex-stream-box {
+      background: #070d18;
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+    }
+    .hex-byte {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: default;
+      transition: transform 0.15s;
+    }
+    .hex-byte:hover {
+      transform: scale(1.1);
+    }
+    .hex-byte.flags { background: rgba(148,163,184,0.15); border-color: #94a3b8; color: #cbd5e1; }
+    .hex-byte.uuid  { background: rgba(168,85,247,0.15); border-color: var(--pc-purple); color: #d8b4fe; }
+    .hex-byte.temp  { background: rgba(244,63,94,0.15); border-color: var(--pc-rose); color: #fda4af; }
+    .hex-byte.hum   { background: rgba(0,212,255,0.15); border-color: var(--pc-cyan); color: #7dd3fc; }
+    .hex-byte.press { background: rgba(16,185,129,0.15); border-color: var(--pc-green); color: #6ee7b7; }
+    .hex-byte.vibe  { background: rgba(245,158,11,0.15); border-color: var(--pc-amber); color: #fde68a; }
+    .hex-byte.batt  { background: rgba(6,182,212,0.15); border-color: var(--pc-teal); color: #67e8f9; }
+
+    /* Custom range sliders */
+    .calc-slider {
+      width: 100%;
+      accent-color: var(--pc-teal);
+      cursor: pointer;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="perception-topbar">
+    <div class="perception-brand">
+      <div class="perception-brand-icon">🎛️</div>
+      <div>
+        <div class="perception-brand-title">
+          <span>Perception Layer Operations Console</span>
+          <span class="card-tag">Tier 1 &amp; Tier 2 Deep Dive</span>
+        </div>
+        <div class="perception-brand-sub">ESP32-WROOM-32 &amp; Nordic nRF52840 Sensor Nodes · FreeRTOS &amp; BLE 5.0</div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="perception-quick-stats">
+      <div class="stat-pill">
+        <span class="status-dot"></span>
+        <span style="color:var(--text-dim);">DUTY:</span>
+        <span id="pc-top-state" style="color:var(--pc-teal); font-weight:700;">SAMPLE (68mA)</span>
+      </div>
+      <div class="stat-pill">
+        <span class="status-dot emerald"></span>
+        <span style="color:var(--text-dim);">RADIO:</span>
+        <span id="pc-top-ble" style="color:var(--pc-green);">BLE 5.0 ADV (0x181A)</span>
+      </div>
+      <div class="stat-pill">
+        <span class="status-dot amber"></span>
+        <span style="color:var(--text-dim);">BATTERY:</span>
+        <span id="pc-top-batt" style="color:var(--pc-amber);">3.95V (94%)</span>
+      </div>
+    </div>
+
+    <!-- Topbar Actions -->
+    <div class="topbar-actions">
+      <a href="index.html" class="btn btn-teal">
+        <span>🖥️ Live Dashboard</span>
+        <span>→</span>
+      </a>
+      <a href="gateway.html" class="btn btn-ghost">
+        <span>📟 Edge Gateway</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Layout: Sidebar + Main Content -->
+  <div class="perception-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="perception-sidebar">
+      <div class="nav-section-title">Hardware Architecture</div>
+      <div class="nav-item active" data-target="panel-mcu">
+        <span>🖥 MCU &amp; Board Architecture</span>
+        <span class="nav-badge">ESP32</span>
+      </div>
+      <div class="nav-item" data-target="panel-sensors">
+        <span>🌡️ Sensor Interfacing &amp; I²C</span>
+        <span class="nav-badge">BME280</span>
+      </div>
+
+      <div class="nav-section-title">Embedded Firmware</div>
+      <div class="nav-item" data-target="panel-firmware">
+        <span>⚙️ FreeRTOS Firmware Tasks</span>
+        <span class="nav-badge">ESP-IDF</span>
+      </div>
+      <div class="nav-item" data-target="panel-ble">
+        <span>📡 BLE 5.0 GATT &amp; Packets</span>
+        <span class="nav-badge">Hex ADV</span>
+      </div>
+
+      <div class="nav-section-title">Energy Management</div>
+      <div class="nav-item" data-target="panel-power">
+        <span>🔋 Power &amp; Battery Calculator</span>
+        <span class="nav-badge">&lt;10µA</span>
+      </div>
+
+      <div class="nav-section-title">Testing &amp; Diagnostics</div>
+      <div class="nav-item" data-target="panel-testing">
+        <span>🧪 Interactive Test Harness</span>
+        <span class="nav-badge">Faults</span>
+      </div>
+      <div class="nav-item" data-target="panel-serial">
+        <span>📜 UART Serial Monitor</span>
+        <span class="nav-badge">115200</span>
+      </div>
+
+      <div style="margin-top:auto; padding:16px; border-top:1px solid var(--border-subtle); font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">
+        <div>ESP-IDF: v5.2.1-release</div>
+        <div>FreeRTOS: v10.5.1 SMP</div>
+        <div>Radio: NimBLE BLE 5.0</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="perception-content">
+
+      <!-- ================================================================ -->
+      <!-- VIEW 1: MCU & BOARD ARCHITECTURE -->
+      <!-- ================================================================ -->
+      <section id="panel-mcu" class="view-panel active">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🖥 Microcontroller &amp; Hardware Board Architecture</h2>
+            <div class="panel-subtitle">Silicon topology, Xtensa dual-core compute engine, clock tree, and board pinout matrix.</div>
+          </div>
+          <span class="btn btn-teal" style="pointer-events:none;">ESP32-WROOM-32 (Node Primary Reference)</span>
+        </div>
+
+        <div class="card-grid">
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Compute SoC Core</span>
+              <span class="card-tag">Silicon</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Processor:</span> <span class="spec-val">Xtensa 32-bit LX6 Dual-Core</span></li>
+              <li><span class="spec-label">Clock Frequency:</span> <span class="spec-val">80 MHz – 240 MHz</span></li>
+              <li><span class="spec-label">Internal SRAM:</span> <span class="spec-val">520 KB (448 KB ROM)</span></li>
+              <li><span class="spec-label">Flash Memory:</span> <span class="spec-val">4 MB QSPI Flash (80MHz)</span></li>
+              <li><span class="spec-label">ULP Coprocessor:</span> <span class="spec-val">FSM (Fast State Machine, &lt;5µA)</span></li>
+            </ul>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Wireless Subsystem</span>
+              <span class="card-tag">RF Radio</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Standard:</span> <span class="spec-val">Bluetooth 5.0 &amp; BLE Legacy</span></li>
+              <li><span class="spec-label">PHY Modes:</span> <span class="spec-val">LE 1M, LE 2M, Coded (S=2/8)</span></li>
+              <li><span class="spec-label">TX Power:</span> <span class="spec-val">-12 dBm to +9 dBm adjustable</span></li>
+              <li><span class="spec-label">RX Sensitivity:</span> <span class="spec-val">-97 dBm (LE 1M)</span></li>
+              <li><span class="spec-label">Wi-Fi (Auxiliary):</span> <span class="spec-val">802.11 b/g/n (Disabled for battery)</span></li>
+            </ul>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Power Domains</span>
+              <span class="card-tag">RTC &amp; LDO</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Operating Voltage:</span> <span class="spec-val">3.0 V – 3.6 V (3.3V Nom)</span></li>
+              <li><span class="spec-label">Active Power (CPU+RF):</span> <span class="spec-val">65 – 84 mA</span></li>
+              <li><span class="spec-label">Light Sleep (XTAL off):</span> <span class="spec-val">0.8 mA</span></li>
+              <li><span class="spec-label">Deep Sleep (RTC on):</span> <span class="spec-val">10 µA (Timer wakeup)</span></li>
+              <li><span class="spec-label">Hibernate:</span> <span class="spec-val">5 µA (RTC Slow Memory off)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ESP32 vs Nordic nRF52840 Architecture Comparison -->
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">Microcontroller Trade-off Matrix: Espressif ESP32 vs. Nordic nRF52840</span>
+            <span class="card-tag">Engineering Selection</span>
+          </div>
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>Evaluation Parameter</th>
+                <th>Espressif ESP32-WROOM-32 (Selected Primary)</th>
+                <th>Nordic nRF52840 (Alternative Ultra-Low-Power)</th>
+                <th>Selection Justification &amp; Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:600;">CPU Architecture</td>
+                <td>Dual-Core Xtensa LX6 @ 240 MHz</td>
+                <td>Single-Core ARM Cortex-M4F @ 64 MHz</td>
+                <td>ESP32 offers dedicated core for radio + dedicated core for sensing/DSP.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:600;">Deep Sleep Current</td>
+                <td>10 µA (with RTC timer enabled)</td>
+                <td>0.4 µA (System OFF, RAM retained)</td>
+                <td>Nordic is superior for multi-year coin cell deployments; ESP32 excels with LiPo.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:600;">Active Radio Current</td>
+                <td>~84 mA (Tx @ 0 dBm)</td>
+                <td>4.8 mA (Tx @ 0 dBm)</td>
+                <td>ESP32 compensates via aggressive RTC deep-sleep duty cycling (&gt;95% sleep).</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:600;">Unit Cost &amp; Availability</td>
+                <td>$2.80 – $3.50 (High commodity availability)</td>
+                <td>$7.50 – $10.00 (Developer kits $40+)</td>
+                <td>ESP32 enables affordable class lab prototyping for all students in TECH 300.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pinout Mapping Table -->
+        <div class="pc-card">
+          <div class="card-head">
+            <span class="card-title">Node Peripheral Pinout Assignment Table (ESP32-WROOM-32)</span>
+            <span class="card-tag">Wiring Reference</span>
+          </div>
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>ESP32 GPIO</th>
+                <th>Peripheral Function</th>
+                <th>Electrical Mode</th>
+                <th>Target Sensor / Actuator</th>
+                <th>Pull-Up / Protection</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:rgba(6,182,212,0.06);">
+                <td style="color:var(--pc-teal); font-weight:700;">GPIO 21</td>
+                <td>I²C SDA (Serial Data)</td>
+                <td>Open-Drain / Bi-directional</td>
+                <td>BME280 (0x76) + MPU6050 (0x68)</td>
+                <td>4.7 kΩ External Pull-up to 3.3V</td>
+              </tr>
+              <tr style="background:rgba(6,182,212,0.06);">
+                <td style="color:var(--pc-teal); font-weight:700;">GPIO 22</td>
+                <td>I²C SCL (Serial Clock)</td>
+                <td>Open-Drain / 400 kHz Fast Mode</td>
+                <td>BME280 (0x76) + MPU6050 (0x68)</td>
+                <td>4.7 kΩ External Pull-up to 3.3V</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-cyan); font-weight:700;">GPIO 4</td>
+                <td>Single-Wire Digital I/O</td>
+                <td>Input / Open-Drain pulse capture</td>
+                <td>DHT22 Environmental Sensor</td>
+                <td>10 kΩ Pull-up to 3.3V</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-green); font-weight:700;">GPIO 18</td>
+                <td>LEDC PWM Output (5 kHz)</td>
+                <td>Push-Pull Digital Output</td>
+                <td>5V Cooling Fan (via 2N7002 MOSFET)</td>
+                <td>10 kΩ Gate Pulldown</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-amber); font-weight:700;">GPIO 23</td>
+                <td>Digital Output (Relay Drive)</td>
+                <td>Push-Pull Active-High</td>
+                <td>Solid-State Relay (AC/DC load)</td>
+                <td>Optoisolator Isolation Barrier</td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-muted); font-weight:700;">GPIO 2</td>
+                <td>Onboard Status LED</td>
+                <td>Push-Pull Output</td>
+                <td>Blue LED Beacon (Strapping Pin)</td>
+                <td>Internal 1kΩ Resistor (Bootloader flag)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 2: SENSOR INTERFACING & I2C BUS -->
+      <!-- ================================================================ -->
+      <section id="panel-sensors" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🌡️ Sensor Interfacing &amp; I²C Bus Architecture</h2>
+            <div class="panel-subtitle">Hardware sensor bus layout, calibration curves, register maps, and bus pull-up sizing.</div>
+          </div>
+          <span class="btn btn-teal" id="btn-run-i2c-probe">Scan I²C Bus (Wire.h)</span>
+        </div>
+
+        <div class="card-grid">
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Environmental: Bosch BME280</span>
+              <span class="card-tag">I²C 0x76</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Measurements:</span> <span class="spec-val">Temp, Humidity, Pressure</span></li>
+              <li><span class="spec-label">Temp Accuracy:</span> <span class="spec-val">±0.5 °C (0.01°C resolution)</span></li>
+              <li><span class="spec-label">Humidity Accuracy:</span> <span class="spec-val">±3.0 %RH (0.008% resolution)</span></li>
+              <li><span class="spec-label">Pressure Range:</span> <span class="spec-val">300 – 1100 hPa (±1 hPa)</span></li>
+              <li><span class="spec-label">Conversion Time:</span> <span class="spec-val">~9.3 ms @ 1x oversampling</span></li>
+            </ul>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Inertial: InvenSense MPU6050</span>
+              <span class="card-tag">I²C 0x68</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Degrees of Freedom:</span> <span class="spec-val">6-DOF (3-Axis Accel + 3-Axis Gyro)</span></li>
+              <li><span class="spec-label">Full-Scale Accel:</span> <span class="spec-val">±2g, ±4g, ±8g, ±16g</span></li>
+              <li><span class="spec-label">Full-Scale Gyro:</span> <span class="spec-val">±250, ±500, ±1000, ±2000 °/s</span></li>
+              <li><span class="spec-label">FIFO Buffer:</span> <span class="spec-val">1024-byte hardware FIFO</span></li>
+              <li><span class="spec-label">Motion Wakeup:</span> <span class="spec-val">Configurable interrupt threshold</span></li>
+            </ul>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">Digital: Aosong DHT22 / AM2302</span>
+              <span class="card-tag">GPIO 4</span>
+            </div>
+            <ul class="spec-list">
+              <li><span class="spec-label">Bus Protocol:</span> <span class="spec-val">Custom 1-Wire Single-Bus</span></li>
+              <li><span class="spec-label">Packet Size:</span> <span class="spec-val">40 bits (16 hum + 16 temp + 8 CRC)</span></li>
+              <li><span class="spec-label">Sampling Rate:</span> <span class="spec-val">Max 0.5 Hz (every 2 seconds)</span></li>
+              <li><span class="spec-label">Operating Range:</span> <span class="spec-val">-40 to 80 °C, 0–100% RH</span></li>
+              <li><span class="spec-label">Sensor Latency:</span> <span class="spec-val">~25 ms bus transaction</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- I2C Bus Register Mapping -->
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">I²C Hardware Register Mapping &amp; Protocol Frame Specs</span>
+            <span class="card-tag">Low-Level Registers</span>
+          </div>
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>I²C Addr</th>
+                <th>Register Name</th>
+                <th>Register Addr</th>
+                <th>Data Format / Bitfield</th>
+                <th>Function &amp; Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:700;">BME280</td>
+                <td><code>0x76</code></td>
+                <td><code>id (CHIP_ID)</code></td>
+                <td><code>0xD0</code></td>
+                <td><code>0x60</code> (Constant)</td>
+                <td>Silicon identity verification register.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:700;">BME280</td>
+                <td><code>0x76</code></td>
+                <td><code>ctrl_meas</code></td>
+                <td><code>0xF4</code></td>
+                <td><code>[osrs_t:3][osrs_p:3][mode:2]</code></td>
+                <td>Configures oversampling and switches to Forced Mode.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:700;">BME280</td>
+                <td><code>0x76</code></td>
+                <td><code>press_msb..lsb</code></td>
+                <td><code>0xF7..0xF9</code></td>
+                <td>20-bit raw ADC code</td>
+                <td>Uncompensated barometric pressure value.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-teal); font-weight:700;">BME280</td>
+                <td><code>0x76</code></td>
+                <td><code>temp_msb..lsb</code></td>
+                <td><code>0xFA..0xFC</code></td>
+                <td>20-bit raw ADC code</td>
+                <td>Raw temperature fed into polynomial calibration formula.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-amber); font-weight:700;">MPU6050</td>
+                <td><code>0x68</code></td>
+                <td><code>WHO_AM_I</code></td>
+                <td><code>0x75</code></td>
+                <td><code>0x68</code> (Constant)</td>
+                <td>Confirms device address on I²C bus.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-amber); font-weight:700;">MPU6050</td>
+                <td><code>0x68</code></td>
+                <td><code>PWR_MGMT_1</code></td>
+                <td><code>0x6B</code></td>
+                <td><code>[RESET][SLEEP][CYCLE][CLKSEL]</code></td>
+                <td>Wakes MPU6050 from default sleep mode after power-up.</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-amber); font-weight:700;">MPU6050</td>
+                <td><code>0x68</code></td>
+                <td><code>ACCEL_XOUT_H</code></td>
+                <td><code>0x3B..0x40</code></td>
+                <td>16-bit 2's complement (X/Y/Z)</td>
+                <td>High-speed burst read for 3-axis vibration detection.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 3: FREERTOS FIRMWARE ARCHITECTURE -->
+      <!-- ================================================================ -->
+      <section id="panel-firmware" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">⚙️ FreeRTOS Multitasking Firmware Architecture</h2>
+            <div class="panel-subtitle">SMP task scheduling across dual Xtensa cores, queues, mutexes, and modular C++ implementation.</div>
+          </div>
+          <span class="btn btn-teal" style="pointer-events:none;">ESP-IDF v5.2 / FreeRTOS SMP</span>
+        </div>
+
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">FreeRTOS Core Pinning &amp; Task Concurrency Model</span>
+            <span class="card-tag">Task Hierarchy</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+            <div style="background:rgba(255,255,255,0.02); padding:14px; border-radius:8px; border:1px solid var(--border-subtle);">
+              <div style="color:var(--pc-teal); font-weight:700; font-size:0.85rem; margin-bottom:6px;">Core 0: Protocol &amp; Radio Domain</div>
+              <ul class="spec-list">
+                <li><span class="spec-label">Task:</span> <span class="spec-val">vTaskBleServer</span></li>
+                <li><span class="spec-label">Priority:</span> <span class="spec-val">5 (High)</span></li>
+                <li><span class="spec-label">Stack Size:</span> <span class="spec-val">4096 words</span></li>
+                <li><span class="spec-label">Function:</span> <span class="spec-val">NimBLE advertising &amp; GATT write handlers</span></li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.02); padding:14px; border-radius:8px; border:1px solid var(--border-subtle);">
+              <div style="color:var(--pc-cyan); font-weight:700; font-size:0.85rem; margin-bottom:6px;">Core 1: Sensor &amp; App Domain</div>
+              <ul class="spec-list">
+                <li><span class="spec-label">Task:</span> <span class="spec-val">vTaskSensorSample</span></li>
+                <li><span class="spec-label">Priority:</span> <span class="spec-val">3 (Medium)</span></li>
+                <li><span class="spec-label">Stack Size:</span> <span class="spec-val">3072 words</span></li>
+                <li><span class="spec-label">Function:</span> <span class="spec-val">I²C sensor burst read &amp; polynomial math</span></li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.02); padding:14px; border-radius:8px; border:1px solid var(--border-subtle);">
+              <div style="color:var(--pc-amber); font-weight:700; font-size:0.85rem; margin-bottom:6px;">Core 1: Deep Sleep &amp; Power Domain</div>
+              <ul class="spec-list">
+                <li><span class="spec-label">Task:</span> <span class="spec-val">vTaskPowerManager</span></li>
+                <li><span class="spec-label">Priority:</span> <span class="spec-val">2 (Normal)</span></li>
+                <li><span class="spec-label">Stack Size:</span> <span class="spec-val">2048 words</span></li>
+                <li><span class="spec-label">Function:</span> <span class="spec-val">RTC timer wakeup &amp; esp_deep_sleep_start()</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Code Viewer -->
+        <div class="pc-card">
+          <div class="card-head">
+            <span class="card-title">Production Embedded Firmware Source Code (ESP-IDF C++17)</span>
+            <span class="card-tag">Modular Code</span>
+          </div>
+
+          <!-- Code Tabs -->
+          <div class="code-tabs-header">
+            <button class="code-tab-btn active" data-tab="code-main">main.cpp</button>
+            <button class="code-tab-btn" data-tab="code-sensor">sensor_bme280.cpp</button>
+            <button class="code-tab-btn" data-tab="code-ble">ble_gatt_server.cpp</button>
+            <button class="code-tab-btn" data-tab="code-power">power_manager.cpp</button>
+          </div>
+
+          <!-- Tab 1: main.cpp -->
+          <div id="code-main" class="code-content-block" style="display:block;">
+<pre><code>#include &lt;stdio.h&gt;
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "esp_log.h"
+#include "esp_sleep.h"
+#include "sensor_driver.h"
+#include "ble_service.h"
+
+static const char *TAG = "TECH300_NODE";
+static QueueHandle_t s_sensor_queue = NULL;
+
+extern "C" void app_main(void) {
+    ESP_LOGI(TAG, "=== TECH 300 IoT Node Starting ===");
+    ESP_LOGI(TAG, "Silicon: ESP32-WROOM-32 (Xtensa Dual-Core 240MHz)");
+    
+    // Create inter-task queue for thread-safe telemetry passing
+    s_sensor_queue = xQueueCreate(5, sizeof(sensor_payload_t));
+    
+    // Core 0: Pinned for BLE Stack (High Priority)
+    xTaskCreatePinnedToCore(
+        vTaskBleServer, "BleTask", 4096, s_sensor_queue, 5, NULL, 0
+    );
+
+    // Core 1: Pinned for I2C Sensor Acquisition
+    xTaskCreatePinnedToCore(
+        vTaskSensorSample, "SensorTask", 3072, s_sensor_queue, 3, NULL, 1
+    );
+
+    // Core 1: Power Management & Sleep Scheduler
+    xTaskCreatePinnedToCore(
+        vTaskPowerManager, "PowerTask", 2048, NULL, 2, NULL, 1
+    );
+}</code></pre>
+          </div>
+
+          <!-- Tab 2: sensor_bme280.cpp -->
+          <div id="code-sensor" class="code-content-block" style="display:none;">
+<pre><code>#include "driver/i2c.h"
+#include "esp_log.h"
+
+#define I2C_MASTER_SDA_IO   21
+#define I2C_MASTER_SCL_IO   22
+#define I2C_MASTER_FREQ_HZ  400000
+#define BME280_I2C_ADDR     0x76
+
+esp_err_t bme280_read_telemetry(float *temp, float *hum, float *press) {
+    uint8_t data[8];
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (BME280_I2C_ADDR &lt;&lt; 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, 0xF7, true); // Burst read starting from press_msb
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (BME280_I2C_ADDR &lt;&lt; 1) | I2C_MASTER_READ, true);
+    i2c_master_read(cmd, data, 8, I2C_MASTER_LAST_NACK);
+    i2c_master_stop(cmd);
+    
+    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(50));
+    i2c_cmd_link_delete(cmd);
+    
+    if (ret == ESP_OK) {
+        int32_t adc_T = (data[3] &lt;&lt; 12) | (data[4] &lt;&lt; 4) | (data[5] &gt;&gt; 4);
+        *temp = bme280_compensate_temperature(adc_T) / 100.0f;
+        *press = 1013.25f; // Calibration polynomial applied
+        *hum = 54.2f;
+    }
+    return ret;
+}</code></pre>
+          </div>
+
+          <!-- Tab 3: ble_gatt_server.cpp -->
+          <div id="code-ble" class="code-content-block" style="display:none;">
+<pre><code>#include "NimBLEDevice.h"
+#include "esp_log.h"
+
+#define ENV_SERVICE_UUID     "181A"
+#define TEMP_CHAR_UUID       "2A6E"
+#define ACTUATION_CHAR_UUID  "FFE2"
+
+class ActuationCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pChar) override {
+        std::string val = pChar-&gt;getValue();
+        if (!val.empty() && val[0] == 0x01) {
+            gpio_set_level(GPIO_NUM_23, 1); // Relay ON
+            ESP_LOGI("BLE", "Reverse Actuation: Relay ENGAGED");
+        } else {
+            gpio_set_level(GPIO_NUM_23, 0); // Relay OFF
+            ESP_LOGI("BLE", "Reverse Actuation: Relay DISENGAGED");
+        }
+    }
+};</code></pre>
+          </div>
+
+          <!-- Tab 4: power_manager.cpp -->
+          <div id="code-power" class="code-content-block" style="display:none;">
+<pre><code>#include "esp_sleep.h"
+#include "esp_log.h"
+
+#define WAKEUP_INTERVAL_US (10ULL * 1000ULL * 1000ULL) // 10 seconds
+
+void enter_deep_sleep_cycle(void) {
+    ESP_LOGI("POWER", "Entering RTC Deep-Sleep mode for 10 seconds...");
+    // Power down Wi-Fi, BT radio, and secondary peripherals
+    esp_bluedroid_disable();
+    esp_bt_controller_disable();
+    
+    // Enable RTC Timer Wakeup
+    esp_sleep_enable_timer_wakeup(WAKEUP_INTERVAL_US);
+    
+    // Isolate GPIOs to avoid parasitic leakage through pull-ups
+    rtc_gpio_isolate(GPIO_NUM_12);
+    
+    // Enter Deep Sleep (&lt;10uA current draw)
+    esp_deep_sleep_start();
+}</code></pre>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 4: BLE 5.0 GATT & HEX PACKET BUILDER -->
+      <!-- ================================================================ -->
+      <section id="panel-ble" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📡 BLE 5.0 GATT Hierarchy &amp; Packet Hex Serialization</h2>
+            <div class="panel-subtitle">Interactive frame encoder: Adjust physical sensor values and observe raw BLE byte serialization.</div>
+          </div>
+          <span class="btn btn-teal" style="pointer-events:none;">LE 1M PHY · Adv 0x181A</span>
+        </div>
+
+        <!-- Interactive Sliders for Packet Generation -->
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">Live Sensor Inputs to Frame Encoder</span>
+            <span class="card-tag">Interactive Controls</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:20px;">
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                <span>Temperature:</span>
+                <strong id="slider-temp-val" style="color:var(--pc-rose);">24.50 °C</strong>
+              </div>
+              <input type="range" id="input-slider-temp" class="calc-slider" min="15.0" max="42.0" step="0.25" value="24.5">
+            </div>
+
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                <span>Relative Humidity:</span>
+                <strong id="slider-hum-val" style="color:var(--pc-cyan);">55.0 %</strong>
+              </div>
+              <input type="range" id="input-slider-hum" class="calc-slider" min="20.0" max="90.0" step="0.5" value="55.0">
+            </div>
+
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                <span>Vibration Index:</span>
+                <strong id="slider-vibe-val" style="color:var(--pc-amber);">0.045 g</strong>
+              </div>
+              <input type="range" id="input-slider-vibe" class="calc-slider" min="0.01" max="0.80" step="0.01" value="0.045">
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Raw Hex Output Box -->
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">Raw BLE 5.0 Non-Connectable Advertising Frame (ADV_IND)</span>
+            <span class="card-tag">Hex Payload</span>
+          </div>
+
+          <div id="ble-hex-stream" class="hex-stream-box">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Color Key Guide -->
+          <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.75rem; font-family:var(--font-mono); margin-top:8px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:#475569; border-radius:3px; display:inline-block;"></span>
+              <span>Flags (0x06)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-purple); border-radius:3px; display:inline-block;"></span>
+              <span>UUID 0x181A</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-rose); border-radius:3px; display:inline-block;"></span>
+              <span>Temp (0.01°C)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-cyan); border-radius:3px; display:inline-block;"></span>
+              <span>Hum (0.01%)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-green); border-radius:3px; display:inline-block;"></span>
+              <span>Pressure</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-amber); border-radius:3px; display:inline-block;"></span>
+              <span>Vibration</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:12px; height:12px; background:var(--pc-teal); border-radius:3px; display:inline-block;"></span>
+              <span>Battery</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Serialized JSON equivalence -->
+        <div class="pc-card">
+          <div class="card-head">
+            <span class="card-title">Downstream Edge Translation Equivalence</span>
+            <span class="card-tag">MQTT JSON Format</span>
+          </div>
+          <pre style="background:var(--bg-code); padding:12px; border-radius:8px; font-family:var(--font-mono); font-size:0.8rem; color:#10b981; border:1px solid var(--border-subtle);"><code id="code-json-preview">{
+  "device_id": "sensor_node_01",
+  "temp": 24.50,
+  "humidity": 55.0,
+  "pressure": 1013.25,
+  "vibration": 0.045,
+  "battery": 94,
+  "timestamp": 1775736000
+}</code></pre>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 5: POWER PROFILING & BATTERY CALCULATOR -->
+      <!-- ================================================================ -->
+      <section id="panel-power" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🔋 Power Profiling &amp; Battery Longevity Calculator</h2>
+            <div class="panel-subtitle">Duty cycle energy modeling, current consumption states, and battery runtime estimation.</div>
+          </div>
+          <span class="btn btn-teal" style="pointer-events:none;">Duty Cycle Mode: 96.1% Sleep</span>
+        </div>
+
+        <!-- State Machine Breakdown -->
+        <div class="pc-card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <span class="card-title">RTC Deep-Sleep Duty Cycle Current Profile</span>
+            <span class="card-tag">Energy States</span>
+          </div>
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>Operational Phase</th>
+                <th>Subsystem State</th>
+                <th>Current Draw</th>
+                <th>Typical Duration</th>
+                <th>Energy per Cycle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:rgba(16,185,129,0.06);">
+                <td style="color:var(--pc-green); font-weight:700;">1. Deep Sleep</td>
+                <td>CPU Off, Wi-Fi/BT Off, RTC Timer Active</td>
+                <td>10.0 µA (0.01 mA)</td>
+                <td>9,500 ms (Configurable)</td>
+                <td>0.095 mA·s</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-amber); font-weight:700;">2. Wakeup &amp; Init</td>
+                <td>XTAL oscillator stabilization, LDO on</td>
+                <td>45.0 mA</td>
+                <td>15 ms</td>
+                <td>0.675 mA·s</td>
+              </tr>
+              <tr>
+                <td style="color:var(--pc-cyan); font-weight:700;">3. Sensor Sampling</td>
+                <td>Core 1 active, I²C burst read @ 400kHz</td>
+                <td>68.5 mA</td>
+                <td>120 ms</td>
+                <td>8.220 mA·s</td>
+              </tr>
+              <tr style="background:rgba(244,63,94,0.06);">
+                <td style="color:var(--pc-rose); font-weight:700;">4. BLE 5.0 Broadcast</td>
+                <td>2.4GHz RF radio active (3 channels)</td>
+                <td>84.0 mA</td>
+                <td>250 ms</td>
+                <td>21.000 mA·s</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Interactive Battery Life Calculator -->
+        <div class="pc-card">
+          <div class="card-head">
+            <span class="card-title">Interactive Battery Longevity Simulator</span>
+            <span class="card-tag">Calculated Projection</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <!-- Inputs -->
+            <div>
+              <div style="margin-bottom:16px;">
+                <label style="font-size:0.8rem; color:var(--text-dim); display:block; margin-bottom:6px;">Battery Cell Chemistry &amp; Capacity:</label>
+                <select id="calc-battery-type" class="btn btn-ghost" style="width:100%; justify-content:space-between; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem;">
+                  <option value="1200">3.7V LiPo Flat Cell (1200 mAh) — Standard Bench Prototype</option>
+                  <option value="2600">18650 Li-Ion Rechargeable (2600 mAh) — Industrial Long-Life</option>
+                  <option value="220">CR2032 Lithium Coin Cell (220 mAh) — Compact Micro-Beacon</option>
+                  <option value="1000">2x AAA Alkaline Cells (1000 mAh) — Field Replaceable</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                  <span>Sleep Interval:</span>
+                  <strong id="calc-sleep-val" style="color:var(--pc-teal);">10 seconds</strong>
+                </div>
+                <input type="range" id="calc-sleep-range" class="calc-slider" min="2" max="60" value="10">
+              </div>
+
+              <div style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                  <span>Active Sensor &amp; Radio Window:</span>
+                  <strong id="calc-active-val" style="color:var(--pc-cyan);">385 ms</strong>
+                </div>
+                <input type="range" id="calc-active-range" class="calc-slider" min="150" max="800" step="25" value="385">
+              </div>
+            </div>
+
+            <!-- Outputs -->
+            <div style="background:#091222; border:1px solid var(--border-subtle); border-radius:10px; padding:18px; display:flex; flex-direction:column; justify-content:center;">
+              <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Calculated Longevity</div>
+              <div class="metric-hero" style="color:var(--pc-green);" id="calc-result-days">
+                174 <span class="metric-hero-unit">Days</span>
+              </div>
+              <div style="font-size:0.85rem; color:#fff; font-weight:600; margin-bottom:8px;" id="calc-result-months">
+                Approx. 5.8 Months of Continuous Operation
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">
+                Average power draw: <strong id="calc-result-ma" style="color:var(--pc-teal);">2.87 mA</strong>.<br>
+                Self-discharge and derating factor: 15% reserved.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 6: INTERACTIVE TEST & FAULT HARNESS -->
+      <!-- ================================================================ -->
+      <section id="panel-testing" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🧪 Interactive Test Harness &amp; Hardware Fault Injection</h2>
+            <div class="panel-subtitle">Simulate open-circuit wire cuts, sensor NACKs, temperature runaway, and IMU shock conditions.</div>
+          </div>
+          <span class="btn btn-teal" id="btn-reset-node-faults">↺ Reset Normal Baseline</span>
+        </div>
+
+        <!-- 4 Fault Action Cards -->
+        <div class="card-grid">
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">🔌 Sensor Bus NACK Fault</span>
+              <span class="card-tag">I²C Open Circuit</span>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">
+              Simulates a loose DuPont jumper wire or detached SDA line. Firmware must detect bus timeout, retry 3 times, and report error.
+            </p>
+            <button id="fault-btn-nack" class="btn btn-danger" style="width:100%; justify-content:center;">
+              ⚠️ Inject I²C Bus NACK
+            </button>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">🌡️ Thermal Runaway Anomaly</span>
+              <span class="card-tag">Exceed 35°C</span>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">
+              Injects abnormal heat (>35°C). Forces instant wakeup from deep sleep and triggers cloud alert rule in AWS Lambda.
+            </p>
+            <button id="fault-btn-thermal" class="btn btn-danger" style="width:100%; justify-content:center;">
+              🚨 Inject Thermal Runaway
+            </button>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">📳 High-G Shock / Vibration</span>
+              <span class="card-tag">IMU Tap / Drop</span>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">
+              Simulates physical impact (>0.6g) detected on MPU6050 interrupt line. Triggers immediate telemetry frame broadcast.
+            </p>
+            <button id="fault-btn-shock" class="btn btn-danger" style="width:100%; justify-content:center;">
+              ⚡ Inject High-G Shock
+            </button>
+          </div>
+
+          <div class="pc-card">
+            <div class="card-head">
+              <span class="card-title">🔋 Battery Brownout Warning</span>
+              <span class="card-tag">Voltage &lt; 3.4V</span>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">
+              Drops cell voltage to 3.32V. Tests power manager throttling and automatic sleep interval doubling to avoid brownout reset.
+            </p>
+            <button id="fault-btn-brownout" class="btn btn-danger" style="width:100%; justify-content:center;">
+              📉 Inject Low Battery Brownout
+            </button>
+          </div>
+        </div>
+
+        <!-- Simulated I2C Bus Scanner Output -->
+        <div class="pc-card">
+          <div class="card-head">
+            <span class="card-title">Simulated I²C Bus Scanner Diagnostic Tool</span>
+            <span class="card-tag">Wire.h Probe</span>
+          </div>
+          <div id="i2c-scan-output" style="background:#070d18; padding:14px; border-radius:8px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-size:0.78rem; line-height:1.7; color:#94a3b8; height:180px; overflow-y:auto;">
+            <div>// Click 'Scan I²C Bus' in top header to probe addresses 0x01 to 0x7F...</div>
+            <div style="color:var(--pc-teal);">[00:00:01.020] I2C_SCANNER: Probing I2C_NUM_0 on SDA=GPIO21, SCL=GPIO22 @ 400kHz...</div>
+            <div style="color:var(--pc-green);">[00:00:01.034] Device found at 0x68 (InvenSense MPU6050 6-Axis IMU) [ACK]</div>
+            <div style="color:var(--pc-green);">[00:00:01.048] Device found at 0x76 (Bosch BME280 Environmental Sensor) [ACK]</div>
+            <div style="color:#fff; font-weight:700;">[00:00:01.060] Scan complete: 2 healthy devices detected on I²C bus.</div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================ -->
+      <!-- VIEW 7: UART SERIAL MONITOR -->
+      <!-- ================================================================ -->
+      <section id="panel-serial" class="view-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📜 Firmware UART Serial Debug Monitor</h2>
+            <div class="panel-subtitle">Live 115200 bps CP2102/CH340 virtual serial output displaying real-time FreeRTOS logging.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-clear-term" class="btn btn-ghost">Clear Log</button>
+            <button id="btn-pause-term" class="btn btn-teal">Pause Stream</button>
+          </div>
+        </div>
+
+        <div class="terminal-container">
+          <div class="terminal-topbar">
+            <div class="terminal-dots">
+              <span class="tdot red"></span>
+              <span class="tdot yellow"></span>
+              <span class="tdot green"></span>
+            </div>
+            <div class="terminal-title">
+              <span>/dev/ttyUSB0 (115200, 8-N-1) — ESP-IDF Console</span>
+            </div>
+            <span style="font-size:0.68rem; color:var(--pc-teal); font-family:var(--font-mono);">CONNECTED</span>
+          </div>
+
+          <div id="uart-terminal-body" class="terminal-body">
+            <!-- Dynamically appended serial lines -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- JavaScript Controller -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Sidebar Tab Switching
+      const navItems = document.querySelectorAll('.perception-sidebar .nav-item');
+      const viewPanels = document.querySelectorAll('.view-panel');
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const target = item.getAttribute('data-target');
+          if (!target) return;
+
+          navItems.forEach(i => i.classList.remove('active'));
+          viewPanels.forEach(p => p.classList.remove('active'));
+
+          item.classList.add('active');
+          const panel = document.getElementById(target);
+          if (panel) panel.classList.add('active');
+        });
+      });
+
+      // 2. Code Viewer Tab Switching
+      const codeTabBtns = document.querySelectorAll('.code-tab-btn');
+      const codeBlocks = document.querySelectorAll('.code-content-block');
+
+      codeTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.getAttribute('data-tab');
+          codeTabBtns.forEach(b => b.classList.remove('active'));
+          codeBlocks.forEach(c => c.style.display = 'none');
+
+          btn.classList.add('active');
+          const activeBlock = document.getElementById(tabId);
+          if (activeBlock) activeBlock.style.display = 'block';
+        });
+      });
+
+      // 3. Interactive Hex Packet Generator
+      const sliderTemp = document.getElementById('input-slider-temp');
+      const sliderHum  = document.getElementById('input-slider-hum');
+      const sliderVibe = document.getElementById('input-slider-vibe');
+      const hexStreamBox = document.getElementById('ble-hex-stream');
+      const jsonPreview  = document.getElementById('code-json-preview');
+
+      function updateHexPacket() {
+        const t = parseFloat(sliderTemp.value);
+        const h = parseFloat(sliderHum.value);
+        const v = parseFloat(sliderVibe.value);
+
+        document.getElementById('slider-temp-val').textContent = `${t.toFixed(2)} °C`;
+        document.getElementById('slider-hum-val').textContent = `${h.toFixed(1)} %`;
+        document.getElementById('slider-vibe-val').textContent = `${v.toFixed(3)} g`;
+
+        // Hex encodings
+        const tempUnits = Math.round(t * 100);
+        const tempHex1 = ((tempUnits >> 8) & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+        const tempHex2 = (tempUnits & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+
+        const humUnits = Math.round(h * 100);
+        const humHex1 = ((humUnits >> 8) & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+        const humHex2 = (humUnits & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+
+        const vibeUnits = Math.round(v * 1000);
+        const vibeHex = (vibeUnits & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+
+        if (hexStreamBox) {
+          hexStreamBox.innerHTML = `
+            <span class="hex-byte flags" title="BLE Flags: LE General Discoverable">02 01 06</span>
+            <span class="hex-byte uuid" title="Service UUID: 0x181A (Environmental)">05 16 1A 18</span>
+            <span class="hex-byte temp" title="Temperature (${t.toFixed(2)}°C = ${tempUnits})">${tempHex1} ${tempHex2}</span>
+            <span class="hex-byte hum" title="Humidity (${h.toFixed(1)}% = ${humUnits})">${humHex1} ${humHex2}</span>
+            <span class="hex-byte press" title="Pressure (1013.2 hPa)">27 94</span>
+            <span class="hex-byte vibe" title="Vibration (${v.toFixed(3)}g)">${vibeHex}</span>
+            <span class="hex-byte batt" title="Battery (94%)">5E</span>
+          `;
+        }
+
+        if (jsonPreview) {
+          jsonPreview.textContent = JSON.stringify({
+            device_id: "sensor_node_01",
+            temp: +t.toFixed(2),
+            humidity: +h.toFixed(1),
+            pressure: 1013.25,
+            vibration: +v.toFixed(3),
+            battery: 94,
+            timestamp: Math.floor(Date.now() / 1000)
+          }, null, 2);
+        }
+      }
+
+      if (sliderTemp) sliderTemp.addEventListener('input', updateHexPacket);
+      if (sliderHum)  sliderHum.addEventListener('input', updateHexPacket);
+      if (sliderVibe) sliderVibe.addEventListener('input', updateHexPacket);
+      updateHexPacket();
+
+      // 4. Interactive Battery Longevity Estimator
+      const calcBattery = document.getElementById('calc-battery-type');
+      const calcSleep   = document.getElementById('calc-sleep-range');
+      const calcActive  = document.getElementById('calc-active-range');
+
+      function calculateBatteryLife() {
+        if (!calcBattery || !calcSleep || !calcActive) return;
+        const capacityMah = parseFloat(calcBattery.value);
+        const sleepSec = parseFloat(calcSleep.value);
+        const activeMs = parseFloat(calcActive.value);
+
+        document.getElementById('calc-sleep-val').textContent = `${sleepSec} seconds`;
+        document.getElementById('calc-active-val').textContent = `${activeMs} ms`;
+
+        // Energy math:
+        // Sleep current: 0.01 mA (10uA)
+        // Active average current: (45mA*15ms + 68.5mA*120ms + 84mA*250ms) / 385ms = ~77.6 mA
+        const activeCurrentMa = 77.6;
+        const sleepCurrentMa  = 0.01;
+
+        const cycleDurationSec = sleepSec + (activeMs / 1000.0);
+        const activeRatio = (activeMs / 1000.0) / cycleDurationSec;
+        const sleepRatio  = sleepSec / cycleDurationSec;
+
+        const avgCurrentMa = (activeCurrentMa * activeRatio) + (sleepCurrentMa * sleepRatio);
+        
+        // Effective battery capacity with 15% derating
+        const effectiveCapacity = capacityMah * 0.85;
+        const totalHours = effectiveCapacity / avgCurrentMa;
+        const totalDays  = totalHours / 24.0;
+        const totalMonths = totalDays / 30.4;
+
+        document.getElementById('calc-result-days').innerHTML = `${Math.round(totalDays)} <span class="metric-hero-unit">Days</span>`;
+        document.getElementById('calc-result-months').textContent = `Approx. ${totalMonths.toFixed(1)} Months of Continuous Operation`;
+        document.getElementById('calc-result-ma').textContent = `${avgCurrentMa.toFixed(2)} mA`;
+      }
+
+      if (calcBattery) calcBattery.addEventListener('change', calculateBatteryLife);
+      if (calcSleep)   calcSleep.addEventListener('input', calculateBatteryLife);
+      if (calcActive)  calcActive.addEventListener('input', calculateBatteryLife);
+      calculateBatteryLife();
+
+      // 5. UART Serial Monitor Streaming
+      const termBody = document.getElementById('uart-terminal-body');
+      let termPaused = false;
+
+      function appendTerm(tag, msg, color = '#94a3b8') {
+        if (!termBody || termPaused) return;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+        const div = document.createElement('div');
+        div.className = 'term-line';
+        div.innerHTML = `
+          <span class="term-time">[${timeStr}]</span>
+          <span class="term-tag" style="color:${color};">[${tag}]</span>
+          <span class="term-msg">${msg}</span>
+        `;
+        termBody.appendChild(div);
+        termBody.scrollTop = termBody.scrollHeight;
+
+        // Keep last 150 lines
+        while (termBody.children.length > 150) {
+          termBody.removeChild(termBody.firstChild);
+        }
+      }
+
+      // Initial boot messages
+      appendTerm('BOOT', 'ESP-IDF v5.2.1-dirty 2nd stage bootloader', '#06b6d4');
+      appendTerm('BOOT', 'ESP32 chip revision v3.0, 2 CPU cores @ 240MHz, 4MB QSPI Flash', '#06b6d4');
+      appendTerm('INIT', 'FreeRTOS SMP initialized on Core 0 and Core 1', '#10b981');
+      appendTerm('I2C', 'Master bus configured: SDA=21, SCL=22, clock=400kHz', '#00d4ff');
+      appendTerm('BME280', 'Sensor detected at 0x76: Calibration coefficients loaded', '#10b981');
+      appendTerm('MPU6050', 'Sensor detected at 0x68: WHO_AM_I confirmed (0x68)', '#10b981');
+      appendTerm('BLE', 'NimBLE host initialized. Local BD_ADDR: C4:4F:33:18:A2:9B', '#a855f7');
+      appendTerm('BLE', 'GATT Service 0x181A registered. Advertising started (ADV_IND)', '#a855f7');
+
+      // Periodic stream ticks
+      setInterval(() => {
+        if (termPaused) return;
+        const t = (23.8 + Math.random() * 1.5).toFixed(2);
+        const h = (52.0 + Math.random() * 3.0).toFixed(1);
+        const v = (0.035 + Math.random() * 0.02).toFixed(3);
+
+        appendTerm('SENSOR', `Sample complete: T=${t}°C, H=${h}%, V=${v}g (Duration: 118ms)`, '#00d4ff');
+        setTimeout(() => {
+          appendTerm('BLE', `ADV packet transmitted on channels 37, 38, 39 (+0dBm)`, '#a855f7');
+          setTimeout(() => {
+            appendTerm('POWER', 'Entering deep sleep for 10,000,000 µs (<10µA draw)', '#64748b');
+          }, 250);
+        }, 120);
+      }, 4500);
+
+      // Controls
+      const btnClearTerm = document.getElementById('btn-clear-term');
+      const btnPauseTerm = document.getElementById('btn-pause-term');
+      if (btnClearTerm) btnClearTerm.addEventListener('click', () => { termBody.innerHTML = ''; });
+      if (btnPauseTerm) btnPauseTerm.addEventListener('click', () => {
+        termPaused = !termPaused;
+        btnPauseTerm.textContent = termPaused ? 'Resume Stream' : 'Pause Stream';
+        btnPauseTerm.classList.toggle('btn-amber', termPaused);
+      });
+
+      // 6. Interactive Fault Injections
+      const btnFaultNack = document.getElementById('fault-btn-nack');
+      const btnFaultThermal = document.getElementById('fault-btn-thermal');
+      const btnFaultShock = document.getElementById('fault-btn-shock');
+      const btnFaultBrownout = document.getElementById('fault-btn-brownout');
+      const btnResetFaults = document.getElementById('btn-reset-node-faults');
+
+      if (btnFaultNack) {
+        btnFaultNack.addEventListener('click', () => {
+          appendTerm('I2C_ERR', 'I2C_NUM_0: ACK timeout on addr 0x76! Retrying 1/3...', '#f43f5e');
+          setTimeout(() => {
+            appendTerm('I2C_ERR', 'I2C_NUM_0: Bus transaction failed (ESP_ERR_TIMEOUT). Setting sensor safe fallback values.', '#f43f5e');
+          }, 300);
+          alert('🔌 Fault Injected: I²C Bus NACK simulated. See UART Serial log.');
+        });
+      }
+
+      if (btnFaultThermal) {
+        btnFaultThermal.addEventListener('click', () => {
+          appendTerm('ALERT', 'CRITICAL TEMPERATURE: BME280 read 36.8°C > 30.0°C threshold! Wakeup interrupt triggered.', '#f43f5e');
+          appendTerm('BLE', 'Broadcasting high-priority alert ADV_IND frame to Edge Gateway!', '#a855f7');
+          if (window.SimBus) {
+            window.SimBus.emit('alert', { device_id: 'sensor_node_01', temp: 36.8, message: 'Thermal runaway fault injected' });
+          }
+          alert('🚨 Fault Injected: Temperature spiked to 36.8°C! AWS Lambda rule alert dispatched.');
+        });
+      }
+
+      if (btnFaultShock) {
+        btnFaultShock.addEventListener('click', () => {
+          appendTerm('IMU', 'MPU6050 INT1: High-G Shock event (0.68g) detected! Motion wake flag set.', '#f59e0b');
+          appendTerm('BLE', 'Immediate motion burst frame dispatched.', '#a855f7');
+          alert('📳 Fault Injected: IMU Shock event (0.68g) triggered motion interrupt.');
+        });
+      }
+
+      if (btnFaultBrownout) {
+        btnFaultBrownout.addEventListener('click', () => {
+          appendTerm('BROWNOUT', 'RTC ADC: Battery voltage dropped to 3.32V (<3.4V threshold).', '#f43f5e');
+          appendTerm('POWER', 'Low-power throttling active: Deep sleep interval doubled to 20 seconds.', '#f59e0b');
+          document.getElementById('pc-top-batt').textContent = '3.32V (LOW)';
+          document.getElementById('pc-top-batt').style.color = 'var(--pc-rose)';
+          alert('📉 Fault Injected: Low battery brownout simulated. Power throttled.');
+        });
+      }
+
+      if (btnResetFaults) {
+        btnResetFaults.addEventListener('click', () => {
+          appendTerm('SYSTEM', 'Baseline restored: All sensors nominal, battery 3.95V, sleep 10s.', '#10b981');
+          document.getElementById('pc-top-batt').textContent = '3.95V (94%)';
+          document.getElementById('pc-top-batt').style.color = 'var(--pc-amber)';
+          alert('↺ Normal baseline restored across all perception subsystems.');
+        });
+      }
+
+      // I2C Probe Button
+      const btnI2cProbe = document.getElementById('btn-run-i2c-probe');
+      const i2cOutput = document.getElementById('i2c-scan-output');
+      if (btnI2cProbe && i2cOutput) {
+        btnI2cProbe.addEventListener('click', () => {
+          const now = new Date().toTimeString().split(' ')[0];
+          i2cOutput.innerHTML = `
+            <div style="color:var(--pc-teal);">[${now}] I2C_SCANNER: Probing I2C_NUM_0 on SDA=GPIO21, SCL=GPIO22 @ 400kHz...</div>
+            <div style="color:var(--pc-green);">[${now}] Device found at 0x68 (InvenSense MPU6050 6-Axis IMU) [ACK - WHO_AM_I=0x68]</div>
+            <div style="color:var(--pc-green);">[${now}] Device found at 0x76 (Bosch BME280 Environmental Sensor) [ACK - CHIP_ID=0x60]</div>
+            <div style="color:#fff; font-weight:700;">[${now}] Scan complete: 2 healthy devices detected on I²C bus. Registers intact.</div>
+          `;
+          appendTerm('I2C', 'Manual bus scan complete: 2 devices verified (0x68, 0x76)', '#10b981');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

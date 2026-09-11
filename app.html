@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IoT Sense — TECH 300 Mobile App</title>
+  <meta name="description" content="Android-style mobile app for TECH 300 IoT Demo. Live sensor monitoring and AC auto-control.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── CSS Reset & Variables ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:      #0a0e1a;
+      --bg-surface:   #111827;
+      --bg-card:      #1a2235;
+      --bg-elevated:  #1f2d44;
+      --border:       rgba(99,120,160,0.18);
+      --border-glow:  rgba(0,200,255,0.22);
+
+      --cyan:    #00c8ff;
+      --emerald: #10b981;
+      --rose:    #f43f5e;
+      --amber:   #f59e0b;
+      --purple:  #a855f7;
+      --indigo:  #6366f1;
+
+      --text-main: #e2e8f0;
+      --text-muted:#94a3b8;
+      --text-dim:  #64748b;
+
+      --font-body: 'Roboto', 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+
+      --phone-w: 390px;
+      --phone-h: 844px;
+      --status-h: 44px;
+      --appbar-h: 60px;
+      --bottomnav-h: 68px;
+      --content-h: calc(var(--phone-h) - var(--status-h) - var(--appbar-h) - var(--bottomnav-h));
+
+      --ac-on-color:  #06b6d4;
+      --ac-off-color: #475569;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse 120% 90% at 50% 0%, #0d1a2e 0%, #060b14 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    /* ── Phone Shell (desktop wrapper) ────────────────────────────────── */
+    .phone-shell {
+      width: var(--phone-w);
+      height: var(--phone-h);
+      background: var(--bg-deep);
+      border-radius: 46px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 1.5px #1e2d44,
+        0 0 0 6px #0d1520,
+        0 0 60px rgba(0,200,255,0.12),
+        0 40px 80px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Notch */
+    .phone-shell::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 32px;
+      background: #050810;
+      border-radius: 0 0 20px 20px;
+      z-index: 100;
+    }
+
+    /* Side button accents */
+    .phone-shell::after {
+      content: '';
+      position: absolute;
+      right: -3px; top: 140px;
+      width: 3px; height: 70px;
+      background: linear-gradient(180deg, #1a2235, #0d1520);
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ── Android Status Bar ────────────────────────────────────────────── */
+    .status-bar {
+      height: var(--status-h);
+      padding: 0 24px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: transparent;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .status-time { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
+    .status-icons { display: flex; gap: 5px; align-items: center; }
+    .status-icons svg { width: 14px; height: 14px; fill: var(--text-main); }
+
+    /* ── App Bar / Toolbar ─────────────────────────────────────────────── */
+    .app-bar {
+      height: var(--appbar-h);
+      padding: 0 16px 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, rgba(10,14,26,0.95), rgba(17,24,39,0.8));
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .app-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .app-subtitle {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .app-bar-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.15s;
+      color: var(--text-main);
+    }
+    .icon-btn:active { background: rgba(255,255,255,0.14); }
+
+    /* ── Content Area (scrollable) ─────────────────────────────────────── */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    .content-area::-webkit-scrollbar { display: none; }
+
+    /* ── Pages (slide transition) ──────────────────────────────────────── */
+    .page {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      min-height: 100%;
+      padding: 0 0 20px;
+      animation: fadeSlideIn 0.28s cubic-bezier(0.4,0,0.2,1);
+    }
+    .page.active { display: flex; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Section header inside pages ──────────────────────────────────── */
+    .section-hdr {
+      padding: 16px 20px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    /* ── Node Selector Chip Row ────────────────────────────────────────── */
+    .node-chips {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px 4px;
+      overflow-x: auto;
+    }
+    .node-chips::-webkit-scrollbar { display: none; }
+
+    .node-chip {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .node-chip.active {
+      background: linear-gradient(135deg, rgba(0,200,255,0.2), rgba(99,102,241,0.2));
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    /* ── Big Temperature Gauge ─────────────────────────────────────────── */
+    .gauge-section {
+      padding: 10px 20px 0;
+    }
+
+    .gauge-card {
+      background: linear-gradient(145deg, #141f33, #1a2a44);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      padding: 24px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gauge-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%;
+      transform: translateX(-50%);
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(0,200,255,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .gauge-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* SVG Radial Gauge */
+    .gauge-svg-wrap { position: relative; width: 200px; height: 120px; }
+    .gauge-svg {
+      width: 200px;
+      overflow: visible;
+    }
+    .gauge-track {
+      fill: none;
+      stroke: rgba(99,120,160,0.2);
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease;
+    }
+    .gauge-glow {
+      fill: none;
+      stroke-width: 18;
+      stroke-linecap: round;
+      opacity: 0.25;
+      filter: blur(4px);
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease;
+    }
+
+    .gauge-value-box {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    .gauge-val {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: #fff;
+      transition: color 0.4s;
+    }
+    .gauge-unit { font-size: 1rem; color: var(--text-muted); }
+    .gauge-sublabel {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    /* Gauge status strip */
+    .gauge-strip {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      gap: 8px;
+    }
+    .gs-item { text-align: center; flex: 1; }
+    .gs-val { font-size: 1.05rem; font-weight: 700; }
+    .gs-lbl { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Sensor Metric Cards Grid ──────────────────────────────────────── */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 20px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+    }
+    .metric-card.cyan::after  { background: linear-gradient(90deg, transparent, var(--cyan),  transparent); }
+    .metric-card.emerald::after{ background: linear-gradient(90deg, transparent, var(--emerald), transparent); }
+    .metric-card.amber::after { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+    .metric-card.purple::after{ background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+
+    .mc-icon { font-size: 1.3rem; }
+    .mc-val  {
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-top: 6px;
+    }
+    .mc-unit { font-size: 0.7rem; color: var(--text-dim); }
+    .mc-lbl  { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Mini bar for battery */
+    .battery-bar-wrap { margin-top: 6px; }
+    .battery-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .battery-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* ── AC Control Panel ──────────────────────────────────────────────── */
+    .ac-panel {
+      margin: 4px 20px 0;
+      background: linear-gradient(145deg, #0f1c32, #162036);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .ac-panel-header {
+      padding: 18px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ac-title-group { display: flex; align-items: center; gap: 10px; }
+    .ac-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      transition: background 0.3s;
+    }
+    .ac-icon.on  { background: linear-gradient(135deg, rgba(6,182,212,0.35), rgba(99,102,241,0.25)); box-shadow: 0 0 16px rgba(6,182,212,0.25); }
+    .ac-icon.off { background: rgba(255,255,255,0.05); }
+
+    .ac-title { font-size: 1rem; font-weight: 700; color: #fff; }
+    .ac-status-badge {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-top: 2px;
+      display: inline-block;
+      transition: all 0.3s;
+    }
+    .ac-status-badge.on  { background: rgba(6,182,212,0.2); color: var(--cyan); }
+    .ac-status-badge.off { background: rgba(71,85,105,0.4); color: var(--text-dim); }
+
+    /* Big power toggle */
+    .ac-power-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 2.5px solid;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      background: transparent;
+      position: relative;
+    }
+    .ac-power-btn.on {
+      border-color: var(--ac-on-color);
+      color: var(--ac-on-color);
+      box-shadow: 0 0 20px rgba(6,182,212,0.4), inset 0 0 12px rgba(6,182,212,0.08);
+    }
+    .ac-power-btn.off {
+      border-color: var(--ac-off-color);
+      color: var(--text-dim);
+    }
+    .ac-power-btn:active { transform: scale(0.92); }
+
+    /* AC body */
+    .ac-body {
+      padding: 0 20px 20px;
+    }
+
+    /* Auto mode row */
+    .ac-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ac-row:last-child { border-bottom: none; }
+
+    .ac-row-label { font-size: 0.85rem; color: var(--text-muted); }
+    .ac-row-label span { font-size: 0.7rem; display: block; color: var(--text-dim); margin-top: 1px; }
+
+    /* Android-style toggle */
+    .android-toggle { position: relative; width: 48px; height: 26px; cursor: pointer; }
+    .android-toggle input { display: none; }
+    .android-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 13px;
+      background: var(--ac-off-color);
+      transition: background 0.25s;
+    }
+    .android-toggle input:checked + .android-track { background: #0891b2; }
+    .android-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      transition: left 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .android-toggle input:checked ~ .android-thumb { left: 25px; }
+
+    /* Threshold sliders */
+    .threshold-section { padding: 10px 0 4px; }
+    .thresh-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .thresh-lbl { font-size: 0.78rem; color: var(--text-muted); }
+    .thresh-val { font-size: 0.78rem; font-family: var(--font-mono); font-weight: 600; color: var(--cyan); }
+    .thresh-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      outline: none;
+      cursor: pointer;
+      margin: 4px 0;
+    }
+    .thresh-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--cyan);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,200,255,0.4);
+      transition: transform 0.1s;
+    }
+    .thresh-slider::-webkit-slider-thumb:active { transform: scale(1.25); }
+
+    /* ── AC Event Log ──────────────────────────────────────────────────── */
+    .log-card {
+      margin: 12px 20px 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .log-card-header {
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .log-list { max-height: 200px; overflow-y: auto; }
+    .log-list::-webkit-scrollbar { width: 3px; }
+    .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .log-entry {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(99,120,160,0.08);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: logSlide 0.3s ease;
+    }
+    @keyframes logSlide {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .log-dot.on     { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+    .log-dot.off    { background: var(--text-dim); }
+    .log-dot.mode   { background: var(--amber); }
+    .log-dot.thresh { background: var(--purple); }
+
+    .log-msg  { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+    .log-time { font-size: 0.65rem; color: var(--text-dim); font-family: var(--font-mono); margin-top: 2px; }
+
+    /* ── Alerts Page ───────────────────────────────────────────────────── */
+    .alert-list { padding: 8px 20px; display: flex; flex-direction: column; gap: 8px; }
+
+    .alert-card {
+      background: rgba(244,63,94,0.08);
+      border: 1px solid rgba(244,63,94,0.22);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: fadeSlideIn 0.3s ease;
+    }
+    .alert-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .alert-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    .alert-meta { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
+    .alert-badge {
+      font-size: 0.62rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .alert-badge.hot { background: rgba(244,63,94,0.25); color: var(--rose); }
+    .alert-badge.node { background: rgba(0,200,255,0.15); color: var(--cyan); }
+
+    .no-alerts {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    .no-alerts .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* ── Settings Page ─────────────────────────────────────────────────── */
+    .settings-section {
+      margin: 8px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .settings-row {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(99,120,160,0.08);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:active { background: rgba(255,255,255,0.03); }
+    .sr-left { display: flex; gap: 12px; align-items: center; }
+    .sr-icon { font-size: 1.1rem; }
+    .sr-label { font-size: 0.88rem; color: var(--text-main); }
+    .sr-sub   { font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
+    .sr-right { color: var(--text-dim); font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Bottom Navigation Bar ─────────────────────────────────────────── */
+    .bottom-nav {
+      height: var(--bottomnav-h);
+      background: rgba(10,14,26,0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 4px;
+      position: relative;
+      transition: all 0.2s;
+      color: var(--text-dim);
+    }
+
+    .nav-btn.active { color: var(--cyan); }
+    .nav-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 36px; height: 3px;
+      background: var(--cyan);
+      border-radius: 0 0 3px 3px;
+    }
+
+    .nav-icon { font-size: 1.3rem; line-height: 1; }
+    .nav-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; }
+
+    .nav-badge {
+      position: absolute;
+      top: 6px; right: calc(50% - 18px);
+      background: var(--rose);
+      color: #fff;
+      font-size: 0.55rem;
+      font-weight: 800;
+      min-width: 16px; height: 16px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
+    .nav-badge:empty, .nav-badge[data-count="0"] { display: none; }
+
+    /* ── Ripple animation ──────────────────────────────────────────────── */
+    @keyframes ripple {
+      from { transform: scale(0); opacity: 0.5; }
+      to   { transform: scale(4); opacity: 0; }
+    }
+
+    /* ── Pulsing ring for AC ON ────────────────────────────────────────── */
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(6,182,212,0.4); }
+      70%  { box-shadow: 0 0 0 12px rgba(6,182,212,0); }
+      100% { box-shadow: 0 0 0 0 rgba(6,182,212,0); }
+    }
+    .ac-power-btn.on { animation: pulse-ring 2s cubic-bezier(0.66,0,0,1) infinite; }
+
+    /* ── Connection pill ───────────────────────────────────────────────── */
+    .conn-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      padding: 3px 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    .conn-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    /* ── Chart mini sparkline ──────────────────────────────────────────── */
+    .sparkline-wrap {
+      padding: 12px 20px 0;
+    }
+    .sparkline-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+    .sc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .sc-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+    .sc-val   { font-size: 0.78rem; font-family: var(--font-mono); color: var(--cyan); }
+    canvas.sparkline { width: 100%; height: 56px; display: block; }
+
+    /* ── Control page extras ───────────────────────────────────────────── */
+    .ctrl-card {
+      margin: 0 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .ctrl-row {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(99,120,160,0.08);
+    }
+    .ctrl-row:last-child { border-bottom: none; }
+    .ctrl-label { font-size: 0.85rem; color: var(--text-muted); }
+    .ctrl-sub   { font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; }
+    .ctrl-val   { font-size: 0.82rem; font-family: var(--font-mono); color: var(--cyan); }
+
+    /* Fan speed arc display */
+    .fan-arc-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+    }
+    .fan-arc-canvas { width: 80px; height: 80px; }
+    .fan-arc-info { flex: 1; }
+    .fan-speed-lbl { font-size: 1.4rem; font-weight: 800; color: var(--cyan); }
+    .fan-speed-sub { font-size: 0.7rem; color: var(--text-dim); }
+    .fan-speed-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+      margin-top: 10px;
+      cursor: pointer;
+      outline: none;
+    }
+    .fan-speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--cyan);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,200,255,0.5);
+    }
+
+    /* ── Responsive: full screen on mobile ────────────────────────────── */
+    @media (max-width: 420px) {
+      html, body { align-items: flex-start; }
+      .phone-shell {
+        width: 100vw; height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .phone-shell::before, .phone-shell::after { display: none; }
+    }
+
+    /* ── Toast ─────────────────────────────────────────────────────────── */
+    .m-toast-wrap {
+      position: absolute;
+      bottom: calc(var(--bottomnav-h) + 12px);
+      left: 16px; right: 16px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .m-toast {
+      background: #1f2d44;
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      color: var(--text-main);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 3.5s forwards;
+      pointer-events: auto;
+    }
+    .m-toast.ac-on  { border-color: rgba(6,182,212,0.5); }
+    .m-toast.ac-off { border-color: rgba(71,85,105,0.5); }
+    .m-toast.alert  { border-color: rgba(244,63,94,0.5); }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(8px); } }
+
+    /* Page title inside page */
+    .page-title {
+      padding: 16px 20px 4px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .page-title-sub {
+      padding: 0 20px 8px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════ PHONE SHELL ═══════════════════════════════════ -->
+  <div class="phone-shell" id="phone-shell">
+
+    <!-- Android Status Bar -->
+    <div class="status-bar">
+      <span class="status-time" id="m-status-time">12:00</span>
+      <div class="status-icons">
+        <!-- Signal bars -->
+        <svg viewBox="0 0 24 24"><rect x="1" y="14" width="3" height="8" rx="1"/><rect x="6" y="10" width="3" height="12" rx="1"/><rect x="11" y="6" width="3" height="16" rx="1"/><rect x="16" y="2" width="3" height="20" rx="1" opacity="0.3"/></svg>
+        <!-- WiFi -->
+        <svg viewBox="0 0 24 24"><path d="M1 7.5C4.47 4.03 9.02 2 12 2s7.53 2.03 11 5.5" opacity="0.3" stroke-linecap="round" fill="none" stroke="white" stroke-width="2"/><path d="M4.22 11.28A10.94 10.94 0 0 1 12 8c3.04 0 5.79 1.23 7.78 3.22" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M7.66 14.74A5.97 5.97 0 0 1 12 13c1.65 0 3.14.67 4.24 1.74" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="12" cy="18.5" r="1.5" fill="white"/></svg>
+        <!-- Battery -->
+        <svg viewBox="0 0 24 24"><rect x="1" y="7" width="18" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="19" y="10" width="3" height="4" rx="1" fill="white" opacity="0.6"/><rect x="2.5" y="8.5" width="12" height="7" rx="1" fill="white"/></svg>
+      </div>
+    </div>
+
+    <!-- App Bar -->
+    <div class="app-bar">
+      <div class="app-bar-left">
+        <div class="app-icon">🌡️</div>
+        <div>
+          <div class="app-title">IoT Sense</div>
+          <div class="app-subtitle">TECH 300 · ESP32 Fleet</div>
+        </div>
+      </div>
+      <div class="app-bar-actions">
+        <div class="conn-pill">
+          <span class="conn-dot"></span>
+          AWS IoT Core
+        </div>
+        <button class="icon-btn" id="btn-anomaly-app" title="Inject temp spike">⚠️</button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area" id="m-content">
+
+      <!-- ─── PAGE: HOME ─────────────────────────────────────────────── -->
+      <div class="page active" id="page-home">
+
+        <!-- Node chips -->
+        <div class="node-chips">
+          <div class="node-chip active" data-node="sensor_node_01" id="chip-01">📍 Lab Node</div>
+          <div class="node-chip" data-node="sensor_node_02" id="chip-02">🏢 Server Rack</div>
+          <div class="node-chip" data-node="sensor_node_03" id="chip-03">🌱 Greenhouse</div>
+        </div>
+
+        <!-- Big Temperature Gauge -->
+        <div class="gauge-section">
+          <div class="gauge-card">
+            <div class="gauge-label">🌡️ Ambient Temperature</div>
+
+            <div class="gauge-svg-wrap">
+              <svg class="gauge-svg" viewBox="0 0 200 110">
+                <!-- Track: 210° arc, starting from bottom-left (approx -210° to 30°) -->
+                <!-- We'll draw a semicircle arc: -210deg to +30deg = 240° sweep -->
+                <path class="gauge-track"
+                  d="M 20 100 A 80 80 0 1 1 180 100"
+                  pathLength="100"
+                />
+                <path class="gauge-glow" id="gauge-glow-path"
+                  d="M 20 100 A 80 80 0 1 1 180 100"
+                  pathLength="100"
+                  stroke="#00c8ff"
+                  stroke-dasharray="0 100"
+                  stroke-dashoffset="0"
+                />
+                <path class="gauge-fill" id="gauge-fill-path"
+                  d="M 20 100 A 80 80 0 1 1 180 100"
+                  pathLength="100"
+                  stroke="#00c8ff"
+                  stroke-dasharray="0 100"
+                  stroke-dashoffset="0"
+                />
+              </svg>
+              <div class="gauge-value-box">
+                <div class="gauge-val" id="gauge-temp">--<span class="gauge-unit">°C</span></div>
+                <div class="gauge-sublabel" id="gauge-node-lbl">sensor_node_01</div>
+              </div>
+            </div>
+
+            <div class="gauge-strip">
+              <div class="gs-item">
+                <div class="gs-val" id="g-humidity" style="color:var(--cyan)">--<span style="font-size:0.75rem;color:var(--text-dim)">%</span></div>
+                <div class="gs-lbl">Humidity</div>
+              </div>
+              <div class="gs-item">
+                <div class="gs-val" id="g-pressure" style="color:var(--purple)">--<span style="font-size:0.75rem;color:var(--text-dim)">hPa</span></div>
+                <div class="gs-lbl">Pressure</div>
+              </div>
+              <div class="gs-item">
+                <div class="gs-val" id="g-battery" style="color:var(--emerald)">--<span style="font-size:0.75rem;color:var(--text-dim)">%</span></div>
+                <div class="gs-lbl">Battery</div>
+              </div>
+              <div class="gs-item">
+                <div class="gs-val" id="g-state" style="color:var(--amber); font-size:0.8rem">--</div>
+                <div class="gs-lbl">State</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric cards grid -->
+        <div class="metric-grid">
+          <div class="metric-card cyan">
+            <div class="mc-icon">💧</div>
+            <div class="mc-val" id="m-humidity">--<span class="mc-unit">%</span></div>
+            <div class="mc-lbl">Relative Humidity</div>
+          </div>
+          <div class="metric-card purple">
+            <div class="mc-icon">⏲️</div>
+            <div class="mc-val" id="m-pressure">--<span class="mc-unit">hPa</span></div>
+            <div class="mc-lbl">Barometric Pressure</div>
+          </div>
+          <div class="metric-card amber">
+            <div class="mc-icon">📳</div>
+            <div class="mc-val" id="m-vibration">--<span class="mc-unit">g</span></div>
+            <div class="mc-lbl">Vibration (RMS)</div>
+          </div>
+          <div class="metric-card emerald">
+            <div class="mc-icon">🔋</div>
+            <div class="mc-val" id="m-battery">--<span class="mc-unit">%</span></div>
+            <div class="mc-lbl">Battery Level</div>
+            <div class="battery-bar-wrap">
+              <div class="battery-bar">
+                <div class="battery-bar-fill" id="m-batt-fill" style="width:94%; background:var(--emerald);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini sparkline chart -->
+        <div class="sparkline-wrap">
+          <div class="sparkline-card">
+            <div class="sc-header">
+              <span class="sc-title">🌡️ Temperature History (last 30 readings)</span>
+              <span class="sc-val" id="spark-latest">--°C</span>
+            </div>
+            <canvas class="sparkline" id="sparkline-canvas" height="56"></canvas>
+          </div>
+        </div>
+
+      </div><!-- end page-home -->
+
+      <!-- ─── PAGE: CONTROL ──────────────────────────────────────────── -->
+      <div class="page" id="page-control">
+
+        <div class="page-title">🕹️ AC & Actuator Control</div>
+        <div class="page-title-sub">Targeting: <span id="ctrl-node-name" style="color:var(--cyan);font-family:var(--font-mono);">sensor_node_01</span></div>
+
+        <!-- AC Auto-Control Panel -->
+        <div class="section-hdr">❄️ Air Conditioner</div>
+        <div class="ac-panel">
+          <div class="ac-panel-header">
+            <div class="ac-title-group">
+              <div class="ac-icon off" id="ac-icon">❄️</div>
+              <div>
+                <div class="ac-title">AC Compressor</div>
+                <span class="ac-status-badge off" id="ac-status-badge">STANDBY</span>
+              </div>
+            </div>
+            <button class="ac-power-btn off" id="ac-power-btn" title="Manual AC toggle">⏻</button>
+          </div>
+
+          <div class="ac-body">
+
+            <!-- Auto Mode Toggle -->
+            <div class="ac-row">
+              <div class="ac-row-label">
+                Auto Mode
+                <span>Temperature-based automatic control</span>
+              </div>
+              <label class="android-toggle">
+                <input type="checkbox" id="ac-auto-toggle" checked>
+                <div class="android-track"></div>
+                <div class="android-thumb"></div>
+              </label>
+            </div>
+
+            <!-- Set Point display row -->
+            <div class="ac-row">
+              <div class="ac-row-label">
+                Set-Point Temperature
+                <span>Comfort target (display only)</span>
+              </div>
+              <span style="font-size:0.9rem;font-weight:700;color:var(--cyan);font-family:var(--font-mono);">25.0 °C</span>
+            </div>
+
+            <!-- Threshold controls -->
+            <div class="threshold-section">
+              <div class="thresh-row">
+                <span class="thresh-lbl">🔴 ON Threshold</span>
+                <span class="thresh-val" id="on-thresh-val">26.0 °C</span>
+              </div>
+              <input type="range" class="thresh-slider" id="on-thresh-slider"
+                     min="20" max="35" step="0.5" value="26">
+
+              <div class="thresh-row" style="margin-top:12px;">
+                <span class="thresh-lbl">🔵 OFF Threshold</span>
+                <span class="thresh-val" id="off-thresh-val">24.0 °C</span>
+              </div>
+              <input type="range" class="thresh-slider" id="off-thresh-slider"
+                     min="15" max="30" step="0.5" value="24">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Fan Speed -->
+        <div class="section-hdr" style="margin-top:12px;">💨 Fan Control</div>
+        <div class="ctrl-card">
+          <div class="fan-arc-wrap">
+            <canvas class="fan-arc-canvas" id="fan-arc-canvas" width="80" height="80"></canvas>
+            <div class="fan-arc-info">
+              <div class="fan-speed-lbl"><span id="fan-speed-val">75</span>%</div>
+              <div class="fan-speed-sub">PWM Duty Cycle · GPIO 18</div>
+              <input type="range" class="fan-speed-slider" id="fan-speed-slider"
+                     min="10" max="100" value="75">
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <div>
+              <div class="ctrl-label">Fan Power</div>
+              <div class="ctrl-sub">GPIO 18 MOSFET driver</div>
+            </div>
+            <label class="android-toggle">
+              <input type="checkbox" id="fan-toggle-ctrl">
+              <div class="android-track"></div>
+              <div class="android-thumb"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Relay & LED -->
+        <div class="section-hdr" style="margin-top:12px;">⚡ Relay & Status LED</div>
+        <div class="ctrl-card">
+          <div class="ctrl-row">
+            <div>
+              <div class="ctrl-label">SSR Relay</div>
+              <div class="ctrl-sub">GPIO 23 · AC load circuit</div>
+            </div>
+            <label class="android-toggle">
+              <input type="checkbox" id="relay-toggle-ctrl">
+              <div class="android-track"></div>
+              <div class="android-thumb"></div>
+            </label>
+          </div>
+          <div class="ctrl-row">
+            <div>
+              <div class="ctrl-label">Status LED Mode</div>
+              <div class="ctrl-sub">Onboard diagnostic indicator</div>
+            </div>
+            <select id="led-select-ctrl" style="background:var(--bg-surface);color:var(--text-main);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.78rem;cursor:pointer;">
+              <option value="OFF">Off</option>
+              <option value="BLINK">Pulsing</option>
+              <option value="SOLID">Solid</option>
+            </select>
+          </div>
+          <div class="ctrl-row">
+            <div>
+              <div class="ctrl-label">Sleep Interval</div>
+              <div class="ctrl-sub">RTC deep-sleep duration</div>
+            </div>
+            <select id="sleep-select-ctrl" style="background:var(--bg-surface);color:var(--text-main);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.78rem;cursor:pointer;">
+              <option value="5">5 s (Test)</option>
+              <option value="10" selected>10 s (Std)</option>
+              <option value="30">30 s (Eco)</option>
+              <option value="60">60 s (Ultra)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- AC Event Log -->
+        <div class="section-hdr" style="margin-top:12px;">📋 AC Control Log</div>
+        <div class="log-card">
+          <div class="log-card-header">
+            <span>Auto-Control Events</span>
+            <span id="log-count" style="color:var(--cyan);font-family:var(--font-mono);">0 events</span>
+          </div>
+          <div class="log-list" id="ac-log-list">
+            <div style="padding:16px; text-align:center; color:var(--text-dim); font-size:0.78rem;">
+              Waiting for AC events…
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end page-control -->
+
+      <!-- ─── PAGE: ALERTS ───────────────────────────────────────────── -->
+      <div class="page" id="page-alerts">
+        <div class="page-title">🚨 Temperature Alerts</div>
+        <div class="page-title-sub">AWS Lambda dispatches — threshold &gt; 30.0 °C</div>
+
+        <div class="alert-list" id="alert-list">
+          <div class="no-alerts">
+            <div class="icon">✅</div>
+            <div>All sensors nominal</div>
+            <div style="color:var(--text-dim);font-size:0.72rem;margin-top:4px;">No temperature alerts detected</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PAGE: SETTINGS ─────────────────────────────────────────── -->
+      <div class="page" id="page-settings">
+        <div class="page-title">⚙️ Settings</div>
+        <div class="page-title-sub">App & connection configuration</div>
+
+        <div class="section-hdr">Connection</div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <div class="sr-left">
+              <span class="sr-icon">☁️</span>
+              <div>
+                <div class="sr-label">AWS IoT Core</div>
+                <div class="sr-sub">Broker: mTLS 8883 · us-east-1</div>
+              </div>
+            </div>
+            <div class="sr-right">
+              <span style="color:var(--emerald);font-size:0.7rem;font-family:var(--font-mono);">CONNECTED</span>
+              ›
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-left">
+              <span class="sr-icon">📶</span>
+              <div>
+                <div class="sr-label">BLE 5.0 Gateway</div>
+                <div class="sr-sub">Raspberry Pi 4 — hci0</div>
+              </div>
+            </div>
+            <div class="sr-right">
+              <span style="color:var(--emerald);font-size:0.7rem;font-family:var(--font-mono);">ONLINE</span>
+              ›
+            </div>
+          </div>
+        </div>
+
+        <div class="section-hdr">Telemetry</div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <div class="sr-left">
+              <span class="sr-icon">🔄</span>
+              <div>
+                <div class="sr-label">Simulation Speed</div>
+                <div class="sr-sub">Tick interval multiplier</div>
+              </div>
+            </div>
+            <div class="sr-right">
+              <select id="settings-speed" style="background:transparent;color:var(--text-dim);border:none;font-size:0.78rem;cursor:pointer;">
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="5">5×</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-row" id="settings-pause-row">
+            <div class="sr-left">
+              <span class="sr-icon">⏸</span>
+              <div>
+                <div class="sr-label">Stream Paused</div>
+                <div class="sr-sub">Telemetry generation status</div>
+              </div>
+            </div>
+            <label class="android-toggle">
+              <input type="checkbox" id="settings-pause-toggle">
+              <div class="android-track"></div>
+              <div class="android-thumb"></div>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div class="sr-left">
+              <span class="sr-icon">⚠️</span>
+              <div>
+                <div class="sr-label">Inject Temp Spike</div>
+                <div class="sr-sub">Trigger &gt;30°C anomaly on active node</div>
+              </div>
+            </div>
+            <button id="settings-anomaly" style="background:rgba(244,63,94,0.15);color:var(--rose);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-sm);padding:4px 10px;font-size:0.75rem;cursor:pointer;">Inject</button>
+          </div>
+          <div class="settings-row">
+            <div class="sr-left">
+              <span class="sr-icon">↺</span>
+              <div>
+                <div class="sr-label">Reset to Normal</div>
+                <div class="sr-sub">Clear anomaly state</div>
+              </div>
+            </div>
+            <button id="settings-reset" style="background:rgba(16,185,129,0.12);color:var(--emerald);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius-sm);padding:4px 10px;font-size:0.75rem;cursor:pointer;">Reset</button>
+          </div>
+        </div>
+
+        <div class="section-hdr">Navigation</div>
+        <div class="settings-section">
+          <div class="settings-row" onclick="window.location='index.html'">
+            <div class="sr-left">
+              <span class="sr-icon">🖥️</span>
+              <div>
+                <div class="sr-label">Open Full Dashboard</div>
+                <div class="sr-sub">5-Tier Pipeline • Fleet Telemetry • AWS Inspector</div>
+              </div>
+            </div>
+            <div class="sr-right">›</div>
+          </div>
+          <div class="settings-row" onclick="window.location='landing.html'">
+            <div class="sr-left">
+              <span class="sr-icon">🏠</span>
+              <div>
+                <div class="sr-label">Landing Page</div>
+                <div class="sr-sub">TECH 300 IoT Demo home</div>
+              </div>
+            </div>
+            <div class="sr-right">›</div>
+          </div>
+        </div>
+
+        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:0.72rem;line-height:1.6;">
+          IoT Sense · TECH 300 IoT Demo<br>
+          Westcliff University · Professor Liang Li<br>
+          <span style="font-family:var(--font-mono);color:var(--border);">v1.0 · Simulated Edge Stack</span>
+        </div>
+
+      </div><!-- end page-settings -->
+
+    </div><!-- end content-area -->
+
+    <!-- Toast Layer -->
+    <div class="m-toast-wrap" id="m-toast-wrap"></div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="home" id="nav-home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-btn" data-page="control" id="nav-control">
+        <span class="nav-icon">❄️</span>
+        <span class="nav-label">Control</span>
+      </button>
+      <button class="nav-btn" data-page="alerts" id="nav-alerts">
+        <span class="nav-icon">🚨</span>
+        <span class="nav-label">Alerts</span>
+        <span class="nav-badge" id="alert-badge"></span>
+      </button>
+      <button class="nav-btn" data-page="settings" id="nav-settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+
+  </div><!-- end phone-shell -->
+
+  <!-- ═══════════════════ SCRIPTS ═══════════════════════════════════════ -->
+  <script src="js/simulation.js"></script>
+  <script src="js/ac_controller.js"></script>
+  <script>
+  (() => {
+    // ── Bootstrap ──────────────────────────────────────────────────────
+    const sim = new IoTSimulationEngine();
+    let activeNodeId = 'sensor_node_01';
+    const ac = new ACController(sim, activeNodeId);
+
+    let alertCount = 0;
+
+    // ── Status bar clock ───────────────────────────────────────────────
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('m-status-time').textContent = `${h}:${m}`;
+    }
+    updateClock();
+    setInterval(updateClock, 10000);
+
+    // ── Bottom nav routing ─────────────────────────────────────────────
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const pages   = document.querySelectorAll('.page');
+
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.page;
+        navBtns.forEach(b => b.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const pg = document.getElementById(`page-${target}`);
+        if (pg) pg.classList.add('active');
+        // Reset alert badge on alerts page open
+        if (target === 'alerts') {
+          alertCount = 0;
+          const badge = document.getElementById('alert-badge');
+          if (badge) badge.textContent = '';
+        }
+      });
+    });
+
+    // ── Node chip selection ────────────────────────────────────────────
+    document.querySelectorAll('.node-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.node-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeNodeId = chip.dataset.node;
+        ac.setNode(activeNodeId);
+        refreshGaugeFromNode();
+        updateCtrlNodeName();
+
+        // Reload sparkline history
+        const hist = sim.getRecentTelemetry(activeNodeId, 30);
+        sparklineHistory = hist.map(r => r.temp).reverse();
+        drawSparkline();
+      });
+    });
+
+    function updateCtrlNodeName() {
+      const el = document.getElementById('ctrl-node-name');
+      if (el) el.textContent = activeNodeId;
+    }
+
+    // ── Gauge rendering ────────────────────────────────────────────────
+    const gaugeFill = document.getElementById('gauge-fill-path');
+    const gaugeGlow = document.getElementById('gauge-glow-path');
+    const gaugeTemp = document.getElementById('gauge-temp');
+
+    function tempToGaugePercent(temp) {
+      // Map 15°C → 0%, 40°C → 100%
+      return Math.max(0, Math.min(100, ((temp - 15) / 25) * 100));
+    }
+
+    function setGauge(temp) {
+      const pct   = tempToGaugePercent(temp);
+      const dash  = pct;
+      const gap   = 100 - pct;
+
+      // Color: green (<24) → cyan (24-26) → amber (26-30) → rose (>30)
+      let color;
+      if (temp > 30) color = '#f43f5e';
+      else if (temp > 26) color = '#f59e0b';
+      else if (temp > 24) color = '#00c8ff';
+      else color = '#10b981';
+
+      gaugeFill.setAttribute('stroke-dasharray', `${dash} ${gap}`);
+      gaugeFill.setAttribute('stroke', color);
+      gaugeGlow.setAttribute('stroke-dasharray', `${dash} ${gap}`);
+      gaugeGlow.setAttribute('stroke', color);
+
+      gaugeTemp.style.color = color;
+    }
+
+    function refreshGaugeFromNode() {
+      const node = sim.nodes[activeNodeId];
+      if (!node) return;
+      setGauge(node.temp);
+      gaugeTemp.innerHTML = `${node.temp.toFixed(1)}<span class="gauge-unit">°C</span>`;
+      document.getElementById('gauge-node-lbl').textContent = activeNodeId;
+      document.getElementById('g-humidity').innerHTML  = `${node.humidity.toFixed(1)}<span style="font-size:.75rem;color:var(--text-dim)">%</span>`;
+      document.getElementById('g-pressure').innerHTML  = `${node.pressure.toFixed(0)}<span style="font-size:.75rem;color:var(--text-dim)">hPa</span>`;
+      document.getElementById('g-battery').innerHTML   = `${node.battery.toFixed(0)}<span style="font-size:.75rem;color:var(--text-dim)">%</span>`;
+      document.getElementById('g-state').textContent   = node.state;
+
+      // Metric cards
+      document.getElementById('m-humidity').innerHTML  = `${node.humidity.toFixed(1)}<span class="mc-unit">%</span>`;
+      document.getElementById('m-pressure').innerHTML  = `${node.pressure.toFixed(0)}<span class="mc-unit">hPa</span>`;
+      document.getElementById('m-vibration').innerHTML = `${node.vibration.toFixed(3)}<span class="mc-unit">g</span>`;
+      document.getElementById('m-battery').innerHTML   = `${node.battery.toFixed(0)}<span class="mc-unit">%</span>`;
+
+      const batt = node.battery;
+      const fillEl = document.getElementById('m-batt-fill');
+      fillEl.style.width = `${batt}%`;
+      fillEl.style.background = batt > 50 ? 'var(--emerald)' : batt > 20 ? 'var(--amber)' : 'var(--rose)';
+    }
+    refreshGaugeFromNode();
+
+    // ── Sparkline ──────────────────────────────────────────────────────
+    let sparklineHistory = sim.getRecentTelemetry(activeNodeId, 30).map(r => r.temp).reverse();
+    const sparkCanvas    = document.getElementById('sparkline-canvas');
+
+    function drawSparkline() {
+      if (!sparkCanvas) return;
+      const ctx = sparkCanvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const W   = sparkCanvas.clientWidth  * dpr;
+      const H   = sparkCanvas.clientHeight * dpr;
+      sparkCanvas.width  = W;
+      sparkCanvas.height = H;
+
+      const data = sparklineHistory.slice(-30);
+      if (data.length < 2) return;
+
+      ctx.clearRect(0, 0, W, H);
+      const min  = Math.min(...data) - 1;
+      const max  = Math.max(...data) + 1;
+      const xStep = W / (data.length - 1);
+
+      const toX = (i) => i * xStep;
+      const toY = (v) => H - ((v - min) / (max - min)) * H * 0.85 - H * 0.05;
+
+      // Fill gradient under line
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(0,200,255,0.25)');
+      grad.addColorStop(1, 'rgba(0,200,255,0)');
+
+      ctx.beginPath();
+      ctx.moveTo(toX(0), toY(data[0]));
+      data.forEach((v, i) => {
+        if (i === 0) return;
+        const px = toX(i - 1), py = toY(data[i - 1]);
+        const cx = (px + toX(i)) / 2;
+        ctx.bezierCurveTo(cx, py, cx, toY(v), toX(i), toY(v));
+      });
+      ctx.lineTo(toX(data.length - 1), H);
+      ctx.lineTo(toX(0), H);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(toX(0), toY(data[0]));
+      data.forEach((v, i) => {
+        if (i === 0) return;
+        const px = toX(i - 1), py = toY(data[i - 1]);
+        const cx = (px + toX(i)) / 2;
+        ctx.bezierCurveTo(cx, py, cx, toY(v), toX(i), toY(v));
+      });
+      ctx.strokeStyle = data[data.length - 1] > 30 ? '#f43f5e' : '#00c8ff';
+      ctx.lineWidth = 2 * dpr;
+      ctx.stroke();
+
+      // Last point dot
+      const lx = toX(data.length - 1);
+      const ly = toY(data[data.length - 1]);
+      ctx.beginPath();
+      ctx.arc(lx, ly, 4 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = data[data.length - 1] > 30 ? '#f43f5e' : '#00c8ff';
+      ctx.fill();
+    }
+    drawSparkline();
+
+    // ── Fan Arc Canvas ─────────────────────────────────────────────────
+    function drawFanArc(pct) {
+      const canvas = document.getElementById('fan-arc-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = 80 * dpr;
+      canvas.height = 80 * dpr;
+      ctx.scale(dpr, dpr);
+
+      const cx = 40, cy = 40, r = 30, lw = 8;
+      const start = -Math.PI * 0.75;
+      const end   = Math.PI * 0.75;
+      const fillEnd = start + (end - start) * (pct / 100);
+
+      ctx.clearRect(0, 0, 80, 80);
+
+      // Track
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, start, end);
+      ctx.strokeStyle = 'rgba(99,120,160,0.2)';
+      ctx.lineWidth = lw;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Fill
+      if (pct > 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, start, fillEnd);
+        ctx.strokeStyle = '#00c8ff';
+        ctx.lineWidth = lw;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // Center text
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = `bold ${9 * dpr / dpr}px Roboto, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('💨', cx, cy);
+    }
+    drawFanArc(75);
+
+    // Fan slider
+    const fanSlider = document.getElementById('fan-speed-slider');
+    const fanValEl  = document.getElementById('fan-speed-val');
+    if (fanSlider) {
+      fanSlider.addEventListener('input', (e) => {
+        const v = parseInt(e.target.value);
+        fanValEl.textContent = v;
+        drawFanArc(v);
+        ac.setFanSpeed(v);
+      });
+      fanSlider.addEventListener('change', (e) => {
+        sim.dispatchActuatorCommand(activeNodeId, 'fan_pwm', parseInt(e.target.value));
+      });
+    }
+
+    // ── AC Power Button ────────────────────────────────────────────────
+    const acPowerBtn   = document.getElementById('ac-power-btn');
+    const acIcon       = document.getElementById('ac-icon');
+    const acStatusBadge= document.getElementById('ac-status-badge');
+
+    function updateACUI(isOn) {
+      if (acPowerBtn) {
+        acPowerBtn.className = `ac-power-btn ${isOn ? 'on' : 'off'}`;
+      }
+      if (acIcon) acIcon.className = `ac-icon ${isOn ? 'on' : 'off'}`;
+      if (acStatusBadge) {
+        acStatusBadge.textContent = isOn ? '● COOLING' : 'STANDBY';
+        acStatusBadge.className = `ac-status-badge ${isOn ? 'on' : 'off'}`;
+      }
+    }
+    updateACUI(sim.nodes[activeNodeId]?.relayState || false);
+
+    if (acPowerBtn) {
+      acPowerBtn.addEventListener('click', () => {
+        const node = sim.nodes[activeNodeId];
+        const newState = !(node?.relayState);
+        ac.manualOverride(newState ? 'ON' : 'OFF');
+        updateACUI(newState);
+        mToast(newState ? '❄️ AC turned ON manually' : '⏹ AC turned OFF manually',
+               newState ? 'ac-on' : 'ac-off');
+      });
+    }
+
+    // ── Auto Mode Toggle ───────────────────────────────────────────────
+    const autoToggle = document.getElementById('ac-auto-toggle');
+    if (autoToggle) {
+      autoToggle.addEventListener('change', (e) => {
+        ac.setAutoMode(e.target.checked);
+        mToast(e.target.checked
+          ? '🤖 Auto-control ON — monitoring temperature'
+          : '🤚 Manual mode — auto-control suspended');
+      });
+    }
+
+    // ── Threshold sliders ──────────────────────────────────────────────
+    const onSlider  = document.getElementById('on-thresh-slider');
+    const offSlider = document.getElementById('off-thresh-slider');
+    const onValEl   = document.getElementById('on-thresh-val');
+    const offValEl  = document.getElementById('off-thresh-val');
+
+    if (onSlider) {
+      onSlider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        onValEl.textContent = `${v.toFixed(1)} °C`;
+        ac.setThresholds(v, ac.offThreshold);
+      });
+    }
+    if (offSlider) {
+      offSlider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        offValEl.textContent = `${v.toFixed(1)} °C`;
+        ac.setThresholds(ac.onThreshold, v);
+      });
+    }
+
+    // ── Hardware control toggles ───────────────────────────────────────
+    const fanToggleCtrl   = document.getElementById('fan-toggle-ctrl');
+    const relayToggleCtrl = document.getElementById('relay-toggle-ctrl');
+    const ledSelectCtrl   = document.getElementById('led-select-ctrl');
+    const sleepSelectCtrl = document.getElementById('sleep-select-ctrl');
+
+    if (fanToggleCtrl) {
+      fanToggleCtrl.addEventListener('change', (e) => {
+        sim.dispatchActuatorCommand(activeNodeId, 'fan', e.target.checked);
+      });
+    }
+    if (relayToggleCtrl) {
+      relayToggleCtrl.addEventListener('change', (e) => {
+        const on = e.target.checked;
+        sim.dispatchActuatorCommand(activeNodeId, 'relay', on);
+        updateACUI(on);
+      });
+    }
+    if (ledSelectCtrl) {
+      ledSelectCtrl.addEventListener('change', (e) => {
+        sim.dispatchActuatorCommand(activeNodeId, 'led', e.target.value);
+      });
+    }
+    if (sleepSelectCtrl) {
+      sleepSelectCtrl.addEventListener('change', (e) => {
+        sim.dispatchActuatorCommand(activeNodeId, 'sleep_interval', parseInt(e.target.value));
+      });
+    }
+
+    function syncCtrlToggles() {
+      const node = sim.nodes[activeNodeId];
+      if (!node) return;
+      if (fanToggleCtrl)   fanToggleCtrl.checked  = node.fanState;
+      if (relayToggleCtrl) relayToggleCtrl.checked = node.relayState;
+      if (ledSelectCtrl)   ledSelectCtrl.value     = node.ledState;
+      if (sleepSelectCtrl) sleepSelectCtrl.value   = String(node.rtcInterval);
+    }
+    syncCtrlToggles();
+
+    // ── AC Controller Events ───────────────────────────────────────────
+    ac.on('stateChange', (status) => {
+      updateACUI(status.acOn);
+      syncCtrlToggles();
+    });
+
+    ac.on('autoEvent', (evt) => {
+      if (evt.changed) {
+        // State flipped — update UI
+        updateACUI(evt.acOn);
+        syncCtrlToggles();
+        mToast(evt.acOn
+          ? `❄️ AUTO: AC ON — temp ${evt.temp.toFixed(1)}°C ≥ ${ac.onThreshold}°C`
+          : `⏹ AUTO: AC OFF — temp ${evt.temp.toFixed(1)}°C ≤ ${ac.offThreshold}°C`,
+          evt.acOn ? 'ac-on' : 'ac-off');
+        renderACLog();
+      }
+    });
+
+    // ── Render AC event log ────────────────────────────────────────────
+    function renderACLog() {
+      const logList = document.getElementById('ac-log-list');
+      const countEl = document.getElementById('log-count');
+      if (!logList) return;
+      const events = ac.eventLog;
+      if (!countEl) return;
+      countEl.textContent = `${events.length} event${events.length !== 1 ? 's' : ''}`;
+
+      if (events.length === 0) {
+        logList.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.78rem;">Waiting for AC events…</div>';
+        return;
+      }
+
+      logList.innerHTML = '';
+      events.slice(0, 20).forEach(evt => {
+        const dotClass = evt.type === 'AC_ON' ? 'on' : evt.type === 'AC_OFF' ? 'off' : evt.type === 'MODE_CHANGE' ? 'mode' : 'thresh';
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+          <span class="log-dot ${dotClass}"></span>
+          <div>
+            <div class="log-msg">${evt.message}</div>
+            <div class="log-time">${evt.timestamp} · ${evt.nodeId}</div>
+          </div>
+        `;
+        logList.appendChild(entry);
+      });
+    }
+
+    // ── Telemetry event → UI updates ──────────────────────────────────
+    sim.on('telemetry', (record) => {
+      if (record.device_id !== activeNodeId) return;
+
+      // Update gauge
+      const temp = record.temp;
+      setGauge(temp);
+      gaugeTemp.innerHTML = `${temp.toFixed(1)}<span class="gauge-unit">°C</span>`;
+      document.getElementById('gauge-node-lbl').textContent = activeNodeId;
+
+      // Update strip
+      document.getElementById('g-humidity').innerHTML  = `${record.humidity.toFixed(1)}<span style="font-size:.75rem;color:var(--text-dim)">%</span>`;
+      document.getElementById('g-pressure').innerHTML  = `${record.pressure.toFixed(0)}<span style="font-size:.75rem;color:var(--text-dim)">hPa</span>`;
+      document.getElementById('g-battery').innerHTML   = `${record.battery.toFixed(0)}<span style="font-size:.75rem;color:var(--text-dim)">%</span>`;
+      const node = sim.nodes[activeNodeId];
+      if (node) document.getElementById('g-state').textContent = node.state;
+
+      // Update metric cards
+      document.getElementById('m-humidity').innerHTML  = `${record.humidity.toFixed(1)}<span class="mc-unit">%</span>`;
+      document.getElementById('m-pressure').innerHTML  = `${record.pressure.toFixed(0)}<span class="mc-unit">hPa</span>`;
+      document.getElementById('m-vibration').innerHTML = `${(record.vibration||0).toFixed(3)}<span class="mc-unit">g</span>`;
+      document.getElementById('m-battery').innerHTML   = `${record.battery.toFixed(0)}<span class="mc-unit">%</span>`;
+
+      const b = record.battery;
+      const fillEl = document.getElementById('m-batt-fill');
+      fillEl.style.width = `${b}%`;
+      fillEl.style.background = b > 50 ? 'var(--emerald)' : b > 20 ? 'var(--amber)' : 'var(--rose)';
+
+      // Sparkline
+      document.getElementById('spark-latest').textContent = `${temp.toFixed(1)}°C`;
+      sparklineHistory.push(temp);
+      if (sparklineHistory.length > 30) sparklineHistory.shift();
+      drawSparkline();
+    });
+
+    // ── Alert events ───────────────────────────────────────────────────
+    sim.on('alert', (alertItem) => {
+      alertCount++;
+      const badge = document.getElementById('alert-badge');
+      if (badge) badge.textContent = alertCount > 9 ? '9+' : String(alertCount);
+      prependAlertCard(alertItem);
+      mToast(`🚨 ALERT: ${alertItem.device_id} → ${alertItem.temp.toFixed(1)}°C`, 'alert');
+    });
+
+    function prependAlertCard(item) {
+      const list = document.getElementById('alert-list');
+      if (!list) return;
+      // Clear "no alerts" placeholder
+      const noAlerts = list.querySelector('.no-alerts');
+      if (noAlerts) noAlerts.remove();
+
+      const card = document.createElement('div');
+      card.className = 'alert-card';
+      card.innerHTML = `
+        <div class="alert-icon">🌡️</div>
+        <div>
+          <div class="alert-msg">${item.message}</div>
+          <div class="alert-meta">
+            <span class="alert-badge hot">${item.temp.toFixed(2)}°C</span>
+            <span class="alert-badge node">${item.device_id}</span>
+            <span style="font-size:.62rem;color:var(--text-dim);font-family:var(--font-mono);">${new Date(item.timestamp*1000).toLocaleTimeString()}</span>
+          </div>
+        </div>
+      `;
+      list.insertBefore(card, list.firstChild);
+
+      // Keep max 20
+      while (list.children.length > 20) list.removeChild(list.lastChild);
+    }
+
+    // ── Settings controls ──────────────────────────────────────────────
+    const settingsSpeed = document.getElementById('settings-speed');
+    if (settingsSpeed) {
+      settingsSpeed.addEventListener('change', (e) => sim.setSpeed(parseFloat(e.target.value)));
+    }
+
+    const pauseToggle = document.getElementById('settings-pause-toggle');
+    if (pauseToggle) {
+      pauseToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          sim.isRunning = false;
+          mToast('⏸ Telemetry stream paused');
+        } else {
+          sim.isRunning = true;
+          mToast('▶ Telemetry stream resumed');
+        }
+      });
+    }
+
+    const settingsAnomaly = document.getElementById('settings-anomaly');
+    if (settingsAnomaly) {
+      settingsAnomaly.addEventListener('click', () => {
+        sim.triggerTempAnomaly(activeNodeId);
+        mToast(`⚠️ Temp spike injected on ${activeNodeId}`, 'alert');
+      });
+    }
+
+    const settingsReset = document.getElementById('settings-reset');
+    if (settingsReset) {
+      settingsReset.addEventListener('click', () => {
+        sim.clearAnomaly(activeNodeId);
+        mToast(`✅ Anomaly cleared — normal baseline restored`);
+      });
+    }
+
+    // Inject anomaly quick-access button in app bar
+    const btnAnomalyApp = document.getElementById('btn-anomaly-app');
+    if (btnAnomalyApp) {
+      btnAnomalyApp.addEventListener('click', () => {
+        sim.triggerTempAnomaly(activeNodeId);
+        mToast('⚠️ Temp spike injected!', 'alert');
+      });
+    }
+
+    // ── Mobile Toast ───────────────────────────────────────────────────
+    function mToast(msg, type = '') {
+      const wrap = document.getElementById('m-toast-wrap');
+      if (!wrap) return;
+      const t = document.createElement('div');
+      t.className = `m-toast ${type}`;
+      t.textContent = msg;
+      wrap.appendChild(t);
+      setTimeout(() => { if (t.parentElement) t.remove(); }, 3800);
+    }
+
+  })();
+  </script>
+</body>
+</html>
