@@ -18,8 +18,8 @@
 
   // ── Page identity map ────────────────────────────────────────────────
   const PAGES = [
-    { id: 'landing',    file: 'landing.html',    label: '🏠 Home',             color: '#94a3b8' },
-    { id: 'dashboard',  file: 'index.html',       label: '🖥 Dashboard',        color: '#00e5ff' },
+    { id: 'landing',    file: 'index.html',       label: '🏠 Home',             color: '#94a3b8' },
+    { id: 'dashboard',  file: 'dashboard.html',   label: '🖥 Dashboard',        color: '#00e5ff' },
     { id: 'perception', file: 'perception.html',  label: '🎛️ Perception Layer', color: '#06b6d4' },
     { id: 'gateway',    file: 'gateway.html',     label: '📟 Edge Gateway',     color: '#10b981' },
     { id: 'aws',        file: 'aws-cloud.html',   label: '☁️ AWS Cloud',        color: '#ff9900' },
@@ -34,13 +34,13 @@
   function detectCurrentPage() {
     const path = location.pathname.toLowerCase();
     const href = location.href.toLowerCase();
-    if (path.endsWith('landing.html')    || href.includes('landing.html'))    return 'landing';
+    if (path.endsWith('dashboard.html')  || href.includes('dashboard.html'))  return 'dashboard';
     if (path.endsWith('perception.html') || href.includes('perception.html')) return 'perception';
     if (path.endsWith('gateway.html')    || href.includes('gateway.html'))    return 'gateway';
     if (path.endsWith('app.html')        || href.includes('app.html'))        return 'app';
     if (path.endsWith('aws-cloud.html')  || href.includes('aws-cloud.html'))  return 'aws';
     if (path.endsWith('design.html')     || href.includes('design.html'))     return 'design';
-    return 'dashboard'; // index.html or root
+    return 'landing'; // index.html, landing.html, or root
   }
 
   // ── Read snapshot from localStorage ──────────────────────────────────
@@ -309,7 +309,7 @@
     }).join('');
 
     bar.innerHTML = `
-      <a class="nb-brand" href="${_relPath('landing.html', currentPage)}">
+      <a class="nb-brand" href="${_relPath('index.html', currentPage)}">
         <div class="nb-brand-icon">
           <img src="${_relPath('assets/images/westcliff_icon_192.png', currentPage)}" alt="Westcliff University Logo">
         </div>
@@ -459,7 +459,7 @@
         localStorage.setItem('tech300-demo-active', '1');
         localStorage.setItem('tech300-demo-step', '0');
         if (currentPage !== 'dashboard') {
-          window.location.href = 'index.html#demo';
+          window.location.href = 'dashboard.html#demo';
         } else {
           // Reload to trigger demo mode
           window.location.reload();

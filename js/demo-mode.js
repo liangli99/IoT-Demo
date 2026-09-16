@@ -13,7 +13,7 @@
  *   6. Highlight Tier 5 — AC auto-control engages, relay actuation confirmed
  *   7. Resolution      — anomaly cleared, system returns to normal
  *
- * Runs entirely on index.html. No cross-page navigation needed.
+ * Runs entirely on dashboard.html. No cross-page navigation needed.
  */
 
 (function () {

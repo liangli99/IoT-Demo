@@ -184,5 +184,5 @@ class ACController {
   }
 }
 
-// Attach to window for global access from both index.html and app.html
+// Attach to window for global access from both dashboard.html and app.html
 window.ACController = ACController;
