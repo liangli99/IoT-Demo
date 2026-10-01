@@ -3,15 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TECH 300 IoT Demo — Westcliff University</title>
-  <meta name="description" content="End-to-End IoT Demonstration System. ESP32 sensors → BLE 5.0 → Edge Gateway → AWS IoT Core → Real-time Dashboard & Mobile App. Course project by Professor Liang Li, TECH 300, Westcliff University.">
+  <title>IoT Demo System</title>
+  <meta name="description" content="End-to-End IoT Demonstration System. ESP32 sensors → BLE 5.0 → Edge Gateway → AWS IoT Core → Real-time Dashboard & Mobile App. Designed by Professor Liang Li.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <!-- Shared bus first so SimBus is available when sim engine auto-connects -->
   <script src="js/sim-bus.js"></script>
   <!-- Unified system nav bar -->
-  <script src="js/nav-bar.js"></script>
+  <script src="js/nav-bar.js?v=2.3"></script>
 
   <style>
     /* ── Reset & Variables ─────────────────────────────────────────────── */
@@ -239,31 +245,33 @@
       22%, 100% { left: 100%; }
     }
     .hdb-crest {
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.45);
+      border: 2px solid rgba(245, 158, 11, 0.65);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 4px;
+      padding: 0;
+      overflow: hidden;
       flex-shrink: 0;
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.35);
       text-decoration: none;
       transition: all 0.2s ease;
-      cursor: pointer;
     }
     .hdb-crest:hover {
       border-color: #fbbf24;
       transform: scale(1.06);
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.55);
     }
     .hdb-crest img {
       width: 100%;
       height: 100%;
-      object-fit: contain;
-      border-radius: 8px;
+      object-fit: cover;
+      object-position: center top;
+      border-radius: 50%;
+      display: block;
     }
     .hdb-details {
       display: flex;
@@ -400,38 +408,51 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      min-width: 90px;
+      gap: 8px;
+      min-width: 110px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .arch-node:hover {
+      transform: translateY(-3px);
+    }
+    .arch-node:hover .arch-label {
+      color: var(--cyan);
     }
     .arch-icon {
-      width: 52px; height: 52px;
-      border-radius: 14px;
+      width: 58px; height: 58px;
+      border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem;
-      border: 1px solid;
+      font-size: 1.6rem;
+      border: 1.5px solid;
       position: relative;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
     .arch-label {
-      font-size: 0.62rem;
+      font-size: 0.80rem;
       font-family: var(--font-mono);
-      color: var(--text-dim);
+      font-weight: 700;
+      color: #334155;
       text-align: center;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.45;
     }
 
     .arch-arrow {
-      font-size: 1.1rem;
-      color: var(--text-dim);
-      padding: 0 4px;
-      margin-bottom: 26px;
+      font-size: 1.35rem;
+      color: var(--cyan);
+      font-weight: 700;
+      padding: 0 6px;
+      margin-bottom: 30px;
     }
 
-    .arch-icon.t1 { background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.3); }
-    .arch-icon.t2 { background: rgba(0,212,255,0.10); border-color: rgba(0,212,255,0.3); }
-    .arch-icon.t3 { background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.3); }
-    .arch-icon.t4 { background: rgba(168,85,247,0.10); border-color: rgba(168,85,247,0.3); }
-    .arch-icon.t5 { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); }
+    .arch-icon.t1 { background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.4); }
+    .arch-icon.t2 { background: rgba(0,212,255,0.12); border-color: rgba(0,212,255,0.4); }
+    .arch-icon.t3 { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.4); }
+    .arch-icon.t4 { background: rgba(168,85,247,0.12); border-color: rgba(168,85,247,0.4); }
+    .arch-icon.t5 { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.4); }
 
     /* Animated dot on each arch-icon */
     .arch-icon::after {
@@ -826,14 +847,14 @@
     }
 
     .pipeline-flow {
-      max-width: 1000px;
+      max-width: 1240px;
       margin: 0 auto;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       flex-wrap: wrap;
-      gap: 0;
-      row-gap: 20px;
+      gap: 10px;
+      row-gap: 28px;
     }
 
     .pipeline-step {
@@ -841,41 +862,85 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      width: 160px;
+      width: 185px;
     }
 
     .pipeline-icon-box {
-      width: 72px; height: 72px;
-      border-radius: 18px;
+      width: 78px; height: 78px;
+      border-radius: 20px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.8rem;
-      margin-bottom: 10px;
-      border: 1px solid;
+      font-size: 2rem;
+      margin-bottom: 14px;
+      border: 1.5px solid;
       position: relative;
       transition: transform 0.2s;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
     }
     .pipeline-icon-box:hover { transform: scale(1.08); }
 
-    .ps1 { background:rgba(244,63,94,0.12); border-color:rgba(244,63,94,0.3); }
-    .ps2 { background:rgba(0,212,255,0.10); border-color:rgba(0,212,255,0.3); }
-    .ps3 { background:rgba(16,185,129,0.10);border-color:rgba(16,185,129,0.3); }
-    .ps4 { background:rgba(168,85,247,0.10);border-color:rgba(168,85,247,0.3); }
-    .ps5 { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.3); }
+    .ps1 { background:rgba(244,63,94,0.12); border-color:rgba(244,63,94,0.4); }
+    .ps2 { background:rgba(0,212,255,0.12); border-color:rgba(0,212,255,0.4); }
+    .ps3 { background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4); }
+    .ps4 { background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.4); }
+    .ps5 { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.4); }
 
-    .pipeline-step-title { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-    .pipeline-step-sub   { font-size: 0.62rem; color: var(--text-dim); line-height: 1.4; }
+    .pipeline-step-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .pipeline-step-sub {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
 
     .pipeline-arrow {
-      font-size: 1.4rem;
-      color: var(--text-dim);
+      font-size: 1.6rem;
+      color: #0284c7;
       padding: 0 4px;
-      margin-bottom: 44px;
+      margin-top: 24px;
       flex-shrink: 0;
+      font-weight: 700;
       animation: arrowPulse 1.8s ease-in-out infinite;
     }
     @keyframes arrowPulse {
       0%,100%{opacity:0.3;transform:translateX(0)}
       50%{opacity:0.8;transform:translateX(4px)}
+    }
+
+    /* ── Light Mode Pipeline & Footer Overrides ── */
+    [data-theme="light"] .pipeline-step-title {
+      color: #0f172a !important;
+      font-size: 1.05rem !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .pipeline-step-sub {
+      color: #1e293b !important;
+      font-size: 0.86rem !important;
+      font-weight: 600 !important;
+      line-height: 1.6 !important;
+    }
+    [data-theme="light"] .pipeline-arrow {
+      color: #0284c7 !important;
+      font-size: 1.6rem !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .pipeline-icon-box {
+      background: #ffffff !important;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06) !important;
+    }
+    [data-theme="light"] .footer-title-strong {
+      color: #0f172a !important;
+      font-size: 0.95rem !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .footer-designer-lbl {
+      color: #d97706 !important;
+      font-weight: 700 !important;
     }
 
     /* ── CTA Section ────────────────────────────────────────────────────── */
@@ -989,33 +1054,13 @@
   <!-- Particle canvas background -->
   <canvas id="particle-canvas"></canvas>
 
-  <!-- ═══════════════════ TOP NAV ═══════════════════════════════════════ -->
-  <nav class="topnav">
-    <div class="nav-brand">
-      <div class="nav-logo">
-        <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo" class="nav-logo-img">
-      </div>
-      <div>
-        <div class="nav-name">IoT Demo System</div>
-        <div class="nav-tag"><span style="color:#94a3b8;">TECH 300 · Westcliff University</span> · <span style="color:#fbbf24; font-weight:700;">Demo Designer: Prof. Liang Li</span></div>
-      </div>
-    </div>
-    <div class="nav-links">
-      <a class="nav-link" href="#features">Features</a>
-      <a class="nav-link" href="#pipeline">Architecture</a>
-      <a class="nav-link" href="perception.html">Perception</a>
-      <a class="nav-link" href="gateway.html">Edge Gateway</a>
-      <a class="nav-link" href="aws-cloud.html">AWS Cloud</a>
-      <a class="nav-link" href="dashboard.html">Dashboard</a>
-      <a class="nav-cta" href="dashboard.html">Open Dashboard →</a>
-    </div>
-  </nav>
+
 
   <!-- ═══════════════════ HERO ══════════════════════════════════════════ -->
   <section class="hero">
     <div class="hero-eyebrow">
       <span class="eyebrow-dot"></span>
-      TECH 300 · WESTCLIFF UNIVERSITY · LIVE DEMO
+      END-TO-END IOT DEMO SYSTEM · LIVE DEMO
     </div>
 
     <h1 class="hero-title">
@@ -1031,19 +1076,16 @@
 
     <!-- ── Prominent Demo Designer Showcase Banner ── -->
     <div class="hero-designer-banner">
-      <a href="https://www.westcliff.edu" target="_blank" rel="noopener noreferrer" class="hdb-crest" title="Visit Westcliff University (www.westcliff.edu)">
-        <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Emblem">
-      </a>
+      <div class="hdb-crest" title="Prof. Liang Li — Course and Demo Designer">
+        <img src="assets/images/liangli_photo.jpg" alt="Prof. Liang Li">
+      </div>
       <div class="hdb-details">
-        <div class="hdb-tagline">Course Architecture &amp; System Engineering</div>
+        <div class="hdb-tagline">IoT Architecture &amp; System Engineering</div>
         <div class="hdb-lead">
-          <span class="hdb-role">Demo Designer:</span>
+          <span class="hdb-role">Course and Demo Designer:</span>
           <span class="hdb-name">Prof. Liang Li</span>
         </div>
       </div>
-      <a href="https://www.westcliff.edu" target="_blank" rel="noopener noreferrer" class="hdb-affiliation" title="Visit Westcliff University (www.westcliff.edu)">
-        Westcliff University ↗
-      </a>
     </div>
 
     <div class="hero-cta-group">
@@ -1057,30 +1099,30 @@
 
     <!-- Architecture strip -->
     <div class="arch-strip">
-      <div class="arch-node">
+      <a href="perception.html" class="arch-node" title="Open Perception Layer Console (Tier 1)">
         <div class="arch-icon t1">🎛️</div>
-        <div class="arch-label">Tier 1<br>ESP32 Sensor</div>
-      </div>
+        <div class="arch-label">Tier 1<br>ESP32 Sensor ↗</div>
+      </a>
       <div class="arch-arrow">→</div>
-      <div class="arch-node">
+      <a href="proximity.html" class="arch-node" title="Open Proximity Network (BLE 5.0) Architecture &amp; Deployment Console (Tier 2)">
         <div class="arch-icon t2">📶</div>
-        <div class="arch-label">Tier 2<br>BLE 5.0</div>
-      </div>
+        <div class="arch-label">Tier 2<br>BLE 5.0 ↗</div>
+      </a>
       <div class="arch-arrow">→</div>
-      <div class="arch-node">
+      <a href="gateway.html" class="arch-node" title="Open Edge Gateway Operations (Tier 3)">
         <div class="arch-icon t3">🖥️</div>
-        <div class="arch-label">Tier 3<br>Edge Gateway</div>
-      </div>
+        <div class="arch-label">Tier 3<br>Edge Gateway ↗</div>
+      </a>
       <div class="arch-arrow">→</div>
-      <div class="arch-node">
+      <a href="aws-cloud.html" class="arch-node" title="Open AWS IoT Cloud (Tier 4)">
         <div class="arch-icon t4">☁️</div>
-        <div class="arch-label">Tier 4<br>AWS IoT Core</div>
-      </div>
+        <div class="arch-label">Tier 4<br>AWS IoT Core ↗</div>
+      </a>
       <div class="arch-arrow">→</div>
-      <div class="arch-node">
+      <a href="app.html" class="arch-node" title="Open Mobile App Presentation Console (Tier 5)">
         <div class="arch-icon t5">📱</div>
-        <div class="arch-label">Tier 5<br>Dashboard</div>
-      </div>
+        <div class="arch-label">Tier 5<br>Mobile App ↗</div>
+      </a>
     </div>
   </section>
 
@@ -1143,12 +1185,13 @@
 
       <div class="feature-card fc-emerald reveal">
         <span class="fc-icon">🖥️</span>
-        <div class="fc-title">Edge Gateway — Raspberry Pi 4</div>
+        <div class="fc-title">Edge Gateway — Raspberry Pi 4 Model B (4GB)</div>
         <div class="fc-desc">The Raspberry Pi 4 gateway translates raw BLE GATT frames into structured MQTT JSON payloads. Features store-and-forward: packets are cached in local SQLite during WAN outages and bulk-flushed on reconnect.</div>
         <div class="fc-tags">
-          <span class="fc-tag emerald">Raspberry Pi 4</span>
+          <span class="fc-tag emerald">Raspberry Pi 4 (4GB)</span>
+          <span class="fc-tag emerald">Broadcom BCM2711</span>
           <span class="fc-tag emerald">bleak + paho</span>
-          <span class="fc-tag emerald">Store-Forward</span>
+          <span class="fc-tag emerald">SQLite Store-Forward</span>
         </div>
       </div>
 
@@ -1282,31 +1325,31 @@
     <p class="section-desc">Every telemetry packet traverses all five layers — from constrained hardware through the cloud to your screen.</p>
 
     <div class="pipeline-flow">
-      <div class="pipeline-step reveal">
+      <div class="pipeline-step">
         <div class="pipeline-icon-box ps1">🎛️</div>
         <div class="pipeline-step-title">Perception Layer</div>
         <div class="pipeline-step-sub">ESP32-WROOM-32<br>DHT22 / MPU6050<br>BLE Advertising</div>
       </div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step reveal">
+      <div class="pipeline-step">
         <div class="pipeline-icon-box ps2">📶</div>
         <div class="pipeline-step-title">Proximity Network</div>
         <div class="pipeline-step-sub">BLE 5.0 (2.4 GHz)<br>IEEE 802.15.1<br>AES-128 CCM</div>
       </div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step reveal">
+      <div class="pipeline-step">
         <div class="pipeline-icon-box ps3">🖥️</div>
         <div class="pipeline-step-title">Edge Gateway</div>
         <div class="pipeline-step-sub">Raspberry Pi 4<br>bleak + paho-mqtt<br>Store-and-Forward</div>
       </div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step reveal">
+      <div class="pipeline-step">
         <div class="pipeline-icon-box ps4">☁️</div>
         <div class="pipeline-step-title">AWS IoT Cloud</div>
         <div class="pipeline-step-sub">IoT Core mTLS<br>Rules Engine SQL<br>DynamoDB + Lambda</div>
       </div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step reveal">
+      <div class="pipeline-step">
         <div class="pipeline-icon-box ps5">📱</div>
         <div class="pipeline-step-title">Presentation Layer</div>
         <div class="pipeline-step-sub">WebSockets + REST<br>Live Charts<br>AC Auto-Control</div>
@@ -1331,18 +1374,23 @@
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
-        <div class="nav-logo" style="width:36px;height:36px;border-radius:8px;padding:3px;border-color:rgba(245,158,11,0.35);">
-          <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo" class="nav-logo-img">
+        <div class="nav-logo" style="width:38px;height:38px;border-radius:50%;overflow:hidden;padding:0;border:1.5px solid rgba(245,158,11,0.55);box-shadow:0 0 10px rgba(245,158,11,0.3);">
+          <img src="assets/images/liangli_photo.jpg" alt="Prof. Liang Li" class="nav-logo-img" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%;">
         </div>
         <div class="footer-text">
-          <strong style="color:#fff;">TECH 300: IoT Demo System</strong><br>
-          <span style="color:#fbbf24; font-weight:700;">Demo Designer: Prof. Liang Li</span> · <span style="color:#94a3b8; font-weight:600;">Westcliff University</span> · v1.0
+          <strong class="footer-title-strong">IoT Demo System</strong><br>
+          <span class="footer-designer-lbl">Demo Designer: Prof. Liang Li</span>
         </div>
       </div>
-      <div class="footer-links">
-        <a class="footer-link" href="dashboard.html">Dashboard</a>
-        <a class="footer-link" href="app.html">Mobile App</a>
-        <a class="footer-link" href="design.html">Technical Design</a>
+      <div class="footer-contact" style="display:flex; align-items:center; gap:16px; font-size:0.84rem; flex-wrap:wrap;">
+        <span style="color:#fbbf24; font-weight:700; font-family:var(--font-mono); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em;">Contact:</span>
+        <a href="mailto:liangli@westcliff.edu" style="color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;" onmouseover="this.style.color='#00d4ff'" onmouseout="this.style.color='var(--text-muted)'">
+          <span style="color:var(--cyan); font-weight:600;">Email:</span> liangli@westcliff.edu
+        </a>
+        <span style="color:rgba(255,255,255,0.18);">|</span>
+        <a href="tel:949-813-7909" style="color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;" onmouseover="this.style.color='#00d4ff'" onmouseout="this.style.color='var(--text-muted)'">
+          <span style="color:var(--cyan); font-weight:600;">Tel:</span> 949-813-7909
+        </a>
       </div>
     </div>
   </footer>

@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edge Gateway Operations — TECH 300 IoT Demo</title>
+  <title>Edge Gateway Operations — IoT Demo System</title>
   <meta name="description" content="Dedicated Edge Gateway Operations Console: Broadcom BCM2711 SoC, Cypress CYW43455 BLE 5.0, BlueZ hci0, protocol translation, store-and-forward buffer, and AWS IoT Core mTLS bridge.">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <!-- Shared bus first so SimBus is available -->
   <script src="js/sim-bus.js"></script>
   <!-- Unified system navigation bar -->
-  <script src="js/nav-bar.js"></script>
+  <script src="js/nav-bar.js?v=2.3"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -553,10 +559,10 @@
       <div class="gw-brand-icon">📟</div>
       <div>
         <div class="gw-brand-title">
-          <span>TECH 300 Edge Gateway</span>
+          <span>Raspberry Pi 4 Edge Gateway</span>
           <span style="font-size:0.65rem; background:rgba(16,185,129,0.15); color:var(--gw-green); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">ONLINE</span>
         </div>
-        <div class="gw-brand-sub">gw-pi4-tech300.local · BCM2711 · BlueZ 5.66+ · CYW43455</div>
+        <div class="gw-brand-sub">Raspberry Pi 4 Model B (4GB) · BCM2711 · BlueZ 5.66+ · CYW43455</div>
       </div>
     </a>
 
@@ -632,7 +638,8 @@
       </div>
 
       <div style="margin-top:auto; padding:16px; border-top:1px solid var(--border-subtle); font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">
-        <div>RPi OS Lite 64-bit</div>
+        <div style="color:var(--gw-green); font-weight:700; margin-bottom:2px;">Raspberry Pi 4 (4GB)</div>
+        <div>OS: RPi OS Lite 64-bit</div>
         <div>Kernel: 6.6.20-v8+</div>
         <div>IP: 192.168.1.100</div>
       </div>
@@ -651,6 +658,50 @@
             <div class="panel-subtitle">Comprehensive breakdown of gateway compute SoC, RF chipsets, network PHYs, and peripheral I/O interfaces.</div>
           </div>
           <span class="btn btn-cyan" style="pointer-events:none;">Raspberry Pi 4 Model B (4GB) Reference Gateway</span>
+        </div>
+
+        <!-- ── Primary Reference Gateway Hardware Card ── -->
+        <div class="gw-card" style="margin-bottom:20px; background:linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(0,212,255,0.06) 100%); border:1.5px solid rgba(16,185,129,0.35); border-radius:12px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:14px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span style="font-size:1.4rem;">🖥️</span>
+                <h3 style="font-size:1.15rem; font-weight:800; color:#fff; letter-spacing:-0.01em;">Primary Reference Gateway: Raspberry Pi 4 Model B (4GB)</h3>
+                <span class="btn btn-green" style="padding:2px 8px; font-size:0.68rem; pointer-events:none;">Reference Deployment</span>
+              </div>
+              <p style="font-size:0.84rem; color:var(--text-muted); line-height:1.5; max-width:850px;">
+                The primary Edge Gateway hardware unit in this 5-tier IoT system is a <strong>Raspberry Pi 4 Model B (4GB SDRAM)</strong>. 
+                It executes Linux 6.6 LTS (Raspberry Pi OS Lite 64-bit), acting as an autonomous protocol bridge between southbound BLE 5.0 sensor nodes and northbound AWS IoT Core via mutual TLS (mTLS). Features an embedded <strong>SQLite 3.42 Write-Ahead Log (WAL)</strong> store-and-forward queue to prevent telemetry loss during network disruptions.
+              </p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; align-self:center;">
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.35); border-radius:8px; font-size:0.75rem; color:var(--gw-cyan); font-family:var(--font-mono); font-weight:700;">
+                Broadcom BCM2711 · 1.5 GHz Quad-Core
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); border-radius:8px; font-size:0.75rem; color:var(--gw-amber); font-family:var(--font-mono); font-weight:700;">
+                Industrial Option: Advantech UNO-220
+              </span>
+            </div>
+          </div>
+          
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:0.75rem;">
+              <span style="color:var(--text-dim); display:block; margin-bottom:2px;">Compute Engine:</span>
+              <strong style="color:#fff;">Broadcom BCM2711 SoC</strong> (4× ARM Cortex-A72 @ 1.5GHz)
+            </div>
+            <div style="font-size:0.75rem;">
+              <span style="color:var(--text-dim); display:block; margin-bottom:2px;">Southbound RF Link:</span>
+              <strong style="color:var(--gw-cyan);">Cypress CYW43455 BLE 5.0</strong> (BlueZ 5.66 / hci0)
+            </div>
+            <div style="font-size:0.75rem;">
+              <span style="color:var(--text-dim); display:block; margin-bottom:2px;">Northbound Backhaul:</span>
+              <strong style="color:var(--gw-green);">mTLS 1.2 AWS IoT Core</strong> (Port 8883 / X.509)
+            </div>
+            <div style="font-size:0.75rem;">
+              <span style="color:var(--text-dim); display:block; margin-bottom:2px;">Offline Buffer:</span>
+              <strong style="color:var(--gw-amber);">SQLite 3.42 WAL Buffer</strong> (~250k pkts / 72h offline)
+            </div>
+          </div>
         </div>
 
         <!-- Metric Cards -->
@@ -821,7 +872,10 @@
             <h2 class="panel-title">📡 Southbound Wireless Network (BLE 5.0 GATT)</h2>
             <div class="panel-subtitle">Linux BlueZ subsystem, HCI controller status, and active perception node telemetry.</div>
           </div>
-          <span class="btn btn-green" id="btn-hci-reset">HCI Controller: hci0 UP RUNNING</span>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <a href="proximity.html" class="btn" style="text-decoration:none; background:rgba(168,85,247,0.18); border:1px solid #a855f7; color:#c084fc; font-weight:600;" title="Deep dive into BLE selection, duty cycle math, and peripheral deployment">📶 BLE Selection &amp; Deployment Guide ↗</a>
+            <span class="btn btn-green" id="btn-hci-reset">HCI Controller: hci0 UP RUNNING</span>
+          </div>
         </div>
 
         <div class="card-grid">
@@ -965,7 +1019,7 @@ battery_pct  = batt_raw          # 94%
               <span class="card-tag">SQLite 3.42</span>
             </div>
             <ul class="spec-list">
-              <li><span class="spec-label">File:</span> <span class="spec-val">/var/log/tech300/buffer.db</span></li>
+              <li><span class="spec-label">File:</span> <span class="spec-val">/var/log/iotdemo/buffer.db</span></li>
               <li><span class="spec-label">Sync Mode:</span> <span class="spec-val">WAL (Write-Ahead-Log)</span></li>
               <li><span class="spec-label">Disk Free:</span> <span class="spec-val">24.2 GB / 32 GB SD</span></li>
             </ul>
@@ -1035,8 +1089,8 @@ battery_pct  = batt_raw          # 94%
               <span class="card-tag">Namespaced</span>
             </div>
             <ul class="spec-list">
-              <li><span class="spec-label">Publish:</span> <span class="spec-val">tech300/telemetry/{id}</span></li>
-              <li><span class="spec-label">Subscribe:</span> <span class="spec-val">tech300/commands/{id}</span></li>
+              <li><span class="spec-label">Publish:</span> <span class="spec-val">iot/telemetry/{id}</span></li>
+              <li><span class="spec-label">Subscribe:</span> <span class="spec-val">iot/commands/{id}</span></li>
               <li><span class="spec-label">Shadow:</span> <span class="spec-val">$aws/things/.../shadow</span></li>
               <li><span class="spec-label">QoS Policy:</span> <span class="spec-val">Level 1 (At Least Once)</span></li>
             </ul>
@@ -1084,7 +1138,7 @@ battery_pct  = batt_raw          # 94%
             <ul class="spec-list">
               <li><span class="spec-label">Local Physical:</span> <span class="spec-val">GPIO 22 Relay Drive</span></li>
               <li><span class="spec-label">Wireless BLE:</span> <span class="spec-val">GATT Char 0xFFE1 Write</span></li>
-              <li><span class="spec-label">Acknowledge:</span> <span class="spec-val">PUB tech300/actuator/ack</span></li>
+              <li><span class="spec-label">Acknowledge:</span> <span class="spec-val">PUB iot/actuator/ack</span></li>
             </ul>
           </div>
         </div>
@@ -1097,7 +1151,7 @@ battery_pct  = batt_raw          # 94%
       <section id="panel-console" class="view-panel">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">📜 Edge Daemon Console (`tech300-gateway.service`)</h2>
+            <h2 class="panel-title">📜 Edge Daemon Console (`iot-gateway.service`)</h2>
             <div class="panel-subtitle">Real-time systemd journal log feed from the Python async gateway engine.</div>
           </div>
           <div style="display:flex; gap:8px;">
@@ -1108,7 +1162,7 @@ battery_pct  = batt_raw          # 94%
 
         <div class="terminal-container">
           <div class="terminal-head">
-            <span>root@gw-pi4-tech300:/var/log# journalctl -u tech300-gateway.service -f</span>
+            <span>root@gw-pi4-edge:/var/log# journalctl -u iot-gateway.service -f</span>
             <div class="terminal-controls">
               <span style="color:var(--gw-green)">● active (running)</span>
             </div>
@@ -1169,7 +1223,7 @@ battery_pct  = batt_raw          # 94%
       }
 
       // Populate initial logs
-      addLog('SYSTEM', 'Linux gw-pi4-tech300 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 12 (Bookworm)', 'tag-ble');
+      addLog('SYSTEM', 'Linux gw-pi4-edge 6.6.20+rpt-rpi-v8 #1 SMP PREEMPT Debian 12 (Bookworm)', 'tag-ble');
       addLog('BLUEZ', 'Bluetooth daemon 5.66 initialized. Controller hci0 UP RUNNING.', 'tag-ble');
       addLog('BLEAK', 'Async GATT client scanning on BLE 5.0 (channels 37, 38, 39)...', 'tag-ble');
       addLog('MQTT', 'Connected to AWS IoT Core endpoint over TLS 1.3 port 8883 (QoS 1).', 'tag-mqtt');
@@ -1186,7 +1240,7 @@ battery_pct  = batt_raw          # 94%
           addLog('BLE-INGEST', `GATT read from ${nodeId}: temp=${temp}°C, hum=${hum}% (RSSI -${60 + Math.floor(Math.random()*15)}dBm)`, 'tag-ble');
           
           if (isWanConnected) {
-            addLog('TRANSLATE', `Decoded 16 bytes ➔ JSON (132 bytes). Pub to tech300/telemetry/${nodeId}`, 'tag-trans');
+            addLog('TRANSLATE', `Decoded 16 bytes ➔ JSON (132 bytes). Pub to iot/telemetry/${nodeId}`, 'tag-trans');
             addLog('MQTT-ACK', `PUBACK received from aws-iot-core (MID: ${1000 + Math.floor(Math.random()*9000)}, RTT: ${20 + Math.floor(Math.random()*12)}ms)`, 'tag-mqtt');
           } else {
             bufferCount++;

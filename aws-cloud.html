@@ -3,11 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AWS IoT Cloud Operations — TECH 300 IoT Demo</title>
+  <title>AWS IoT Cloud Operations — IoT Demo System</title>
   <meta name="description" content="Live AWS IoT Core operations dashboard: MQTT broker, Rules Engine, Device Shadows, DynamoDB, Lambda, SNS, and IAM certificate viewer.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <script src="js/nav-bar.js?v=2.3"></script>
   <style>
     /* ── CSS Variables ──────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1059,8 +1066,16 @@
     .eb-status-dot {
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--emerald);
-      animation: blink 1.5s infinite;
-    }
+    /* ── Subpage Specific Light Theme Overrides ── */
+    [data-theme="light"] .panel-title { color: #0f172a !important; font-weight: 800 !important; }
+    [data-theme="light"] .panel-desc { color: #334155 !important; font-weight: 500 !important; }
+    [data-theme="light"] .panel-service-tag { color: #b45309 !important; font-weight: 800 !important; }
+    [data-theme="light"] .tb-logo-text { color: #0f172a !important; font-weight: 800 !important; }
+    [data-theme="light"] .tb-logo-sub { color: #475569 !important; font-weight: 600 !important; }
+    [data-theme="light"] .eb-label { color: #475569 !important; font-weight: 700 !important; }
+    [data-theme="light"] .eb-meta { color: #64748b !important; font-weight: 600 !important; }
+    [data-theme="light"] .eb-endpoint { color: #b45309 !important; font-weight: 800 !important; }
+    [data-theme="light"] .endpoint-box { background: #fffbeb !important; border-color: #fde68a !important; }
   </style>
 </head>
 <body>
@@ -1071,15 +1086,11 @@
       <span class="tb-logo-icon">☁️</span>
       <div>
         <div class="tb-logo-text">AWS IoT Core</div>
-        <div class="tb-logo-sub">TECH 300 Simulation Console</div>
+        <div class="tb-logo-sub">Cloud Simulation Console</div>
       </div>
     </a>
 
     <div class="tb-breadcrumb">
-      <span>IoT Core</span>
-      <span class="tb-sep">›</span>
-      <span>tech300</span>
-      <span class="tb-sep">›</span>
       <span class="active">Cloud Operations</span>
     </div>
 
@@ -1159,7 +1170,7 @@
           <div class="panel-title-group">
             <div class="panel-service-tag">☁️ AWS IoT Core</div>
             <div class="panel-title">Cloud Operations Overview</div>
-            <div class="panel-desc">Live status of all AWS IoT services connected to the TECH 300 end-to-end pipeline. All telemetry is simulated using the same engine driving the main dashboard.</div>
+            <div class="panel-desc">Live status of all AWS IoT services connected to the end-to-end IoT pipeline. All telemetry is simulated using the same engine driving the main dashboard.</div>
           </div>
           <div class="panel-actions">
             <button class="btn btn-outline" id="btn-inject-ov">⚠️ Inject Spike</button>
@@ -1194,7 +1205,7 @@
           <div class="metric-card" style="--accent:var(--aws-orange)">
             <div class="mc-label">Messages Ingested</div>
             <div class="mc-value" id="ov-total-msgs">1,248</div>
-            <div class="mc-sub">tech300/telemetry/+</div>
+            <div class="mc-sub">iot/telemetry/+</div>
             <div class="mc-trend up" id="ov-msg-trend">↑ Live</div>
             <span class="mc-icon-bg">📨</span>
           </div>
@@ -1234,7 +1245,7 @@
         <!-- Architecture diagram -->
         <div class="section-card">
           <div class="sc-header">
-            <div class="sc-title">🏗️ AWS Service Architecture — TECH 300 IoT Pipeline</div>
+            <div class="sc-title">🏗️ AWS Service Architecture — End-to-End IoT Pipeline</div>
             <span class="sc-meta">us-east-1</span>
           </div>
           <div class="arch-diagram">
@@ -1309,7 +1320,7 @@
                 <span class="arch-label-tag" style="background:rgba(255,153,0,0.1);color:var(--aws-orange);">mTLS X.509</span>
                 <span class="arch-label-tag" style="background:rgba(16,185,129,0.1);color:var(--emerald);">QoS 1 Acknowledged</span>
                 <span class="arch-label-tag" style="background:rgba(168,85,247,0.1);color:var(--purple);">Least-Privilege IAM</span>
-                <span class="arch-label-tag" style="background:rgba(0,212,255,0.1);color:var(--cyan);">TECH 300 Namespace: tech300/*</span>
+                <span class="arch-label-tag" style="background:rgba(0,212,255,0.1);color:var(--cyan);">Topic Namespace: iot/*</span>
               </div>
             </div>
           </div>
@@ -1335,18 +1346,18 @@
         <div class="section-card">
           <div class="sc-header">
             <div class="sc-title">📋 Active Topic Subscriptions</div>
-            <span class="sc-meta">Namespace: tech300/*</span>
+            <span class="sc-meta">Namespace: iot/*</span>
           </div>
           <div class="topic-tree">
             <div class="topic-branch">
               <span class="topic-icon">📤</span>
-              <span class="topic-path"><span class="seg">tech300/</span>telemetry/<span class="seg">{device_id}</span></span>
+              <span class="topic-path"><span class="seg">iot/</span>telemetry/<span class="seg">{device_id}</span></span>
               <span class="topic-direction pub">PUB</span>
               <span class="topic-count" id="topic-count-telemetry">0 msgs</span>
             </div>
             <div class="topic-branch">
               <span class="topic-icon">📥</span>
-              <span class="topic-path"><span class="seg">tech300/</span>commands/<span class="seg">{device_id}</span></span>
+              <span class="topic-path"><span class="seg">iot/</span>commands/<span class="seg">{device_id}</span></span>
               <span class="topic-direction sub">SUB</span>
               <span class="topic-count" id="topic-count-commands">0 msgs</span>
             </div>
@@ -1358,7 +1369,7 @@
             </div>
             <div class="topic-branch">
               <span class="topic-icon">⚠️</span>
-              <span class="topic-path"><span class="seg">tech300/</span>alerts/<span class="seg">lambda</span></span>
+              <span class="topic-path"><span class="seg">iot/</span>alerts/<span class="seg">lambda</span></span>
               <span class="topic-direction sub">SUB</span>
               <span class="topic-count" id="topic-count-alerts">0 msgs</span>
             </div>
@@ -1374,10 +1385,10 @@
           <div style="padding:8px 20px; border-bottom:1px solid var(--border-card); display:flex; gap:8px; align-items:center;">
             <span style="font-size:0.72rem;color:var(--text-dim);">Topic filter:</span>
             <select class="filter-select" id="broker-topic-filter">
-              <option value="all">All topics (tech300/#)</option>
-              <option value="telemetry">tech300/telemetry/+</option>
-              <option value="commands">tech300/commands/+</option>
-              <option value="alerts">tech300/alerts/+</option>
+              <option value="all">All topics (iot/#)</option>
+              <option value="telemetry">iot/telemetry/+</option>
+              <option value="commands">iot/commands/+</option>
+              <option value="alerts">iot/alerts/+</option>
             </select>
             <span style="margin-left:auto;font-size:0.7rem;color:var(--text-dim);font-family:var(--font-mono);">
               Ingestion rate: <span id="broker-rate" style="color:var(--cyan);">0</span> msg/min
@@ -1421,7 +1432,7 @@
             <div class="rule-body">
               <div style="margin-bottom:12px;">
                 <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">SQL Statement</div>
-                <div class="code-block"><span class="c">-- TECH 300 Telemetry Routing — AWS IoT Rules Engine SQL</span>
+                <div class="code-block"><span class="c">-- Telemetry Routing — AWS IoT Rules Engine SQL</span>
 <span class="kw">SELECT</span>
   <span class="f">device_id</span>,
   <span class="f">temp</span>,
@@ -1430,7 +1441,7 @@
   <span class="f">vibration</span>,
   <span class="f">battery</span>,
   <span class="f">timestamp</span>() <span class="kw">AS</span> <span class="f">ingest_time</span>
-<span class="kw">FROM</span> <span class="s">'tech300/telemetry/+'</span>
+<span class="kw">FROM</span> <span class="s">'iot/telemetry/+'</span>
 <span class="kw">WHERE</span> <span class="f">temp</span> &gt; 0
 
 <span class="c">-- Action 1: DynamoDB PutItem → SensorTelemetry</span>
@@ -1642,7 +1653,7 @@
           <!-- Function code viewer -->
           <div style="padding:14px 20px; border-bottom:1px solid var(--border-card);">
             <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Function Code (Python 3.11)</div>
-            <div class="code-block"><span class="c"># HighTempAlertFn — AWS Lambda · TECH 300 IoT Demo</span>
+            <div class="code-block"><span class="c"># HighTempAlertFn — AWS Lambda · IoT Demo System</span>
 <span class="k">import</span> boto3, json, os
 
 sns_client = boto3.client(<span class="s">'sns'</span>)
@@ -1700,8 +1711,8 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
 
         <div class="section-card" style="margin-bottom:16px;">
           <div class="sc-header">
-            <div class="sc-title">📌 Topic: TECH300IoTAlerts</div>
-            <span class="sc-meta">arn:aws:sns:us-east-1:123456789012:TECH300IoTAlerts</span>
+            <div class="sc-title">📌 Topic: IoTAlerts</div>
+            <span class="sc-meta">arn:aws:sns:us-east-1:123456789012:IoTAlerts</span>
           </div>
           <div style="padding:14px 20px; border-bottom:1px solid var(--border-card);">
             <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; text-align:center;">
@@ -1726,7 +1737,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
               <span class="sns-sub-icon">📧</span>
               <div class="sns-sub-info">
                 <div class="sns-sub-protocol">EMAIL</div>
-                <div class="sns-sub-endpoint">instructor@westcliff.edu (TECH 300 Alerts)</div>
+                <div class="sns-sub-endpoint">instructor@westcliff.edu (IoT System Alerts)</div>
               </div>
               <span class="sns-sub-status">Confirmed</span>
             </div>
@@ -1734,7 +1745,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
               <span class="sns-sub-icon">🌐</span>
               <div class="sns-sub-info">
                 <div class="sns-sub-protocol">HTTPS</div>
-                <div class="sns-sub-endpoint">https://webhook.tech300.westcliff.edu/iot-alerts</div>
+                <div class="sns-sub-endpoint">https://webhook.westcliff.edu/iot-alerts</div>
               </div>
               <span class="sns-sub-status">Confirmed</span>
             </div>
@@ -1770,13 +1781,13 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
           <div class="panel-title-group">
             <div class="panel-service-tag">🔐 AWS IAM — IoT Certificates</div>
             <div class="panel-title">IAM Policies & X.509 Certificates</div>
-            <div class="panel-desc">Least-privilege IoT Core policies scoped to the <code style="color:var(--cyan);font-family:var(--font-mono);">tech300/*</code> topic namespace. Each device authenticates using a unique RSA-2048 X.509 certificate.</div>
+            <div class="panel-desc">Least-privilege IoT Core policies scoped to the <code style="color:var(--cyan);font-family:var(--font-mono);">iot/*</code> topic namespace. Each device authenticates using a unique RSA-2048 X.509 certificate.</div>
           </div>
         </div>
 
         <div class="section-card">
           <div class="sc-header">
-            <div class="sc-title">📜 IoT Policy: Tech300GatewayPolicy</div>
+            <div class="sc-title">📜 IoT Policy: IoTGatewayPolicy</div>
             <span class="sc-meta">Attached to: 3 certificates · 1 IoT policy</span>
           </div>
           <div style="padding:14px 20px;">
@@ -1790,12 +1801,12 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
       <span class="k">"Resource"</span>: <span class="s">"arn:aws:iot:*:*:client/${iot:Connection.Thing.ThingName}"</span>
     },
     {
-      <span class="c">// PUBLISH &amp; SUBSCRIBE — scoped to tech300/* namespace only</span>
+      <span class="c">// PUBLISH &amp; SUBSCRIBE — scoped to iot/* namespace only</span>
       <span class="k">"Effect"</span>: <span class="s">"Allow"</span>,
       <span class="k">"Action"</span>: [<span class="s">"iot:Publish"</span>, <span class="s">"iot:Subscribe"</span>, <span class="s">"iot:Receive"</span>],
       <span class="k">"Resource"</span>: [
-        <span class="s">"arn:aws:iot:*:*:topic/tech300/*"</span>,
-        <span class="s">"arn:aws:iot:*:*:topicfilter/tech300/*"</span>
+        <span class="s">"arn:aws:iot:*:*:topic/iot/*"</span>,
+        <span class="s">"arn:aws:iot:*:*:topicfilter/iot/*"</span>
       ]
     },
     {
@@ -1819,7 +1830,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
             <div class="cert-field-list">
               <div class="cert-field">
                 <span class="cf-key">Common Name</span>
-                <span class="cf-val">sensor_node_01.tech300.iot</span>
+                <span class="cf-val">sensor_node_01.local</span>
               </div>
               <div class="cert-field">
                 <span class="cf-key">Algorithm</span>
@@ -1843,7 +1854,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
               </div>
               <div class="cert-field">
                 <span class="cf-key">Policy</span>
-                <span class="cf-val">Tech300GatewayPolicy</span>
+                <span class="cf-val">IoTGatewayPolicy</span>
               </div>
             </div>
           </div>
@@ -1854,13 +1865,13 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
               <span class="cert-card-title">sensor_node_02 Certificate</span>
             </div>
             <div class="cert-field-list">
-              <div class="cert-field"><span class="cf-key">Common Name</span><span class="cf-val">sensor_node_02.tech300.iot</span></div>
+              <div class="cert-field"><span class="cf-key">Common Name</span><span class="cf-val">sensor_node_02.local</span></div>
               <div class="cert-field"><span class="cf-key">Algorithm</span><span class="cf-val">RSA-2048 / SHA-256</span></div>
               <div class="cert-field"><span class="cf-key">Fingerprint</span><span class="cf-val" style="font-size:0.65rem;">B8:27:EB:4F:91:0C:DE:A2:88:F1:77:CC:34:10:BB:AA</span></div>
               <div class="cert-field"><span class="cf-key">Issued</span><span class="cf-val">2026-01-15</span></div>
               <div class="cert-field"><span class="cf-key">Expires</span><span class="cf-val">2028-01-15</span></div>
               <div class="cert-field"><span class="cf-key">Status</span><span class="cf-val" style="color:var(--emerald);">● ACTIVE</span></div>
-              <div class="cert-field"><span class="cf-key">Policy</span><span class="cf-val">Tech300GatewayPolicy</span></div>
+              <div class="cert-field"><span class="cf-key">Policy</span><span class="cf-val">IoTGatewayPolicy</span></div>
             </div>
           </div>
         </div>
@@ -1924,7 +1935,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
           <div style="padding:14px 20px; display:flex; flex-direction:column; gap:8px;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:rgba(255,255,255,0.025); border-radius:var(--r-sm); border:1px solid var(--border-card);">
               <div>
-                <div style="font-size:0.82rem; font-weight:600; color:#fff;">/aws/iot/tech300</div>
+                <div style="font-size:0.82rem; font-weight:600; color:#fff;">/aws/iot/telemetry</div>
                 <div style="font-size:0.68rem; color:var(--text-dim); font-family:var(--font-mono); margin-top:2px;">Rules Engine evaluation logs · Retention: 30 days</div>
               </div>
               <span style="font-size:0.7rem;font-family:var(--font-mono);color:var(--emerald);" id="cw-iot-events">0 events</span>
@@ -2099,8 +2110,8 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
 
       const ts = new Date(record.timestamp * 1000).toLocaleTimeString();
       const topic = isAlert
-        ? `tech300/alerts/${record.device_id}`
-        : `tech300/telemetry/${record.device_id}`;
+        ? `iot/alerts/${record.device_id}`
+        : `iot/telemetry/${record.device_id}`;
 
       const payload = isAlert
         ? JSON.stringify({ type:'ALERT', device_id: record.device_id, temp: record.temp.toFixed(2), threshold: 30.0 })
@@ -2111,7 +2122,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
       row.innerHTML = `
         <div class="msg-ts">${ts}</div>
         <div class="msg-topic">
-          <span class="topic-tier">tech300/</span>${isAlert ? 'alerts/' : 'telemetry/'}${record.device_id}
+          <span class="topic-tier">iot/</span>${isAlert ? 'alerts/' : 'telemetry/'}${record.device_id}
           ${isAlert ? '<span class="msg-alert-tag">⚠ ALERT</span>' : ''}
         </div>
         <div class="msg-payload">${payload}</div>
@@ -2294,7 +2305,7 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
           <div class="sne-subject">[IoT Alert] High Temp — ${alertItem.device_id}</div>
           <div class="sne-message">${alertItem.message}</div>
           <div class="sne-meta">
-            <span class="sne-tag purple">SNS · TECH300IoTAlerts</span>
+            <span class="sne-tag purple">SNS · IoTAlerts</span>
             <span class="sne-tag rose">temp ${alertItem.temp.toFixed(2)}°C</span>
             <span style="font-size:.62rem;color:var(--text-dim);font-family:var(--font-mono);">${ts}</span>
           </div>

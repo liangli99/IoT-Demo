@@ -3,148 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TECH 300: End-to-End IoT Demo System | Operations Dashboard</title>
+  <title>IoT Demo System | Operations Dashboard</title>
   <meta name="description" content="End-to-End IoT Demonstration System - Sensors, BLE 5.0, Edge Gateway, AWS IoT Core, and Presentation Layer. Course reference by Professor Liang Li.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <!-- Shared bus first so SimBus is available when sim engine auto-connects -->
   <script src="js/sim-bus.js"></script>
   <!-- Unified system nav bar -->
-  <script src="js/nav-bar.js"></script>
+  <script src="js/nav-bar.js?v=2.3"></script>
 </head>
 <body>
 
   <!-- Top Application Header -->
   <header class="app-header">
-    <div class="header-inner">
-      <div class="brand-section">
-        <div class="brand-icon">
-          <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo">
+    <div class="header-inner" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <!-- Operations Dashboard Title & Context Badge -->
+      <div class="dashboard-title-group" style="display:flex; align-items:center; gap:10px;">
+        <div style="width:34px; height:34px; border-radius:8px; background:rgba(0,229,255,0.1); border:1px solid rgba(0,229,255,0.3); display:flex; align-items:center; justify-content:center; font-size:1.15rem; box-shadow:0 0 12px rgba(0,229,255,0.2); flex-shrink:0;">
+          🖥️
         </div>
-        <div class="brand-info">
-          <h1>
-            TECH 300: IoT Demo System 
-            <span class="badge">v1.0 LIVE</span>
-          </h1>
-          <div class="brand-subtitle">
-            <span class="univ-tag">Westcliff University</span>
-            <span class="sep">•</span>
-            <span class="prof-badge">Course Director &amp; Lead Architect: <strong>Prof. Liang Li</strong></span>
+        <div>
+          <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+            <span>Operations &amp; Control Center</span>
+            <span class="badge" style="font-size:0.6rem; padding:1px 7px; background:rgba(16,185,129,0.15); color:var(--emerald); border:1px solid rgba(16,185,129,0.3); border-radius:999px;">● STREAMING</span>
+          </div>
+          <div style="font-size:0.68rem; color:var(--text-dim); font-family:var(--font-mono); margin-top:1px;">
+            5-Tier Telemetry Pipeline · Closed-Loop Real-Time Control
           </div>
         </div>
-        <!-- Quick navigation to other app pages -->
-        <div style="display:flex; gap:6px; margin-left:16px; flex-shrink:0;">
-          <a href="index.html"
-             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
-                    background:rgba(255,255,255,0.06); border:1px solid rgba(99,120,160,0.25);
-                    border-radius:8px; font-size:0.75rem; color:var(--text-muted);
-                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
-             onmouseover="this.style.borderColor='rgba(0,229,255,0.4)';this.style.color='var(--cyan)'"
-             onmouseout="this.style.borderColor='rgba(99,120,160,0.25)';this.style.color='var(--text-muted)'">
-            🏠 Home
-          </a>
-          <a href="gateway.html"
-             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
-                    background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);
-                    border-radius:8px; font-size:0.75rem; color:var(--emerald);
-                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
-             onmouseover="this.style.background='rgba(16,185,129,0.2)'"
-             onmouseout="this.style.background='rgba(16,185,129,0.1)'">
-            📟 Edge Gateway
-          </a>
-          <a href="aws-cloud.html"
-             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
-                    background:rgba(255,153,0,0.1); border:1px solid rgba(255,153,0,0.3);
-                    border-radius:8px; font-size:0.75rem; color:#ff9900;
-                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
-             onmouseover="this.style.background='rgba(255,153,0,0.2)'"
-             onmouseout="this.style.background='rgba(255,153,0,0.1)'">
-            ☁️ AWS Cloud
-          </a>
-          <a href="app.html"
-             style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
-                    background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.3);
-                    border-radius:8px; font-size:0.75rem; color:var(--cyan);
-                    text-decoration:none; transition:all 0.15s; white-space:nowrap;"
-             onmouseover="this.style.background='rgba(14,165,233,0.2)'"
-             onmouseout="this.style.background='rgba(14,165,233,0.1)'">
-            📱 Mobile App
-          </a>
-        </div>
       </div>
 
-      <!-- Quick System Telemetry Strip -->
-      <div class="system-status-strip">
-        <div class="status-pill">
-          <span class="status-dot"></span>
-          <span class="status-label">BROKER:</span>
-          <span class="status-val">AWS IoT Core (mTLS 8883)</span>
+      <!-- Right Side Controls: Telemetry Capsule + Playback -->
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <!-- Quick System Telemetry Strip -->
+        <div class="system-status-strip" style="padding:0.35rem 0.85rem; font-size:0.75rem; gap:1rem; background:rgba(7,10,18,0.65); border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+          <div class="status-pill">
+            <span class="status-dot"></span>
+            <span class="status-label" style="font-size:0.7rem; color:var(--text-dim);">BROKER:</span>
+            <span class="status-val" style="font-size:0.75rem; font-family:var(--font-mono);">AWS IoT Core (mTLS)</span>
+          </div>
+          <div class="status-pill">
+            <span class="status-dot pulsing-blue"></span>
+            <span class="status-label" style="font-size:0.7rem; color:var(--text-dim);">NODES:</span>
+            <span class="status-val" style="font-size:0.75rem; font-family:var(--font-mono); color:var(--cyan);">3 Active</span>
+          </div>
+          <div class="status-pill">
+            <span class="status-label" style="font-size:0.7rem; color:var(--text-dim);">INGESTED:</span>
+            <span id="stat-total-ingested" class="status-val" style="color:var(--cyan); font-size:0.75rem; font-family:var(--font-mono); font-weight:700;">1,248</span>
+          </div>
+          <div class="status-pill">
+            <span class="status-label" style="font-size:0.7rem; color:var(--text-dim);">TIME:</span>
+            <span id="realtime-clock" class="status-val" style="color:var(--amber); font-size:0.75rem; font-family:var(--font-mono);">--:--:--</span>
+          </div>
         </div>
-        <div class="status-pill">
-          <span class="status-dot pulsing-blue"></span>
-          <span class="status-label">NODES:</span>
-          <span class="status-val">3 Active</span>
-        </div>
-        <div class="status-pill">
-          <span class="status-label">INGESTED:</span>
-          <span id="stat-total-ingested" class="status-val" style="color:var(--cyan);">1,248</span>
-        </div>
-        <div class="status-pill">
-          <span class="status-label">TIME:</span>
-          <span id="realtime-clock" class="status-val" style="color:var(--amber);">--:--:--</span>
-        </div>
-      </div>
 
-      <!-- Simulation Toolbar -->
-      <div class="sim-controls">
-        <button id="btn-toggle-sim" class="btn btn-primary" title="Pause/Resume telemetry generation">
-          ⏸ Pause Stream
-        </button>
-        <select id="speed-select" class="speed-select" title="Simulation Clock Multiplier">
-          <option value="1">Speed: 1x</option>
-          <option value="2">Speed: 2x</option>
-          <option value="5">Speed: 5x</option>
-        </select>
-        <button id="btn-inject-anomaly" class="btn btn-danger" title="Inject temp spike >30°C to trigger AWS Lambda">
-          ⚠️ Inject Temp Spike
-        </button>
-        <button id="btnClearAnomaly" id="btn-clear-anomaly" class="btn" title="Reset to normal baseline">
-          ↺ Reset
-        </button>
-        <button id="btn-toggle-gateway" class="btn" title="Simulate edge store-and-forward caching">
-          🌐 Disconnect WAN
-        </button>
+        <!-- Simulation Stream Playback -->
+        <div class="sim-controls" style="display:flex; align-items:center; gap:6px;">
+          <button id="btn-toggle-sim" class="btn btn-primary" style="padding:0.35rem 0.75rem; font-size:0.75rem; font-weight:600;" title="Pause/Resume telemetry generation">
+            ⏸ Pause Stream
+          </button>
+          <select id="speed-select" class="speed-select" style="padding:0.35rem 0.6rem; font-size:0.75rem;" title="Simulation Clock Multiplier">
+            <option value="1">1x Speed</option>
+            <option value="2">2x Speed</option>
+            <option value="5">5x Speed</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="tabs-navigation">
-      <button class="tab-btn active" data-tab="pipeline">
+    <nav class="tabs-navigation" style="margin:0.5rem auto 0; padding:0; border-bottom:none; gap:6px;">
+      <button class="tab-btn active" data-tab="pipeline" style="padding:0.5rem 1rem; font-size:0.82rem;">
         <span>🔄 5-Tier Architecture &amp; Tests</span>
-        <span class="tab-badge">Interactive</span>
       </button>
-      <button class="tab-btn" data-tab="fleet">
+      <button class="tab-btn" data-tab="fleet" style="padding:0.5rem 1rem; font-size:0.82rem;">
         <span>📊 Fleet Telemetry &amp; Charts</span>
-        <span class="tab-badge">Real-Time</span>
       </button>
-      <button class="tab-btn" data-tab="actuation">
+      <button class="tab-btn" data-tab="actuation" style="padding:0.5rem 1rem; font-size:0.82rem;">
         <span>🕹 Reverse Actuation &amp; Control</span>
-        <span class="tab-badge">Bi-Directional</span>
       </button>
-      <button class="tab-btn" data-tab="aws">
+      <button class="tab-btn" data-tab="aws" style="padding:0.5rem 1rem; font-size:0.82rem;">
         <span>☁ AWS IoT Cloud &amp; Rules</span>
-        <span class="tab-badge">DynamoDB</span>
       </button>
-      <button class="tab-btn" data-tab="diagnostics">
+      <button class="tab-btn" data-tab="diagnostics" style="padding:0.5rem 1rem; font-size:0.82rem;">
         <span>⏱️ Latency &amp; Diagnostics</span>
-        <span class="tab-badge">Benchmarks</span>
       </button>
-      <a href="design.html" class="tab-btn tab-link-nav" style="text-decoration:none; color:var(--text-muted); border-left:1px solid rgba(255,255,255,0.1); margin-left:6px; padding-left:12px;" title="View Technical Design Document & BOM">
-        <span>📖 Technical Design</span>
-        <span class="tab-badge" style="background:rgba(0,212,255,0.15); color:var(--cyan);">Doc ↗</span>
-      </a>
     </nav>
   </header>
 
@@ -156,47 +107,31 @@
          ======================================================== -->
     <section id="tab-pipeline" class="tab-panel active">
       
-      <!-- Interactive Demo Operation & Testing Switchboard -->
-      <div class="demo-switchboard-card" style="background:linear-gradient(135deg, rgba(14,22,38,0.95), rgba(20,32,54,0.9)); border:1px solid rgba(0,212,255,0.25); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; margin-bottom:1.5rem; box-shadow:0 8px 30px rgba(0,0,0,0.5);">
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(99,102,241,0.3)); border:1px solid var(--cyan); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
-              ⚡
-            </div>
-            <div>
-              <div style="font-weight:700; color:#fff; font-size:1rem; display:flex; align-items:center; gap:8px;">
-                <span>Live Demo Operation &amp; Scenario Test Center</span>
-                <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border:1px solid rgba(16,185,129,0.3); font-size:0.7rem;">Active</span>
-              </div>
-              <div style="font-size:0.78rem; color:var(--text-muted);">
-                Inject hardware faults, simulate network disconnects, test throughput bursts, and observe real-time cloud rule evaluation.
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <a href="design.html" class="btn" style="border-color:rgba(0,212,255,0.3); color:var(--cyan); text-decoration:none; font-size:0.78rem;" title="Open complete technical documentation & BOM">
-              📖 Technical Design &amp; BOM ↗
-            </a>
-          </div>
+      <!-- Sleek Interactive Scenario Test Bench Strip -->
+      <div class="scenario-test-bench" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; background:linear-gradient(135deg, rgba(14,22,38,0.85), rgba(20,32,54,0.8)); border:1px solid rgba(0,212,255,0.22); border-radius:var(--radius-md); padding:0.55rem 1rem; margin-bottom:1.25rem; box-shadow:0 4px 20px rgba(0,0,0,0.35);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.1rem;">⚡</span>
+          <span style="font-weight:700; color:#fff; font-size:0.82rem; white-space:nowrap;">Interactive Scenario Tests:</span>
+          <span style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono);">[Inject faults &amp; triggers across the pipeline]</span>
         </div>
 
-        <div class="test-action-buttons-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem;">
-          <button id="sb-btn-temp-spike" class="btn btn-danger" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Inject abnormal temperature >30°C to trigger AWS Lambda rule and SNS alert">
-            🚨 Inject Temp Spike (&gt;30°C)
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <button id="sb-btn-temp-spike" class="btn btn-danger" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Inject abnormal temperature >30°C to trigger AWS Lambda rule and SNS alert">
+            🚨 Temp Spike (&gt;30°C)
           </button>
-          <button id="sb-btn-toggle-relay" class="btn btn-primary" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Dispatch reverse command down through AWS IoT Core and Edge Gateway to ESP32 relay">
+          <button id="sb-btn-toggle-relay" class="btn btn-primary" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Dispatch reverse command down through AWS IoT Core and Edge Gateway to ESP32 relay">
             ⚡ Toggle Relay (GPIO 23)
           </button>
-          <button id="sb-btn-wan-toggle" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; border-color:rgba(245,158,11,0.4); color:var(--amber);" title="Simulate WAN network partition: edge stores frames in SQLite buffer and flushes on reconnect">
+          <button id="sb-btn-wan-toggle" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; border-color:rgba(245,158,11,0.4); color:var(--amber);" title="Simulate WAN network partition: edge stores frames in SQLite buffer and flushes on reconnect">
             🔌 Toggle Gateway WAN
           </button>
-          <button id="sb-btn-burst-test" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; border-color:rgba(168,85,247,0.4); color:var(--purple);" title="Inject high-speed 50-packet burst to benchmark ingestion throughput">
+          <button id="sb-btn-burst-test" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; border-color:rgba(168,85,247,0.4); color:var(--purple);" title="Inject high-speed 50-packet burst to benchmark ingestion throughput">
             🌊 50-Pkt Burst Ingest
           </button>
-          <button id="sb-btn-reset-baseline" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
+          <button id="sb-btn-reset-baseline" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
             🔄 Reset Normal Baseline
           </button>
-          <button id="sb-btn-guided-demo" class="btn" style="justify-content:center; padding:0.65rem 0.85rem; font-size:0.8rem; font-weight:700; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(16,185,129,0.2)); border-color:var(--emerald); color:#fff;" title="Start 5-step automated guided demo tour">
+          <button id="sb-btn-guided-demo" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(16,185,129,0.2)); border-color:var(--emerald); color:#fff;" title="Start 5-step automated guided demo tour">
             ▶️ Run Guided Demo
           </button>
         </div>
@@ -225,10 +160,12 @@
           <div class="tier-header">
             <div>
               <span class="tier-num">Tier 1</span>
-              <div class="tier-title">Perception Layer</div>
+              <div class="tier-title">
+                <a href="perception.html" style="color:inherit; text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='inherit'" title="Open Perception Layer Console">Perception Layer <span style="font-size:0.8rem; opacity:0.6;">↗</span></a>
+              </div>
               <div class="tier-subtitle">Constrained End Device</div>
             </div>
-            <span style="font-size:1.4rem;">🎛</span>
+            <a href="perception.html" title="Open Perception Layer Console" style="font-size:1.4rem; text-decoration:none; display:inline-block; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🎛</a>
           </div>
 
           <div class="device-hardware-box">
@@ -278,8 +215,8 @@
             </div>
           </div>
 
-          <div style="margin-top:0.75rem; text-align:center;">
-            <a href="perception.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(6,182,212,0.3); color:#06b6d4;">
+          <div style="margin-top:auto; padding-top:0.85rem; text-align:center;">
+            <a href="perception.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(6,182,212,0.35); color:#06b6d4; font-weight:600; background:rgba(6,182,212,0.08); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(6,182,212,0.2)';this.style.borderColor='#06b6d4';this.style.boxShadow='0 0 14px rgba(6,182,212,0.3)';" onmouseout="this.style.background='rgba(6,182,212,0.08)';this.style.borderColor='rgba(6,182,212,0.35)';this.style.boxShadow='none';">
               🎛️ Firmware &amp; Sensors Console ↗
             </a>
           </div>
@@ -290,10 +227,12 @@
           <div class="tier-header">
             <div>
               <span class="tier-num">Tier 2</span>
-              <div class="tier-title">Proximity Network</div>
+              <div class="tier-title">
+                <a href="proximity.html" style="color:inherit; text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='#c084fc'" onmouseout="this.style.color='inherit'" title="Open Proximity Network (BLE 5.0) Architecture & Deployment Console">Proximity Network <span style="font-size:0.8rem; opacity:0.6;">↗</span></a>
+              </div>
               <div class="tier-subtitle">Southbound Field Link</div>
             </div>
-            <span style="font-size:1.4rem;">📶</span>
+            <a href="proximity.html" title="Open BLE Protocol Selection & Deployment Console" style="font-size:1.4rem; text-decoration:none; display:inline-block; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📶</a>
           </div>
 
           <div class="device-hardware-box">
@@ -331,6 +270,12 @@
           <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
             💡 <em>Design Rationale:</em> Low radio duty cycle preserves battery for months; IP stack is offloaded to Tier 3.
           </div>
+
+          <div style="margin-top:auto; padding-top:0.85rem; text-align:center;">
+            <a href="proximity.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(168,85,247,0.35); color:#c084fc; font-weight:600; background:rgba(168,85,247,0.08); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(168,85,247,0.2)';this.style.borderColor='#a855f7';this.style.boxShadow='0 0 14px rgba(168,85,247,0.3)';" onmouseout="this.style.background='rgba(168,85,247,0.08)';this.style.borderColor='rgba(168,85,247,0.35)';this.style.boxShadow='none';">
+              📶 BLE Protocol &amp; Deployment Console ↗
+            </a>
+          </div>
         </div>
 
         <!-- Tier 3: Edge Gateway Layer -->
@@ -338,10 +283,12 @@
           <div class="tier-header">
             <div>
               <span class="tier-num">Tier 3</span>
-              <div class="tier-title">Edge Gateway</div>
-              <div class="tier-subtitle">Protocol Bridge & Cache</div>
+              <div class="tier-title">
+                <a href="gateway.html" style="color:inherit; text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='var(--emerald)'" onmouseout="this.style.color='inherit'" title="Open Edge Gateway Operations">Edge Gateway <span style="font-size:0.8rem; opacity:0.6;">↗</span></a>
+              </div>
+              <div class="tier-subtitle">Protocol Bridge &amp; Cache</div>
             </div>
-            <span style="font-size:1.4rem;">🖥️</span>
+            <a href="gateway.html" title="Open Edge Gateway Operations" style="font-size:1.4rem; text-decoration:none; display:inline-block; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🖥️</a>
           </div>
 
           <div class="device-hardware-box">
@@ -382,6 +329,12 @@
           <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
             ⚡ Performs BLE GATT-to-JSON serialization and provides store-and-forward persistence during WAN outages.
           </div>
+
+          <div style="margin-top:auto; padding-top:0.85rem; text-align:center;">
+            <a href="gateway.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(16,185,129,0.35); color:var(--emerald); font-weight:600; background:rgba(16,185,129,0.08); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(16,185,129,0.2)';this.style.borderColor='var(--emerald)';this.style.boxShadow='0 0 14px rgba(16,185,129,0.3)';" onmouseout="this.style.background='rgba(16,185,129,0.08)';this.style.borderColor='rgba(16,185,129,0.35)';this.style.boxShadow='none';">
+              📟 Edge Gateway Operations ↗
+            </a>
+          </div>
         </div>
 
         <!-- Tier 4: Cloud Layer (AWS IoT Core) -->
@@ -389,10 +342,12 @@
           <div class="tier-header">
             <div>
               <span class="tier-num">Tier 4</span>
-              <div class="tier-title">AWS IoT Cloud</div>
-              <div class="tier-subtitle">Broker, Storage & Rules</div>
+              <div class="tier-title">
+                <a href="aws-cloud.html" style="color:inherit; text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='#ff9900'" onmouseout="this.style.color='inherit'" title="Open AWS IoT Cloud Operations">AWS IoT Cloud <span style="font-size:0.8rem; opacity:0.6;">↗</span></a>
+              </div>
+              <div class="tier-subtitle">Broker, Storage &amp; Rules</div>
             </div>
-            <span style="font-size:1.4rem;">☁️</span>
+            <a href="aws-cloud.html" title="Open AWS IoT Cloud Operations" style="font-size:1.4rem; text-decoration:none; display:inline-block; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">☁️</a>
           </div>
 
           <div class="device-hardware-box">
@@ -423,14 +378,20 @@
           </div>
           <div class="packet-box" style="color:#e2e8f0; border-color:rgba(168,85,247,0.25);">
             <span style="color:#f43f5e">SELECT</span> device_id, temp, humidity<br>
-            <span style="color:#f43f5e">FROM</span> <span style="color:#10b981">'tech300/telemetry/+'</span><br>
+            <span style="color:#f43f5e">FROM</span> <span style="color:#10b981">'iot/telemetry/+'</span><br>
             <span style="color:#f43f5e">WHERE</span> temp &gt; 0<br>
             <span style="color:#64748b">-- Action 1: DynamoDB PutItem</span><br>
             <span style="color:#64748b">-- Action 2: Lambda temp &gt; 30°C</span>
           </div>
 
           <div style="margin-top:1rem; font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
-            🔒 Scoped to <code style="color:var(--cyan);">tech300/*</code> topic namespace following strict least-privilege IAM policies.
+            🔒 Scoped to <code style="color:var(--cyan);">iot/*</code> topic namespace following strict least-privilege IAM policies.
+          </div>
+
+          <div style="margin-top:auto; padding-top:0.85rem; text-align:center;">
+            <a href="aws-cloud.html" class="btn" style="width:100%; justify-content:center; text-decoration:none; font-size:0.75rem; border-color:rgba(255,153,0,0.4); color:#ff9900; font-weight:600; background:rgba(255,153,0,0.08); transition:all 0.2s ease;" onmouseover="this.style.background='rgba(255,153,0,0.2)';this.style.borderColor='#ff9900';this.style.boxShadow='0 0 14px rgba(255,153,0,0.3)';" onmouseout="this.style.background='rgba(255,153,0,0.08)';this.style.borderColor='rgba(255,153,0,0.4)';this.style.boxShadow='none';">
+              ☁️ AWS IoT Cloud Console ↗
+            </a>
           </div>
         </div>
 
@@ -439,10 +400,12 @@
           <div class="tier-header">
             <div>
               <span class="tier-num">Tier 5</span>
-              <div class="tier-title">Presentation Layer</div>
-              <div class="tier-subtitle">Visualization & Control</div>
+              <div class="tier-title">
+                <a href="app.html" style="color:inherit; text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='#00e5ff'" onmouseout="this.style.color='inherit'" title="Open Tier 5 Mobile App Actuation Console">Presentation Layer <span style="font-size:0.8rem; opacity:0.6;">↗</span></a>
+              </div>
+              <div class="tier-subtitle">Visualization &amp; Control</div>
             </div>
-            <span style="font-size:1.4rem;">📱</span>
+            <a href="app.html" title="Open Tier 5 Mobile App Actuation Console" style="font-size:1.4rem; text-decoration:none; display:inline-block; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📱</a>
           </div>
 
           <div class="device-hardware-box">
@@ -486,9 +449,12 @@
             </div>
           </div>
 
-          <div style="margin-top:1rem; text-align:center;">
-            <button class="btn btn-primary" onclick="document.querySelector('[data-tab=actuation]').click()" style="width:100%; justify-content:center;">
-              🎮 Open Actuation Console
+          <div style="margin-top:auto; padding-top:0.85rem; text-align:center; display:flex; flex-direction:column; gap:6px;">
+            <a href="app.html" class="btn btn-primary" style="width:100%; justify-content:center; font-size:0.75rem; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="Open Mobile App Actuation Console">
+              📱 Open Mobile App Actuation Console ↗
+            </a>
+            <button class="btn btn-ghost" onclick="document.querySelector('[data-tab=actuation]').click()" style="width:100%; justify-content:center; font-size:0.7rem; color:var(--text-dim); padding:2px 8px; border:none; background:transparent; cursor:pointer;" title="View in-dashboard switchboard">
+              or view in-dashboard switchboard ↓
             </button>
           </div>
         </div>
@@ -816,7 +782,7 @@
           </div>
 
           <div id="actuation-terminal-log" class="actuation-terminal">
-            <div class="term-line cmd-sent">[SYSTEM READY] Listening for reverse actuation commands on tech300/commands/#</div>
+            <div class="term-line cmd-sent">[SYSTEM READY] Listening for reverse actuation commands on iot/commands/#</div>
             <div class="term-line gateway-ack">[BLE GATT] Central host adapter (hci0) initialized and bonded.</div>
           </div>
         </div>
@@ -859,14 +825,14 @@
             <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">Active</span>
           </div>
           <div class="code-body">
-<span class="sql-comment">-- Tech 300 Telemetry Routing SQL Statement</span>
+<span class="sql-comment">-- Telemetry Routing SQL Statement</span>
 <span class="sql-keyword">SELECT</span> 
   <span class="sql-field">device_id</span>,
   <span class="sql-field">temp</span>,
   <span class="sql-field">humidity</span>,
   <span class="sql-field">pressure</span>,
   <span class="sql-field">timestamp</span>
-<span class="sql-keyword">FROM</span> <span class="sql-str">'tech300/telemetry/+'</span>
+<span class="sql-keyword">FROM</span> <span class="sql-str">'iot/telemetry/+'</span>
 <span class="sql-keyword">WHERE</span> <span class="sql-field">temp</span> &gt; 0;
 
 <span class="sql-comment">-- Action 1: PutRecord to Amazon DynamoDB</span>
@@ -879,7 +845,7 @@
         <div class="code-editor-card">
           <div class="editor-header">
             <div class="editor-title">
-              <span>🔒</span> AWS IoT Least-Privilege Policy: Tech300GatewayPolicy
+              <span>🔒</span> AWS IoT Least-Privilege Policy: IoTGatewayPolicy
             </div>
             <span class="badge" style="background:rgba(0,229,255,0.15); color:var(--cyan); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem;">X.509 Attached</span>
           </div>
@@ -895,7 +861,7 @@
     {
       <span class="sql-str">"Effect"</span>: <span class="sql-str">"Allow"</span>,
       <span class="sql-str">"Action"</span>: [<span class="sql-str">"iot:Publish"</span>, <span class="sql-str">"iot:Subscribe"</span>],
-      <span class="sql-str">"Resource"</span>: <span class="sql-str">"arn:aws:iot:*:*:topic/tech300/*"</span>
+      <span class="sql-str">"Resource"</span>: <span class="sql-str">"arn:aws:iot:*:*:topic/iot/*"</span>
     }
   ]
 }

@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tier 2: Proximity Network (BLE 5.0) — Setup, Configuration & Access Console</title>
+  <meta name="description" content="Operational guide and interactive engineering workbench for the IoT Demo Board BLE 5.0 proximity network: hardware setup, NimBLE firmware configuration, GATT profiles, Linux BlueZ access, Python daemon, and mobile app integration.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <!-- Shared bus first so SimBus is available -->
+  <script src="js/sim-bus.js"></script>
+  <!-- Unified system navigation bar -->
+  <script src="js/nav-bar.js?v=2.3"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --ble-purple:   #a855f7;
+      --ble-purple-d: #9333ea;
+      --ble-purple-l: #c084fc;
+      --ble-indigo:   #6366f1;
+      --ble-cyan:     #00d4ff;
+      --ble-emerald:  #10b981;
+      --ble-amber:    #f59e0b;
+      --ble-rose:     #f43f5e;
+      --ble-blue:     #3b82f6;
+
+      --bg-void:      #080e1a;
+      --bg-deep:      #0c1527;
+      --bg-surface:   #101c33;
+      --bg-card:      #152442;
+      --bg-card-alt:  #1a2c50;
+      --bg-code:      #09111e;
+
+      --border:         rgba(168, 85, 247, 0.2);
+      --border-subtle:  rgba(255, 255, 255, 0.08);
+      --border-glow:    rgba(168, 85, 247, 0.35);
+
+      --text-main:    #f8fafc;
+      --text-muted:   #94a3b8;
+      --text-dim:     #64748b;
+
+      --font-sans:    'Inter', -apple-system, sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+
+      --sidebar-w:    300px;
+      --topbar-h:     60px;
+      --radius-sm:    6px;
+      --radius-md:    10px;
+      --radius-lg:    14px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-void);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── Proximity Top Bar ────────────────────────────────────────── */
+    .proximity-topbar {
+      height: var(--topbar-h);
+      background: rgba(12, 21, 39, 0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 2px solid var(--ble-purple);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: fixed;
+      top: 48px;
+      left: 0; right: 0;
+      z-index: 1000;
+    }
+
+    .proximity-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+    .proximity-brand-icon {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-md);
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid var(--ble-purple);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
+      flex-shrink: 0;
+    }
+    .proximity-brand-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .proximity-brand-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    .proximity-quick-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--ble-purple);
+      box-shadow: 0 0 8px var(--ble-purple);
+      animation: pulse-dot 1.8s infinite;
+    }
+    .status-dot.emerald { background: var(--ble-emerald); box-shadow: 0 0 8px var(--ble-emerald); }
+    .status-dot.cyan    { background: var(--ble-cyan); box-shadow: 0 0 8px var(--ble-cyan); }
+    @keyframes pulse-dot { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.4; transform:scale(0.8);} }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Layout & Sidebar ─────────────────────────────────────────── */
+    .proximity-layout {
+      display: flex;
+      margin-top: calc(48px + var(--topbar-h));
+      min-height: calc(100vh - 48px - var(--topbar-h));
+    }
+
+    .proximity-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-deep);
+      border-right: 1px solid var(--border-subtle);
+      position: fixed;
+      top: calc(48px + var(--topbar-h));
+      bottom: 0;
+      overflow-y: auto;
+      padding: 1.25rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 100;
+    }
+
+    .nav-section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.75rem 0.5rem 0.25rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .nav-item:hover {
+      background: rgba(168, 85, 247, 0.1);
+      color: #fff;
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(99, 102, 241, 0.18) 100%);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+    }
+    .nav-badge {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-badge {
+      background: rgba(168, 85, 247, 0.25);
+      color: #e9d5ff;
+    }
+
+    /* ── Main Content Area ────────────────────────────────────────── */
+    .proximity-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 1.5rem 2rem 3rem;
+      max-width: 1440px;
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Typography & Cards ───────────────────────────────────────── */
+    .page-hero {
+      background: linear-gradient(135deg, rgba(21, 36, 66, 0.8) 0%, rgba(26, 44, 80, 0.6) 100%);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::after {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .section-heading {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .sub-lead {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 950px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+    @media (max-width: 1080px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .badge-purple { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-cyan   { background: rgba(0, 212, 255, 0.15); color: #67e8f9; border: 1px solid rgba(0, 212, 255, 0.4); }
+    .badge-green  { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-amber  { background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-rose   { background: rgba(244, 63, 94, 0.15); color: #fecdd3; border: 1px solid rgba(244, 63, 94, 0.4); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .btn-purple {
+      background: linear-gradient(135deg, var(--ble-purple), var(--ble-purple-d));
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.35);
+    }
+    .btn-purple:hover {
+      background: linear-gradient(135deg, #b86bfc, #a855f7);
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .btn-cyan {
+      background: rgba(0, 212, 255, 0.15);
+      color: var(--ble-cyan);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+    }
+    .btn-cyan:hover {
+      background: rgba(0, 212, 255, 0.25);
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    /* ── Code Blocks ──────────────────────────────────────────────── */
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      overflow-x: auto;
+      position: relative;
+    }
+    .btn-copy {
+      position: absolute;
+      top: 8px; right: 8px;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-copy:hover {
+      background: rgba(168, 85, 247, 0.3);
+      color: #fff;
+      border-color: var(--ble-purple);
+    }
+
+    /* ── Tables ───────────────────────────────────────────────────── */
+    .protocol-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+    .protocol-table th {
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .protocol-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+    }
+    .protocol-table tr:hover td {
+      background: rgba(168, 85, 247, 0.04);
+      color: #fff;
+    }
+    .protocol-table code {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #38bdf8;
+    }
+
+    /* ── Live Workbench Styles ────────────────────────────────────── */
+    .node-selector-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .node-select-card {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .node-select-card:hover {
+      border-color: rgba(168, 85, 247, 0.5);
+      background: rgba(168, 85, 247, 0.06);
+    }
+    .node-select-card.active {
+      border-color: var(--ble-purple);
+      background: rgba(168, 85, 247, 0.15);
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+    }
+    .node-card-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .node-card-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .gatt-action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      .gatt-action-grid { grid-template-columns: 1fr; }
+    }
+
+    .gatt-char-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .char-meta-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .char-meta-uuid {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .char-val-disp {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ble-cyan);
+    }
+
+    .terminal-window {
+      background: #040810;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: #a5f3fc;
+      height: 220px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .term-line-cmd  { color: #fbbf24; }
+    .term-line-resp { color: #a5f3fc; }
+    .term-line-err  { color: #f43f5e; }
+    .term-line-ok   { color: #10b981; }
+
+    /* ── PDU Hex Stream ───────────────────────────────────────────── */
+    .hex-stream {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: var(--bg-code);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+    }
+    .hex-cell {
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .hex-cell:hover { transform: scale(1.08); z-index: 10; }
+    .hex-flags { background: rgba(168, 85, 247, 0.25); color: #d8b4fe; border: 1px solid var(--ble-purple); }
+    .hex-uuid  { background: rgba(0, 212, 255, 0.25); color: #67e8f9; border: 1px solid var(--ble-cyan); }
+    .hex-temp  { background: rgba(244, 63, 94, 0.25); color: #fecdd3; border: 1px solid var(--ble-rose); }
+    .hex-hum   { background: rgba(59, 130, 246, 0.25); color: #93c5fd; border: 1px solid var(--ble-blue); }
+    .hex-pres  { background: rgba(16, 185, 129, 0.25); color: #a7f3d0; border: 1px solid var(--ble-emerald); }
+    .hex-mac   { background: rgba(245, 158, 11, 0.25); color: #fde68a; border: 1px solid var(--ble-amber); }
+
+    /* Sniffer Log */
+    .sniffer-terminal {
+      background: #040810;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      height: 240px;
+      overflow-y: auto;
+    }
+    .sniffer-line {
+      display: flex;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
+    }
+    .sn-time { color: #64748b; }
+    .sn-mac  { color: #c084fc; font-weight: 700; }
+    .sn-pdu  { color: #38bdf8; }
+    .sn-rssi { color: #10b981; }
+    .sn-data { color: #e2e8f0; }
+
+    /* Form Inputs */
+    .cfg-input {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      width: 100%;
+    }
+    .cfg-input:focus {
+      outline: none;
+      border-color: var(--ble-purple);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       TIER 2 PROXIMITY TOPBAR
+       ═══════════════════════════════════════════════════════════════ -->
+  <header class="proximity-topbar">
+    <a href="index.html" class="proximity-brand">
+      <div class="proximity-brand-icon">📶</div>
+      <div>
+        <div class="proximity-brand-title">
+          <span>Tier 2: Proximity Network (BLE 5.0)</span>
+          <span class="badge badge-purple">Demo Board Console</span>
+        </div>
+        <div class="proximity-brand-sub">Setup · Configuration · GATT Access · Gateway Integration</div>
+      </div>
+    </a>
+
+    <!-- Live Quick Status Strip -->
+    <div class="proximity-quick-stats">
+      <div class="stat-pill">
+        <span class="status-dot"></span>
+        <span style="color:var(--text-dim);">DEMO STACK:</span>
+        <span style="color:var(--ble-purple-l); font-weight:700;">Apache NimBLE (ESP-IDF)</span>
+      </div>
+      <div class="stat-pill">
+        <span class="status-dot emerald"></span>
+        <span style="color:var(--text-dim);">HCI CONTROLLER:</span>
+        <span id="ble-hci-status" style="color:var(--ble-emerald); font-weight:700;">hci0 UP RUNNING</span>
+      </div>
+      <div class="stat-pill">
+        <span class="status-dot cyan"></span>
+        <span style="color:var(--text-dim);">RSSI:</span>
+        <span id="ble-rssi-top" style="color:var(--ble-cyan); font-weight:700;">-62 dBm</span>
+      </div>
+    </div>
+
+    <!-- Topbar Actions -->
+    <div class="topbar-actions">
+      <a href="perception.html" class="btn btn-ghost" title="Back to Tier 1 Perception Layer">
+        <span>← Tier 1 Perception</span>
+      </a>
+      <a href="dashboard.html" class="btn btn-purple" title="Open Main Operations Dashboard">
+        <span>🖥️ Live Dashboard</span>
+      </a>
+      <a href="app.html" class="btn btn-cyan" title="Open Mobile App Actuation Console">
+        <span>📱 Mobile App ↗</span>
+      </a>
+      <a href="gateway.html" class="btn btn-ghost" title="Forward to Tier 3 Edge Gateway">
+        <span>Tier 3 Gateway →</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       LAYOUT: SIDEBAR + MAIN WORKBENCH
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="proximity-layout">
+
+    <!-- Sidebar Navigation -->
+    <aside class="proximity-sidebar">
+      <div class="nav-section-title">Interactive Access</div>
+      <div class="nav-item active" data-target="panel-live-access">
+        <span>🎮 Live BLE Board Access</span>
+        <span class="nav-badge" style="background:rgba(16,185,129,0.2); color:#10b981;">GATT Live</span>
+      </div>
+
+      <div class="nav-section-title">Demo Board Engineering</div>
+      <div class="nav-item" data-target="panel-setup">
+        <span>🛠️ 1. Setup BLE on Demo Board</span>
+        <span class="nav-badge">Hardware &amp; RF</span>
+      </div>
+      <div class="nav-item" data-target="panel-config">
+        <span>⚙️ 2. Configurate BLE Parameters</span>
+        <span class="nav-badge">GATT &amp; PDU</span>
+      </div>
+      <div class="nav-item" data-target="panel-access-gateway">
+        <span>📟 3. Access via Edge Gateway</span>
+        <span class="nav-badge">BlueZ &amp; Python</span>
+      </div>
+      <div class="nav-item" data-target="panel-access-mobile">
+        <span>📱 4. Access via Mobile &amp; Web</span>
+        <span class="nav-badge">WebBLE &amp; App</span>
+      </div>
+
+      <div class="nav-section-title">Packet Sniffing &amp; Security</div>
+      <div class="nav-item" data-target="panel-sniffer">
+        <span>📡 Live Packet Sniffer</span>
+        <span class="nav-badge">SimBus</span>
+      </div>
+      <div class="nav-item" data-target="panel-security">
+        <span>🔒 Security &amp; Pairing Spec</span>
+        <span class="nav-badge">AES-128</span>
+      </div>
+
+      <div style="margin-top:auto; padding:12px; border-top:1px solid var(--border-subtle); font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">
+        <div>Hardware: ESP32-WROOM-32 / nRF52840</div>
+        <div>BLE Stack: NimBLE v1.5.0</div>
+        <div>Standard: IEEE 802.15.1</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Panels -->
+    <main class="proximity-main">
+
+      <!-- ========================================================
+           VIEW 1: INTERACTIVE DEMO BOARD BLE ACCESS CONSOLE
+           ======================================================== -->
+      <section id="panel-live-access" class="tab-panel active">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>🎮 Interactive BLE Demo Board Access Console</span>
+          </h2>
+          <p class="sub-lead">
+            Directly connect, interrogate, and control the physical BLE 5.0 peripherals adopted in this demo. Select a target node below, establish a simulated GATT session, read environmental telemetry characteristics, and dispatch actuation writes.
+          </p>
+        </div>
+
+        <!-- Node Selector -->
+        <div class="node-selector-bar">
+          <div class="node-select-card active" data-node="node_01" onclick="selectBleNode('node_01')">
+            <div class="node-card-name">
+              <span>Node 1: Server Room</span>
+              <span class="badge badge-purple">ESP32</span>
+            </div>
+            <div class="node-card-sub">MAC: C4:4F:33:18:A2:9B · BME280 + Fan PWM</div>
+          </div>
+          <div class="node-select-card" data-node="node_02" onclick="selectBleNode('node_02')">
+            <div class="node-card-name">
+              <span>Node 2: Lab Testbench</span>
+              <span class="badge badge-cyan">nRF52840</span>
+            </div>
+            <div class="node-card-sub">MAC: E2:15:68:C9:44:10 · SHT31 + Relay Switch</div>
+          </div>
+          <div class="node-select-card" data-node="node_03" onclick="selectBleNode('node_03')">
+            <div class="node-card-name">
+              <span>Node 3: Outdoor Rig</span>
+              <span class="badge badge-green">ESP32-S3</span>
+            </div>
+            <div class="node-card-sub">MAC: 24:6F:28:B1:09:88 · BMP280 + RGB LED</div>
+          </div>
+        </div>
+
+        <!-- Session Status & Control -->
+        <div class="card" style="margin-bottom:1.5rem; border-color:rgba(168,85,247,0.35);">
+          <div class="card-title">
+            <span id="session-title">GATT Connection State: [DISCONNECTED] — Node 1 (C4:4F:33:18:A2:9B)</span>
+            <div style="display:flex; gap:8px;">
+              <button id="btn-ble-connect" class="btn btn-purple" onclick="toggleBleConnection()">
+                ⚡ Connect via BLE (GATT)
+              </button>
+              <button class="btn btn-ghost" onclick="resetBleSession()">Reset Stack</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:0.78rem; font-family:var(--font-mono);">
+            <div>Session Status: <strong id="lbl-conn-status" style="color:var(--ble-rose);">DISCONNECTED</strong></div>
+            <div>PHY Mode: <strong id="lbl-conn-phy" style="color:var(--ble-purple-l);">LE 2M PHY (2 Mbps)</strong></div>
+            <div>Conn Interval: <strong id="lbl-conn-int">15.0 ms (12 slots)</strong></div>
+            <div>MTU Size: <strong id="lbl-conn-mtu">247 Bytes</strong></div>
+          </div>
+        </div>
+
+        <!-- Two Columns: GATT Read & GATT Write -->
+        <div class="gatt-action-grid">
+          
+          <!-- Column A: Read Telemetry Characteristics -->
+          <div class="card">
+            <div class="card-title">
+              <span>Read Environmental Characteristics (0x181A)</span>
+              <span class="badge badge-cyan">Inbound Telemetry</span>
+            </div>
+
+            <div class="gatt-char-box">
+              <div>
+                <div class="char-meta-name">Temperature (0x2A6E)</div>
+                <div class="char-meta-uuid">UUID: 00002A6E-0000-1000-8000-00805F9B34FB</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="char-val-disp" id="val-disp-temp">24.20 °C</span>
+                <button class="btn btn-cyan" onclick="readChar('temp')">Read</button>
+              </div>
+            </div>
+
+            <div class="gatt-char-box">
+              <div>
+                <div class="char-meta-name">Humidity (0x2A6F)</div>
+                <div class="char-meta-uuid">UUID: 00002A6F-0000-1000-8000-00805F9B34FB</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="char-val-disp" id="val-disp-hum">51.22 %</span>
+                <button class="btn btn-cyan" onclick="readChar('hum')">Read</button>
+              </div>
+            </div>
+
+            <div class="gatt-char-box">
+              <div>
+                <div class="char-meta-name">Barometric Pressure (0x2A6D)</div>
+                <div class="char-meta-uuid">UUID: 00002A6D-0000-1000-8000-00805F9B34FB</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="char-val-disp" id="val-disp-pres">1013.4 hPa</span>
+                <button class="btn btn-cyan" onclick="readChar('pres')">Read</button>
+              </div>
+            </div>
+
+            <div class="gatt-char-box">
+              <div>
+                <div class="char-meta-name">Battery Level (0x2A19)</div>
+                <div class="char-meta-uuid">UUID: 00002A19-0000-1000-8000-00805F9B34FB</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="char-val-disp" id="val-disp-batt" style="color:var(--ble-emerald);">94% (3.95V)</span>
+                <button class="btn btn-cyan" onclick="readChar('batt')">Read</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-dim);">Auto-subscribe GATT Notifications:</span>
+              <button id="btn-toggle-notify" class="btn btn-ghost" onclick="toggleNotifications()">
+                🔔 Notifications: OFF
+              </button>
+            </div>
+          </div>
+
+          <!-- Column B: Write Actuation Characteristics -->
+          <div class="card">
+            <div class="card-title">
+              <span>Write Actuation Characteristics (0xFF00)</span>
+              <span class="badge badge-purple">Downlink Command</span>
+            </div>
+
+            <!-- Actuator 1: Cooling Fan PWM -->
+            <div style="margin-bottom:1.25rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:0.82rem; font-weight:600; color:#fff;">Cooling Fan PWM (Char: 0xFF01)</span>
+                <span id="lbl-slider-fan" style="font-family:var(--font-mono); color:var(--ble-cyan); font-weight:700;">60%</span>
+              </div>
+              <input type="range" id="slider-fan" min="0" max="100" value="60" style="width:100%; accent-color:var(--ble-cyan); cursor:pointer;" oninput="updateFanLabel(this.value)">
+              <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+                <button class="btn btn-cyan" onclick="writeFanPwm()">Write PWM to BLE Node</button>
+              </div>
+            </div>
+
+            <!-- Actuator 2: Relay Switch -->
+            <div style="margin-bottom:1.25rem; border-top:1px solid var(--border-subtle); padding-top:1rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:0.82rem; font-weight:600; color:#fff;">Power Relay (Char: 0xFF02)</div>
+                  <div style="font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">0x00: Disengaged · 0x01: Engaged</div>
+                </div>
+                <button id="btn-relay-toggle" class="btn btn-purple" onclick="toggleRelay()">
+                  ⚡ Relay: ENGAGED (0x01)
+                </button>
+              </div>
+            </div>
+
+            <!-- Actuator 3: Hardware RGB LED -->
+            <div style="border-top:1px solid var(--border-subtle); padding-top:1rem;">
+              <div style="font-size:0.82rem; font-weight:600; color:#fff; margin-bottom:8px;">RGB Status LED (Char: 0xFF03)</div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost" style="color:#60a5fa;" onclick="writeLedColor('0x0000FF')">Solid Blue</button>
+                <button class="btn btn-ghost" style="color:#34d399;" onclick="writeLedColor('0x00FF00')">Solid Green</button>
+                <button class="btn btn-ghost" style="color:#f87171;" onclick="writeLedColor('0xFF0000')">Solid Red</button>
+                <button class="btn btn-ghost" style="color:#cbd5e1;" onclick="writeLedColor('0x000000')">LED Off</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live GATT Interaction Terminal Log -->
+        <div class="card" style="margin-top:1.5rem;">
+          <div class="card-title">
+            <span>Live HCI / GATT Protocol Exchange Log</span>
+            <button class="btn btn-ghost" onclick="clearGattLog()">Clear Log</button>
+          </div>
+          <div id="gatt-term-log" class="terminal-window">
+            <div class="term-line-ok">[SYSTEM] BLE 5.0 Peripheral Access Console Initialized. Ready to connect.</div>
+            <div class="term-line-resp">[HCI] Target Device: C4:4F:33:18:A2:9B (ESP32-NODE-01) RSSI: -62 dBm</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 2: HOW TO SETUP BLE ON DEMO BOARD
+           ======================================================== -->
+      <section id="panel-setup" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>🛠️ Step 1: How to Setup BLE on this Demo Board</span>
+          </h2>
+          <p class="sub-lead">
+            Step-by-step physical hardware preparation, antenna layout guidelines, and FreeRTOS dual-core task allocation for the <strong>ESP32-WROOM-32</strong> and <strong>Nordic nRF52840</strong> boards adopted in the IoT demo.
+          </p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">
+              <span>1. Hardware &amp; Power Setup</span>
+              <span class="badge badge-purple">Physical</span>
+            </div>
+            <ul style="font-size:0.8rem; color:var(--text-muted); line-height:1.7; padding-left:1.2rem;">
+              <li><strong>Target MCU:</strong> ESP32-WROOM-32D (Tensilica Xtensa Dual-Core 240MHz).</li>
+              <li><strong>Power Supply:</strong> Dedicated 3.3V LDO regulator (AP2112K rated for 600mA). The BLE radio draws up to <strong>68mA peak current</strong> during advertising bursts.</li>
+              <li><strong>Decoupling Capacitors:</strong> Place one 10µF tantalum and one 100nF ceramic capacitor within 3mm of the <code>VDD33</code> pin to suppress ripple.</li>
+              <li><strong>GPIO Assignments:</strong>
+                <br>• GPIO 21 / 22: I²C SDA/SCL (BME280 sensor)
+                <br>• GPIO 18: PWM output for 5V cooling fan (via 2N2222 NPN)
+                <br>• GPIO 19: Relay driver signal (optocoupled active LOW)
+              </li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>2. RF &amp; Antenna Clearance</span>
+              <span class="badge badge-cyan">RF Layout</span>
+            </div>
+            <ul style="font-size:0.8rem; color:var(--text-muted); line-height:1.7; padding-left:1.2rem;">
+              <li><strong>PCB Antenna Keep-Out:</strong> The ESP32 meandered inverted-F antenna (MIFA) requires a minimum <strong>15mm clearance</strong> free of copper planes, traces, or metal screws.</li>
+              <li><strong>Enclosure Material:</strong> Use ABS, polycarbonate, or PLA enclosures. Never house the node in an unvented aluminum case, which introduces 25–40 dB attenuation.</li>
+              <li><strong>Channel Coexistence:</strong> BLE primary advertising occurs on <strong>Channels 37 (2402 MHz), 38 (2426 MHz), and 39 (2480 MHz)</strong>, intentionally slotted between standard 20MHz Wi-Fi channels (1, 6, 11) to avoid packet collision.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>3. NimBLE Stack Selection</span>
+              <span class="badge badge-green">Memory Saving</span>
+            </div>
+            <ul style="font-size:0.8rem; color:var(--text-muted); line-height:1.7; padding-left:1.2rem;">
+              <li><strong>NimBLE vs Bluedroid:</strong> This demo deploys the <strong>Apache NimBLE</strong> stack instead of legacy Bluedroid.
+                <br>• Flash footprint: <strong>~300KB</strong> (vs 850KB Bluedroid).
+                <br>• RAM usage: <strong>~28KB</strong> (saves >100KB for application queues).
+              </li>
+              <li><strong>Dual-Core Pinning:</strong>
+                <br>• <strong>Core 0 (PRO_CPU):</strong> Dedicated to the NimBLE host task and Bluetooth controller baseband ISR.
+                <br>• <strong>Core 1 (APP_CPU):</strong> Dedicated to FreeRTOS sensor sampling and actuation loops.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ESP-IDF Menuconfig / sdkconfig setup -->
+        <div class="card">
+          <div class="card-title">
+            <span>ESP-IDF v5.2 Project Configuration (`sdkconfig.defaults`)</span>
+            <button class="btn-copy" onclick="copyCode('code-sdkconfig')">Copy Config</button>
+          </div>
+          <div class="code-block" id="code-sdkconfig">
+<span style="color:#64748b;"># ESP-IDF NimBLE Stack Configuration</span>
+<span style="color:#f43f5e;">CONFIG_BT_ENABLED</span>=<span style="color:#10b981;">y</span>
+<span style="color:#f43f5e;">CONFIG_BTDM_CTRL_MODE_BLE_ONLY</span>=<span style="color:#10b981;">y</span>
+<span style="color:#f43f5e;">CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY</span>=<span style="color:#a855f7;">n</span>
+<span style="color:#f43f5e;">CONFIG_BTDM_CTRL_MODE_BTDM</span>=<span style="color:#a855f7;">n</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_ENABLED</span>=<span style="color:#10b981;">y</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_INTERNAL</span>=<span style="color:#10b981;">y</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_MAX_CONNECTIONS</span>=<span style="color:#a855f7;">3</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_ROLE_PERIPHERAL</span>=<span style="color:#10b981;">y</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_ROLE_CENTRAL</span>=<span style="color:#a855f7;">n</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_PINNED_TO_CORE</span>=<span style="color:#a855f7;">0</span>
+<span style="color:#f43f5e;">CONFIG_BT_NIMBLE_TASK_STACK_SIZE</span>=<span style="color:#a855f7;">4096</span>
+          </div>
+        </div>
+
+        <!-- FreeRTOS Core Pinning Architecture Code -->
+        <div class="card">
+          <div class="card-title">
+            <span>Firmware Setup: Dual-Core Task Allocation (FreeRTOS)</span>
+            <button class="btn-copy" onclick="copyCode('code-core-pinning')">Copy C Code</button>
+          </div>
+          <div class="code-block" id="code-core-pinning">
+<span style="color:#64748b;">// FreeRTOS Task Initialization in main.c</span>
+<span style="color:#38bdf8;">void</span> <span style="color:#facc15;">app_main</span>(<span style="color:#38bdf8;">void</span>) {
+    <span style="color:#64748b;">// 1. Initialize NVS (required for BLE calibration data)</span>
+    esp_err_t ret = <span style="color:#facc15;">nvs_flash_init</span>();
+    <span style="color:#f43f5e;">if</span> (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        <span style="color:#facc15;">nvs_flash_erase</span>();
+        <span style="color:#facc15;">nvs_flash_init</span>();
+    }
+
+    <span style="color:#64748b;">// 2. Initialize NimBLE Port</span>
+    <span style="color:#facc15;">nimble_port_init</span>();
+
+    <span style="color:#64748b;">// 3. Pin NimBLE Host Task to Core 0 (PRO_CPU)</span>
+    <span style="color:#facc15;">xTaskCreatePinnedToCore</span>(
+        ble_host_task,        <span style="color:#64748b;">// Function pointer</span>
+        <span style="color:#10b981;">"ble_host"</span>,           <span style="color:#64748b;">// Task name</span>
+        <span style="color:#a855f7;">4096</span>,                 <span style="color:#64748b;">// Stack size (bytes)</span>
+        <span style="color:#a855f7;">NULL</span>,                 <span style="color:#64748b;">// Parameters</span>
+        <span style="color:#a855f7;">5</span>,                    <span style="color:#64748b;">// High priority</span>
+        <span style="color:#a855f7;">NULL</span>,                 <span style="color:#64748b;">// Task handle</span>
+        <span style="color:#a855f7;">0</span>                     <span style="color:#64748b;">// Core ID: 0 (PRO_CPU)</span>
+    );
+
+    <span style="color:#64748b;">// 4. Pin Sensor Reading and Actuation Tasks to Core 1 (APP_CPU)</span>
+    <span style="color:#facc15;">xTaskCreatePinnedToCore</span>(
+        sensor_sampling_task, <span style="color:#64748b;">// Function pointer</span>
+        <span style="color:#10b981;">"sensor_loop"</span>,        <span style="color:#64748b;">// Task name</span>
+        <span style="color:#a855f7;">3072</span>,                 <span style="color:#64748b;">// Stack size</span>
+        <span style="color:#a855f7;">NULL</span>,                 <span style="color:#64748b;">// Parameters</span>
+        <span style="color:#a855f7;">2</span>,                    <span style="color:#64748b;">// Normal priority</span>
+        <span style="color:#a855f7;">NULL</span>,                 <span style="color:#64748b;">// Task handle</span>
+        <span style="color:#a855f7;">1</span>                     <span style="color:#64748b;">// Core ID: 1 (APP_CPU)</span>
+    );
+}
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 3: HOW TO CONFIGURATE BLE ON DEMO BOARD
+           ======================================================== -->
+      <section id="panel-config" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>⚙️ Step 2: How to Configurate BLE on this Demo Board</span>
+          </h2>
+          <p class="sub-lead">
+            Configure broadcast advertising parameters, build custom GATT services, and inspect the binary 31-byte advertising packet formatting generated by the demo board firmware.
+          </p>
+        </div>
+
+        <!-- Interactive Board Configurator -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Interactive Demo Board BLE Configurator</span>
+            <span class="badge badge-purple">Code Generator</span>
+          </div>
+
+          <div class="grid-3" style="margin-bottom:1rem;">
+            <div>
+              <label style="font-size:0.75rem; color:var(--text-dim); display:block; margin-bottom:4px;">Device Advertising Name:</label>
+              <input type="text" id="cfg-dev-name" class="cfg-input" value="ESP32-NODE-01" oninput="regenerateBoardCode()">
+            </div>
+            <div>
+              <label style="font-size:0.75rem; color:var(--text-dim); display:block; margin-bottom:4px;">Advertising Interval (ms):</label>
+              <select id="cfg-adv-int" class="cfg-input" onchange="regenerateBoardCode()">
+                <option value="100">100 ms (Fast Discovery / High Energy)</option>
+                <option value="500">500 ms (Balanced Testbench)</option>
+                <option value="1000" selected>1000 ms (Production Default / &lt;10µA)</option>
+                <option value="2000">2000 ms (Ultra Low Power)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.75rem; color:var(--text-dim); display:block; margin-bottom:4px;">Radio TX Power Level:</label>
+              <select id="cfg-tx-power" class="cfg-input" onchange="regenerateBoardCode()">
+                <option value="ESP_PWR_LVL_N12">-12 dBm (Near Field / 5m)</option>
+                <option value="ESP_PWR_LVL_N0">0 dBm (Standard Lab / 15m)</option>
+                <option value="ESP_PWR_LVL_P3" selected>+3 dBm (Default / 25m)</option>
+                <option value="ESP_PWR_LVL_P9">+9 dBm (Max Power / 50m)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Generated Firmware Snippet -->
+          <div class="code-block" id="code-generated-config">
+<span style="color:#64748b;">// Auto-generated NimBLE Advertising &amp; GAP Configuration</span>
+<span style="color:#38bdf8;">void</span> <span style="color:#facc15;">configure_ble_advertising</span>(<span style="color:#38bdf8;">void</span>) {
+    <span style="color:#38bdf8;">struct</span> ble_gap_adv_params adv_params;
+    <span style="color:#38bdf8;">struct</span> ble_hs_adv_fields fields;
+    <span style="color:#facc15;">memset</span>(&amp;fields, <span style="color:#a855f7;">0</span>, <span style="color:#38bdf8;">sizeof</span>(fields));
+
+    <span style="color:#64748b;">// Set Device Name</span>
+    fields.name = (<span style="color:#38bdf8;">uint8_t</span>*)<span style="color:#10b981;">"ESP32-NODE-01"</span>;
+    fields.name_len = <span style="color:#a855f7;">13</span>;
+    fields.name_is_complete = <span style="color:#a855f7;">1</span>;
+
+    <span style="color:#64748b;">// Set Flags: LE General Discoverable + BR/EDR Unsupported</span>
+    fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
+
+    <span style="color:#64748b;">// Service UUID: 0x181A (Environmental Sensing)</span>
+    ble_uuid16_t env_uuid = BLE_UUID16_INIT(<span style="color:#a855f7;">0x181A</span>);
+    fields.uuids16 = &amp;env_uuid;
+    fields.num_uuids16 = <span style="color:#a855f7;">1</span>;
+    fields.uuids16_is_complete = <span style="color:#a855f7;">1</span>;
+
+    <span style="color:#facc15;">ble_gap_adv_set_fields</span>(&amp;fields);
+
+    <span style="color:#64748b;">// Advertising Timing Configuration</span>
+    <span style="color:#facc15;">memset</span>(&amp;adv_params, <span style="color:#a855f7;">0</span>, <span style="color:#38bdf8;">sizeof</span>(adv_params));
+    adv_params.conn_mode = BLE_GAP_CONN_MODE_UND; <span style="color:#64748b;">// Connectable undirected</span>
+    adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
+    adv_params.itvl_min  = BLE_GAP_ADV_ITVL_MS(<span style="color:#a855f7;">1000</span>);
+    adv_params.itvl_max  = BLE_GAP_ADV_ITVL_MS(<span style="color:#a855f7;">1020</span>);
+
+    <span style="color:#64748b;">// Set TX Power</span>
+    <span style="color:#facc15;">esp_ble_tx_power_set</span>(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P3);
+
+    <span style="color:#facc15;">ble_gap_adv_start</span>(BLE_OWN_ADDR_PUBLIC, <span style="color:#a855f7;">NULL</span>, BLE_HS_FOREVER, &amp;adv_params, ble_gap_event, <span style="color:#a855f7;">NULL</span>);
+}
+          </div>
+        </div>
+
+        <!-- GATT Profile Hierarchy Table -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Demo Board GATT Table Hierarchy (SIG &amp; Custom Services)</span>
+            <span class="badge badge-cyan">Full Specification</span>
+          </div>
+          <table class="protocol-table">
+            <thead>
+              <tr>
+                <th>Service Name</th>
+                <th>UUID</th>
+                <th>Characteristic</th>
+                <th>Char UUID</th>
+                <th>Properties</th>
+                <th>Encoding / Units</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td rowspan="3" style="font-weight:700; color:#d8b4fe;">Environmental Sensing</td>
+                <td rowspan="3"><code>0x181A</code></td>
+                <td>Temperature</td>
+                <td><code>0x2A6E</code></td>
+                <td>Read, Notify</td>
+                <td>int16 (0.01 °C resolution, e.g. 2420 = 24.20 °C)</td>
+              </tr>
+              <tr>
+                <td>Humidity</td>
+                <td><code>0x2A6F</code></td>
+                <td>Read, Notify</td>
+                <td>uint16 (0.01 % RH, e.g. 5122 = 51.22 %)</td>
+              </tr>
+              <tr>
+                <td>Pressure</td>
+                <td><code>0x2A6D</code></td>
+                <td>Read</td>
+                <td>uint32 (0.1 Pa resolution, e.g. 1013400 = 1013.4 hPa)</td>
+              </tr>
+              <tr>
+                <td rowspan="2" style="font-weight:700; color:#38bdf8;">Device Information</td>
+                <td rowspan="2"><code>0x180A</code></td>
+                <td>Model Number</td>
+                <td><code>0x2A24</code></td>
+                <td>Read Only</td>
+                <td>UTF-8 String ("ESP32-SN")</td>
+              </tr>
+              <tr>
+                <td>Firmware Rev</td>
+                <td><code>0x2A26</code></td>
+                <td>Read Only</td>
+                <td>UTF-8 String ("v2.4.1-nimble")</td>
+              </tr>
+              <tr style="background:rgba(244,63,94,0.06);">
+                <td rowspan="3" style="font-weight:700; color:#f43f5e;">Custom Actuation</td>
+                <td rowspan="3"><code>0xFF00</code></td>
+                <td>Cooling Fan PWM</td>
+                <td><code>0xFF01</code></td>
+                <td>Read, Write, Write No Resp</td>
+                <td>uint8 (0 to 100 %)</td>
+              </tr>
+              <tr style="background:rgba(244,63,94,0.06);">
+                <td>Relay Switch</td>
+                <td><code>0xFF02</code></td>
+                <td>Read, Write</td>
+                <td>uint8 (0x00: OFF, 0x01: ON)</td>
+              </tr>
+              <tr style="background:rgba(244,63,94,0.06);">
+                <td>RGB LED State</td>
+                <td><code>0xFF03</code></td>
+                <td>Read, Write</td>
+                <td>3-byte uint8 [R, G, B]</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 31-Byte PDU Inspector -->
+        <div class="card">
+          <div class="card-title">
+            <span>Raw 31-Byte BLE Advertising PDU Assembly</span>
+            <span class="badge badge-green">Binary Dissection</span>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
+            Click on any byte field in the packet below to inspect how physical transducer telemetry is serialized into the raw radio burst:
+          </p>
+
+          <div class="hex-stream">
+            <div class="hex-cell hex-flags" onclick="inspectHex('flags')" title="Length: 0x02, Type: 0x01 (Flags), Value: 0x06">02 01 06</div>
+            <div class="hex-cell hex-uuid"  onclick="inspectHex('uuid')"  title="Length: 0x05, Type: 0x16 (Service Data), UUID: 0x181A">05 16 1A 18</div>
+            <div class="hex-cell hex-temp"  onclick="inspectHex('temp')"  title="Temperature: 0x0974 (2420) = 24.20 °C">09 74</div>
+            <div class="hex-cell hex-hum"   onclick="inspectHex('hum')"   title="Humidity: 0x1402 (5122) = 51.22 %">14 02</div>
+            <div class="hex-cell hex-pres"  onclick="inspectHex('pres')"  title="Pressure: 0x01F5 (1013.4 hPa)">01 F5</div>
+            <div class="hex-cell hex-mac"   onclick="inspectHex('batt')"  title="Battery Voltage: 0x018B (3.95 V)">01 8B</div>
+          </div>
+
+          <div id="hex-inspect-desc" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:var(--radius-sm); border:1px solid var(--border-subtle); font-family:var(--font-mono); font-size:0.78rem; color:var(--ble-cyan);">
+            Click a byte block above to view field decoding.
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 4: HOW TO ACCESS BLE VIA EDGE GATEWAY (BLUEZ & PYTHON)
+           ======================================================== -->
+      <section id="panel-access-gateway" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>📟 Step 3: How to Access Demo Board BLE via Edge Gateway</span>
+          </h2>
+          <p class="sub-lead">
+            Production methods for discovering, interrogating, and streaming telemetry from the demo board using the Raspberry Pi 4 edge gateway (Linux BlueZ subsystem and automated Python daemons).
+          </p>
+        </div>
+
+        <!-- Method A: Linux BlueZ CLI Tools -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Method A: Linux BlueZ CLI Access (`bluetoothctl` &amp; `gatttool`)</span>
+            <button class="btn-copy" onclick="copyCode('code-bluez-cli')">Copy Terminal Commands</button>
+          </div>
+          <div class="code-block" id="code-bluez-cli">
+<span style="color:#64748b;"># 1. Verify and bring up the Raspberry Pi Bluetooth transceiver</span>
+sudo hciconfig hci0 up &amp;&amp; sudo hciconfig hci0 leadv 0
+
+<span style="color:#64748b;"># 2. Interactive Discovery via bluetoothctl</span>
+bluetoothctl
+[bluetooth]# power on
+[bluetooth]# scan on
+<span style="color:#10b981;">[NEW] Device C4:4F:33:18:A2:9B ESP32-NODE-01</span>
+[bluetooth]# scan off
+
+<span style="color:#64748b;"># 3. Connect to the Demo Board GATT Server</span>
+[bluetooth]# connect C4:4F:33:18:A2:9B
+<span style="color:#10b981;">[CHG] Device C4:4F:33:18:A2:9B Connected: yes</span>
+[bluetooth]# menu gatt
+[bluetooth]# list-attributes
+<span style="color:#38bdf8;">[GATT] Primary Service: 0000181a-0000-1000-8000-00805f9b34fb (Env Sensing)</span>
+<span style="color:#38bdf8;">[GATT] Characteristic:  00002a6e-0000-1000-8000-00805f9b34fb (Temperature)</span>
+<span style="color:#38bdf8;">[GATT] Characteristic:  0000ff01-0000-1000-8000-00805f9b34fb (Fan PWM)</span>
+
+<span style="color:#64748b;"># 4. Read Temperature Characteristic using gatttool</span>
+gatttool -b C4:4F:33:18:A2:9B --char-read -u 00002a6e-0000-1000-8000-00805f9b34fb
+<span style="color:#10b981;">Characteristic value/descriptor: 74 09   # 0x0974 = 2420 decimal = 24.20 °C</span>
+
+<span style="color:#64748b;"># 5. Write Downlink Actuation: Set Fan PWM to 75% (0x4B)</span>
+gatttool -b C4:4F:33:18:A2:9B --char-write-req -u 0000ff01-0000-1000-8000-00805f9b34fb -a 0x002c -n 4b
+<span style="color:#10b981;">Characteristic value was written successfully</span>
+          </div>
+        </div>
+
+        <!-- Method B: Python Ingestion Daemon -->
+        <div class="card">
+          <div class="card-title">
+            <span>Method B: Automated Gateway Python Daemon (`bleak` + AWS IoT MQTT)</span>
+            <button class="btn-copy" onclick="copyCode('code-py-daemon')">Copy Python Script</button>
+          </div>
+          <div class="code-block" id="code-py-daemon">
+<span style="color:#f43f5e;">import</span> asyncio, struct, json, ssl
+<span style="color:#f43f5e;">from</span> bleak <span style="color:#f43f5e;">import</span> BleakClient, BleakScanner
+<span style="color:#f43f5e;">import</span> paho.mqtt.client <span style="color:#f43f5e;">as</span> mqtt
+
+<span style="color:#64748b;"># GATT Characteristic UUIDs for Demo Board</span>
+TEMP_CHAR_UUID = <span style="color:#10b981;">"00002a6e-0000-1000-8000-00805f9b34fb"</span>
+HUM_CHAR_UUID  = <span style="color:#10b981;">"00002a6f-0000-1000-8000-00805f9b34fb"</span>
+FAN_CHAR_UUID  = <span style="color:#10b981;">"0000ff01-0000-1000-8000-00805f9b34fb"</span>
+
+TARGET_MAC = <span style="color:#10b981;">"C4:4F:33:18:A2:9B"</span>
+
+<span style="color:#38bdf8;">async</span> <span style="color:#38bdf8;">def</span> <span style="color:#facc15;">run_gateway_ble_bridge</span>():
+    <span style="color:#38bdf8;">print</span>(<span style="color:#10b981;">f"[BLE GATEWAY] Connecting to Demo Board: {TARGET_MAC}..."</span>)
+    <span style="color:#38bdf8;">async</span> <span style="color:#f43f5e;">with</span> BleakClient(TARGET_MAC) <span style="color:#f43f5e;">as</span> client:
+        <span style="color:#38bdf8;">print</span>(<span style="color:#10b981;">f"[BLE GATEWAY] Connected: {client.is_connected}"</span>)
+
+        <span style="color:#64748b;"># Handler for live notifications</span>
+        <span style="color:#38bdf8;">def</span> <span style="color:#facc15;">notification_callback</span>(sender, data):
+            temp_raw = struct.unpack(<span style="color:#10b981;">"&lt;h"</span>, data)[<span style="color:#a855f7;">0</span>]
+            temp_c = temp_raw / <span style="color:#a855f7;">100.0</span>
+            <span style="color:#38bdf8;">print</span>(<span style="color:#10b981;">f"[BLE NOTIFY] Live Temperature: {temp_c:.2f} °C"</span>)
+            <span style="color:#64748b;"># Forward to AWS IoT Core over MQTT</span>
+            payload = json.dumps({<span style="color:#10b981;">"node"</span>: <span style="color:#10b981;">"node_01"</span>, <span style="color:#10b981;">"temperature"</span>: temp_c})
+            mqtt_client.publish(<span style="color:#10b981;">"iot/telemetry/node_01"</span>, payload, qos=<span style="color:#a855f7;">1</span>)
+
+        <span style="color:#64748b;"># Subscribe to temperature notifications</span>
+        <span style="color:#38bdf8;">await</span> client.start_notify(TEMP_CHAR_UUID, notification_callback)
+        <span style="color:#38bdf8;">print</span>(<span style="color:#10b981;">"[BLE GATEWAY] Subscribed to Temp notifications. Ingestion active."</span>)
+
+        <span style="color:#64748b;"># Keep connection alive while processing reverse commands</span>
+        <span style="color:#f43f5e;">while</span> <span style="color:#38bdf8;">True</span>:
+            <span style="color:#38bdf8;">await</span> asyncio.sleep(<span style="color:#a855f7;">1</span>)
+
+<span style="color:#f43f5e;">if</span> __name__ == <span style="color:#10b981;">"__main__"</span>:
+    asyncio.run(run_gateway_ble_bridge())
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 5: HOW TO ACCESS BLE VIA MOBILE & WEB
+           ======================================================== -->
+      <section id="panel-access-mobile" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>📱 Step 4: How to Access Demo Board BLE via Mobile &amp; Web</span>
+          </h2>
+          <p class="sub-lead">
+            Access the physical demo board directly from smartphones and tablets. Use industry diagnostic apps like <strong>nRF Connect for Mobile</strong> or the integrated <strong>Mobile App</strong>.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>Mobile Smartphone Diagnostic Apps</span>
+              <span class="badge badge-purple">nRF Connect / LightBlue</span>
+            </div>
+            <ul style="font-size:0.8rem; color:var(--text-muted); line-height:1.7; padding-left:1.2rem;">
+              <li><strong>Step 1: Download nRF Connect:</strong> Install <em>nRF Connect for Mobile</em> (iOS / Android) by Nordic Semiconductor.</li>
+              <li><strong>Step 2: Scan for Peripheral:</strong> Tap <strong>SCAN</strong>. Filter by RSSI > -80 dBm. Locate the advertisement name: <code>ESP32-NODE-01</code>.</li>
+              <li><strong>Step 3: Connect &amp; Discover:</strong> Tap <strong>CONNECT</strong>. The app negotiates MTU 247 and lists all GATT services.</li>
+              <li><strong>Step 4: Interrogate Services:</strong>
+                <br>• Expand <code>0x181A</code> Environmental Sensing: tap the multiple-down-arrow icon to enable live temperature and humidity notifications.
+                <br>• Expand <code>0xFF00</code> Actuation Service: tap the up-arrow icon on <code>0xFF01</code>, enter <code>UINT8</code> value (e.g. <code>80</code>), and tap <strong>SEND</strong> to trigger the physical cooling fan!
+              </li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-color:rgba(0,212,255,0.4); background:linear-gradient(135deg, rgba(21, 36, 66, 0.9), rgba(15, 25, 48, 0.9));">
+            <div class="card-title">
+              <span>Web &amp; Mobile App Integration</span>
+              <span class="badge badge-cyan">Tier 5 Presentation</span>
+            </div>
+            <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.6; margin-bottom:1.25rem;">
+              The system includes a dedicated mobile application interface with live Web Bluetooth and cloud actuation controls. You can control the cooling fan, trip the power relay, and monitor battery telemetry directly.
+            </p>
+
+            <div style="background:rgba(0,0,0,0.3); border-radius:var(--radius-sm); border:1px solid rgba(0,212,255,0.2); padding:1rem; margin-bottom:1.25rem;">
+              <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">COMPANION MOBILE APP:</div>
+              <div style="font-size:1.1rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
+                <span>📱 Mobile App Console</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">
+                Features a responsive mobile viewport, real-time telemetry gauges, and direct reverse control switchboard.
+              </div>
+            </div>
+
+            <a href="app.html" class="btn btn-cyan" style="width:100%; justify-content:center; padding:10px; font-size:0.85rem; font-weight:700; text-decoration:none;">
+              📱 Open Mobile App Actuation Console ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 6: LIVE PACKET SNIFFER (SimBus Connection)
+           ======================================================== -->
+      <section id="panel-sniffer" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>📡 Live BLE 5.0 Packet Sniffer &amp; Channel Analyzer</span>
+          </h2>
+          <p class="sub-lead">
+            Connected in real-time to the simulation bus (<code>SimBus</code>). Observe live advertising packets arriving from ESP32 field nodes across BLE Channels 37, 38, and 39.
+          </p>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Live HCI Packet Trace (Virtual Bluetooth Host Controller)</span>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-purple" onclick="injectTestBlePacket()">Inject Sample Frame</button>
+              <button class="btn btn-ghost" onclick="clearSnifferLog()">Clear Log</button>
+            </div>
+          </div>
+
+          <div class="sniffer-terminal" id="sniffer-log">
+            <div class="sniffer-line">
+              <span class="sn-time">[08:42:01.102]</span>
+              <span class="sn-mac">C4:4F:33:18:A2:9B</span>
+              <span class="sn-pdu">ADV_IND</span>
+              <span class="sn-rssi">-62 dBm</span>
+              <span class="sn-data">RAW: 02 01 06 05 16 1A 18 09 74 14 02 (Temp: 24.2°C, Hum: 51.2%)</span>
+            </div>
+            <div class="sniffer-line">
+              <span class="sn-time">[08:42:02.105]</span>
+              <span class="sn-mac">C4:4F:33:18:A2:9B</span>
+              <span class="sn-pdu">ADV_IND</span>
+              <span class="sn-rssi">-61 dBm</span>
+              <span class="sn-data">RAW: 02 01 06 05 16 1A 18 09 76 14 04 (Temp: 24.22°C, Hum: 51.24%)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 7: SECURITY & HARDENING
+           ======================================================== -->
+      <section id="panel-security" class="tab-panel">
+        <div class="page-hero">
+          <h2 class="section-heading">
+            <span>🔒 BLE 5.0 Security &amp; Pairing Specification</span>
+          </h2>
+          <p class="sub-lead">
+            Industrial wireless links are susceptible to eavesdropping and man-in-the-middle (MITM) injection. Below are the cryptographic protections deployed in the IoT system.
+          </p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">
+              <span>LE Secure Connections</span>
+              <span class="badge badge-purple">ECDH P-256</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.6;">
+              Replaces legacy PIN/TK pairing with <strong>Elliptic Curve Diffie-Hellman (ECDH) P-256</strong> key exchange. Eavesdroppers recording on-air packets cannot deduce the Long Term Key (LTK).
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>AES-128 CCM Encryption</span>
+              <span class="badge badge-green">FIPS Validated</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.6;">
+              All GATT notifications and reverse write commands are encrypted using hardware AES-128 in Counter with CBC-MAC (CCM) mode, guaranteeing confidentiality and message integrity.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Resolvable Private Address</span>
+              <span class="badge badge-cyan">Privacy</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.6;">
+              Sensor nodes rotate random MAC addresses every 15 minutes using an Identity Resolving Key (IRK). Only the authorized edge gateway can resolve the persistent device identity.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // ── Tab Switching Logic ──────────────────────────────────────────
+    document.querySelectorAll('.proximity-sidebar .nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.proximity-sidebar .nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+        item.classList.add('active');
+        const targetId = item.getAttribute('data-target');
+        const panel = document.getElementById(targetId);
+        if (panel) panel.classList.add('active');
+
+        // Scroll to top of main content
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // ── Interactive Live BLE Access Workbench State ─────────────────
+    let currentBleNode = 'node_01';
+    let isBleConnected = false;
+    let notificationsActive = false;
+    let relayEngaged = true;
+
+    const nodeMeta = {
+      node_01: { name: 'Node 1: Server Room', mac: 'C4:4F:33:18:A2:9B', temp: 24.20, hum: 51.22, pres: 1013.4, batt: '3.95V (94%)' },
+      node_02: { name: 'Node 2: Lab Testbench', mac: 'E2:15:68:C9:44:10', temp: 21.80, hum: 45.10, pres: 1014.2, batt: '4.10V (98%)' },
+      node_03: { name: 'Node 3: Outdoor Rig', mac: '24:6F:28:B1:09:88', temp: 28.50, hum: 62.40, pres: 1011.8, batt: '3.78V (82%)' }
+    };
+
+    function selectBleNode(nodeKey) {
+      currentBleNode = nodeKey;
+      document.querySelectorAll('.node-select-card').forEach(c => c.classList.remove('active'));
+      const card = document.querySelector(`.node-select-card[data-node="${nodeKey}"]`);
+      if (card) card.classList.add('active');
+
+      const meta = nodeMeta[nodeKey];
+      document.getElementById('session-title').textContent = 
+        `GATT Connection State: [${isBleConnected ? 'CONNECTED' : 'DISCONNECTED'}] — ${meta.name} (${meta.mac})`;
+
+      document.getElementById('val-disp-temp').textContent = meta.temp.toFixed(2) + ' °C';
+      document.getElementById('val-disp-hum').textContent  = meta.hum.toFixed(2) + ' %';
+      document.getElementById('val-disp-pres').textContent = meta.pres.toFixed(1) + ' hPa';
+      document.getElementById('val-disp-batt').textContent = meta.batt;
+
+      logGatt(`[HCI SWITCH] Selected target peripheral: ${meta.mac} (${meta.name})`, 'term-line-cmd');
+    }
+
+    function toggleBleConnection() {
+      const meta = nodeMeta[currentBleNode];
+      const btn = document.getElementById('btn-ble-connect');
+      const lbl = document.getElementById('lbl-conn-status');
+
+      if (!isBleConnected) {
+        logGatt(`[HCI CONNECT] Initiating BLE GAP connection to ${meta.mac}...`, 'term-line-cmd');
+        setTimeout(() => {
+          isBleConnected = true;
+          btn.textContent = 'Disconnect BLE (GATT)';
+          btn.className = 'btn btn-ghost';
+          lbl.textContent = 'CONNECTED';
+          lbl.style.color = 'var(--ble-emerald)';
+          document.getElementById('session-title').textContent = 
+            `GATT Connection State: [CONNECTED] — ${meta.name} (${meta.mac})`;
+          logGatt(`[HCI CONNECTED] Channel: 37 | Connection Handle: 0x0001 | Latency: 14.8ms | MTU: 247`, 'term-line-ok');
+          logGatt(`[GATT DISCOVERY] Found Primary Services: 0x181A (Env Sensing), 0x180A (Dev Info), 0xFF00 (Actuation)`, 'term-line-resp');
+        }, 300);
+      } else {
+        isBleConnected = false;
+        btn.textContent = '⚡ Connect via BLE (GATT)';
+        btn.className = 'btn btn-purple';
+        lbl.textContent = 'DISCONNECTED';
+        lbl.style.color = 'var(--ble-rose)';
+        document.getElementById('session-title').textContent = 
+          `GATT Connection State: [DISCONNECTED] — ${meta.name} (${meta.mac})`;
+        logGatt(`[HCI DISCONNECT] Connection Handle 0x0001 terminated by local host. Reason: 0x16 (Connection Terminated By Local Host)`, 'term-line-resp');
+      }
+    }
+
+    function resetBleSession() {
+      isBleConnected = false;
+      notificationsActive = false;
+      document.getElementById('btn-ble-connect').textContent = '⚡ Connect via BLE (GATT)';
+      document.getElementById('btn-ble-connect').className = 'btn btn-purple';
+      document.getElementById('lbl-conn-status').textContent = 'DISCONNECTED';
+      document.getElementById('lbl-conn-status').style.color = 'var(--ble-rose)';
+      document.getElementById('btn-toggle-notify').textContent = '🔔 Notifications: OFF';
+      logGatt(`[HCI RESET] Baseband buffers flushed. Controller hci0 reset OK.`, 'term-line-ok');
+    }
+
+    function readChar(type) {
+      if (!isBleConnected) {
+        logGatt(`[GATT ERROR] Cannot read characteristic: BLE session not connected. Click Connect first!`, 'term-line-err');
+        return;
+      }
+      const meta = nodeMeta[currentBleNode];
+      if (type === 'temp') {
+        const val = (meta.temp + (Math.random() * 0.4 - 0.2)).toFixed(2);
+        meta.temp = parseFloat(val);
+        document.getElementById('val-disp-temp').textContent = val + ' °C';
+        const rawHex = Math.round(meta.temp * 100).toString(16).toUpperCase().padStart(4, '0');
+        logGatt(`[GATT READ] Char 0x2A6E (Temperature) -> RAW: 0x${rawHex} (${val} °C) [RTT: 12ms]`, 'term-line-ok');
+      } else if (type === 'hum') {
+        const val = (meta.hum + (Math.random() * 0.6 - 0.3)).toFixed(2);
+        meta.hum = parseFloat(val);
+        document.getElementById('val-disp-hum').textContent = val + ' %';
+        const rawHex = Math.round(meta.hum * 100).toString(16).toUpperCase().padStart(4, '0');
+        logGatt(`[GATT READ] Char 0x2A6F (Humidity) -> RAW: 0x${rawHex} (${val} %) [RTT: 14ms]`, 'term-line-ok');
+      } else if (type === 'pres') {
+        const val = (meta.pres + (Math.random() * 0.2 - 0.1)).toFixed(1);
+        meta.pres = parseFloat(val);
+        document.getElementById('val-disp-pres').textContent = val + ' hPa';
+        logGatt(`[GATT READ] Char 0x2A6D (Pressure) -> RAW: 0x01F5 (${val} hPa) [RTT: 15ms]`, 'term-line-ok');
+      } else if (type === 'batt') {
+        logGatt(`[GATT READ] Char 0x2A19 (Battery) -> Val: 94% (3.95 V) [RTT: 11ms]`, 'term-line-ok');
+      }
+    }
+
+    function toggleNotifications() {
+      if (!isBleConnected) {
+        logGatt(`[GATT ERROR] Please connect to peripheral before subscribing to notifications.`, 'term-line-err');
+        return;
+      }
+      notificationsActive = !notificationsActive;
+      const btn = document.getElementById('btn-toggle-notify');
+      if (notificationsActive) {
+        btn.textContent = '🔔 Notifications: ON (1 Hz)';
+        btn.style.color = 'var(--ble-emerald)';
+        logGatt(`[GATT CCCD WRITE] Wrote 0x0001 to Client Characteristic Configuration (0x2902). Notifications ENABLED.`, 'term-line-ok');
+      } else {
+        btn.textContent = '🔔 Notifications: OFF';
+        btn.style.color = 'var(--text-muted)';
+        logGatt(`[GATT CCCD WRITE] Wrote 0x0000 to CCCD (0x2902). Notifications DISABLED.`, 'term-line-resp');
+      }
+    }
+
+    function updateFanLabel(val) {
+      document.getElementById('lbl-slider-fan').textContent = val + '%';
+    }
+
+    function writeFanPwm() {
+      const val = parseInt(document.getElementById('slider-fan').value, 10);
+      const hexVal = val.toString(16).toUpperCase().padStart(2, '0');
+      if (!isBleConnected) {
+        logGatt(`[GATT SIM-WRITE] Char 0xFF01 (Fan PWM) <- Value: 0x${hexVal} (${val}%) -> Dispatched locally via SimBus.`, 'term-line-cmd');
+      } else {
+        logGatt(`[GATT WRITE REQ] Char 0xFF01 (Fan PWM) <- Value: 0x${hexVal} (${val}%) -> Written to BLE Node [ACK OK]`, 'term-line-ok');
+      }
+      if (window.SimBus) {
+        window.SimBus.publish('actuator_command', { target: currentBleNode, actuator: 'fan', value: val });
+      }
+    }
+
+    function toggleRelay() {
+      relayEngaged = !relayEngaged;
+      const btn = document.getElementById('btn-relay-toggle');
+      if (relayEngaged) {
+        btn.textContent = '⚡ Relay: ENGAGED (0x01)';
+        btn.className = 'btn btn-purple';
+        logGatt(`[GATT WRITE] Char 0xFF02 (Relay) <- Value: 0x01 (ENGAGED) -> ACK OK`, 'term-line-ok');
+      } else {
+        btn.textContent = '○ Relay: OFF (0x00)';
+        btn.className = 'btn btn-ghost';
+        logGatt(`[GATT WRITE] Char 0xFF02 (Relay) <- Value: 0x00 (DISENGAGED) -> ACK OK`, 'term-line-resp');
+      }
+      if (window.SimBus) {
+        window.SimBus.publish('actuator_command', { target: currentBleNode, actuator: 'relay', value: relayEngaged ? 1 : 0 });
+      }
+    }
+
+    function writeLedColor(hexCode) {
+      logGatt(`[GATT WRITE NO-RESP] Char 0xFF03 (RGB LED) <- Color: ${hexCode} -> Dispatched to Peripheral.`, 'term-line-ok');
+      if (window.SimBus) {
+        window.SimBus.publish('actuator_command', { target: currentBleNode, actuator: 'led', color: hexCode });
+      }
+    }
+
+    function logGatt(msg, cls) {
+      const term = document.getElementById('gatt-term-log');
+      if (!term) return;
+      const line = document.createElement('div');
+      line.className = cls || 'term-line-resp';
+      const now = new Date().toISOString().substring(11, 19);
+      line.textContent = `[${now}] ` + msg;
+      term.appendChild(line);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function clearGattLog() {
+      const term = document.getElementById('gatt-term-log');
+      if (term) term.innerHTML = '';
+    }
+
+    // ── Board Code Generator ─────────────────────────────────────────
+    function regenerateBoardCode() {
+      const name = document.getElementById('cfg-dev-name').value || "ESP32-NODE-01";
+      const intVal = document.getElementById('cfg-adv-int').value || "1000";
+      const txVal = document.getElementById('cfg-tx-power').value || "ESP_PWR_LVL_P3";
+
+      const snippet = 
+`// Auto-generated NimBLE Advertising & GAP Configuration
+void configure_ble_advertising(void) {
+    struct ble_gap_adv_params adv_params;
+    struct ble_hs_adv_fields fields;
+    memset(&fields, 0, sizeof(fields));
+
+    // Set Device Name
+    fields.name = (uint8_t*)"${name}";
+    fields.name_len = ${name.length};
+    fields.name_is_complete = 1;
+
+    // Set Flags: LE General Discoverable + BR/EDR Unsupported
+    fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
+
+    // Service UUID: 0x181A (Environmental Sensing)
+    ble_uuid16_t env_uuid = BLE_UUID16_INIT(0x181A);
+    fields.uuids16 = &env_uuid;
+    fields.num_uuids16 = 1;
+    fields.uuids16_is_complete = 1;
+
+    ble_gap_adv_set_fields(&fields);
+
+    // Advertising Timing Configuration
+    memset(&adv_params, 0, sizeof(adv_params));
+    adv_params.conn_mode = BLE_GAP_CONN_MODE_UND; // Connectable undirected
+    adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
+    adv_params.itvl_min  = BLE_GAP_ADV_ITVL_MS(${intVal});
+    adv_params.itvl_max  = BLE_GAP_ADV_ITVL_MS(${parseInt(intVal) + 20});
+
+    // Set TX Power Level
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ${txVal});
+
+    ble_gap_adv_start(BLE_OWN_ADDR_PUBLIC, NULL, BLE_HS_FOREVER, &adv_params, ble_gap_event, NULL);
+}`;
+      document.getElementById('code-generated-config').textContent = snippet;
+    }
+
+    // ── PDU Hex Inspector ────────────────────────────────────────────
+    function inspectHex(type) {
+      const desc = document.getElementById('hex-inspect-desc');
+      if (type === 'flags') {
+        desc.innerHTML = `<strong>Flags (0x02 0x01 0x06):</strong> Length: 2 bytes | Type: 0x01 (Flags) | Value: 0x06 (LE General Discoverable Mode = 1, BR/EDR Not Supported = 1). Informs listening gateways that this node is a low-energy BLE beacon.`;
+      } else if (type === 'uuid') {
+        desc.innerHTML = `<strong>Service Data Header (0x05 0x16 0x1A 0x18):</strong> Length: 5 bytes | Type: 0x16 (Service Data - 16-bit UUID) | UUID: 0x181A (SIG Standard Environmental Sensing Service). Tells BlueZ parser to decode environmental telemetry.`;
+      } else if (type === 'temp') {
+        desc.innerHTML = `<strong>Temperature Payload (0x09 0x74):</strong> Little-Endian 16-bit signed integer = 0x0974 (2420 decimal). Divided by 100.0 = <strong>24.20 °C</strong>. Resolution: 0.01 °C.`;
+      } else if (type === 'hum') {
+        desc.innerHTML = `<strong>Humidity Payload (0x14 0x02):</strong> Little-Endian 16-bit unsigned integer = 0x1402 (5122 decimal). Divided by 100.0 = <strong>51.22 % RH</strong>. Resolution: 0.01 % RH.`;
+      } else if (type === 'pres') {
+        desc.innerHTML = `<strong>Pressure Payload (0x01 0xF5):</strong> Little-Endian 16-bit integer = 101340 Pa = <strong>1013.4 hPa</strong>.`;
+      } else if (type === 'batt') {
+        desc.innerHTML = `<strong>Battery Payload (0x01 0x8B):</strong> 395 decimal = <strong>3.95 Volts</strong> (approx 94% state of charge for 3.7V Li-Po cell).`;
+      }
+    }
+
+    // ── Live SimBus Integration for Sniffer ─────────────────────────
+    if (window.SimBus) {
+      window.SimBus.subscribe('telemetry', (data) => {
+        const log = document.getElementById('sniffer-log');
+        if (!log) return;
+        const now = new Date().toISOString().substring(11, 23);
+        const line = document.createElement('div');
+        line.className = 'sniffer-line';
+        line.innerHTML = `
+          <span class="sn-time">[${now}]</span>
+          <span class="sn-mac">C4:4F:33:18:A2:9B</span>
+          <span class="sn-pdu">ADV_IND</span>
+          <span class="sn-rssi">${data.rssi || -62} dBm</span>
+          <span class="sn-data">RAW: 02 01 06 05 16 1A 18 (Temp: ${data.temp || 24.2}°C, Hum: ${data.humidity || 52}%)</span>
+        `;
+        log.insertBefore(line, log.firstChild);
+        if (log.children.length > 50) log.removeChild(log.lastChild);
+
+        const rssiTop = document.getElementById('ble-rssi-top');
+        if (rssiTop && data.rssi) rssiTop.textContent = data.rssi + " dBm";
+
+        if (notificationsActive && isBleConnected) {
+          const valTemp = data.temp ? data.temp.toFixed(2) : '24.20';
+          const valHum  = data.humidity ? data.humidity.toFixed(2) : '51.22';
+          document.getElementById('val-disp-temp').textContent = valTemp + ' °C';
+          document.getElementById('val-disp-hum').textContent  = valHum + ' %';
+          logGatt(`[GATT NOTIFICATION] Char 0x2A6E -> Temp: ${valTemp} °C | Hum: ${valHum}%`, 'term-line-ok');
+        }
+      });
+    }
+
+    function injectTestBlePacket() {
+      const log = document.getElementById('sniffer-log');
+      if (!log) return;
+      const now = new Date().toISOString().substring(11, 23);
+      const testTemp = (23 + Math.random() * 4).toFixed(2);
+      const testHum = (48 + Math.random() * 8).toFixed(2);
+      const line = document.createElement('div');
+      line.className = 'sniffer-line';
+      line.style.background = 'rgba(168,85,247,0.1)';
+      line.innerHTML = `
+        <span class="sn-time">[${now}]</span>
+        <span class="sn-mac">ESP32_TEST_01</span>
+        <span class="sn-pdu">ADV_IND (Manual)</span>
+        <span class="sn-rssi">-54 dBm</span>
+        <span class="sn-data">RAW: 02 01 06 05 16 1A 18 (Temp: ${testTemp}°C, Hum: ${testHum}%)</span>
+      `;
+      log.insertBefore(line, log.firstChild);
+    }
+
+    function clearSnifferLog() {
+      const log = document.getElementById('sniffer-log');
+      if (log) log.innerHTML = '';
+    }
+
+    function copyCode(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText).then(() => {
+        alert("Code copied to clipboard!");
+      });
+    }
+  </script>
+</body>
+</html>

@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Technical Design & Hardware BOM Reference — TECH 300 IoT Demo</title>
-  <meta name="description" content="Official Technical Design Document and Consolidated Hardware Bill of Materials Reference for TECH 300 (Westcliff University, Professor Liang Li). Complete 5-tier architecture, schematics, protocols, software platforms, and bring-up checklist.">
+  <title>Technical Design & Hardware BOM Reference — IoT Demo System</title>
+  <meta name="description" content="Official Technical Design Document and Consolidated Hardware Bill of Materials Reference for the IoT Demo System (Westcliff University, Professor Liang Li). Complete 5-tier architecture, schematics, protocols, software platforms, and bring-up checklist.">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <script>
+    (function(){
+      var t = localStorage.getItem('tech300-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <!-- Shared bus first so SimBus is available -->
   <script src="js/sim-bus.js"></script>
   <!-- Unified system navigation bar -->
-  <script src="js/nav-bar.js"></script>
+  <script src="js/nav-bar.js?v=2.3"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,31 +32,34 @@
       --emerald-glow: rgba(16, 185, 129, 0.25);
       --amber:       #f59e0b;
       --purple:      #a855f7;
+      --purple-glow: rgba(168, 85, 247, 0.28);
       --rose:        #f43f5e;
-      --blue:        #3b82f6;
+      --blue:        #38bdf8;
+      --indigo:      #6366f1;
 
       --bg-void:     #080e1a;
       --bg-deep:     #0d1627;
       --bg-surface:  #111e35;
       --bg-card:     #14213d;
       --bg-card-alt: #1a2c4e;
-      --bg-figure:   rgba(7, 10, 18, 0.85);
+      --bg-figure:   rgba(7, 10, 18, 0.88);
+      --bg-code:     #070d18;
 
-      --border:        rgba(0, 212, 255, 0.14);
+      --border:        rgba(0, 212, 255, 0.16);
       --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-glow:   rgba(0, 212, 255, 0.28);
+      --border-glow:   rgba(0, 212, 255, 0.32);
 
       --text-main:   #f8fafc;
       --text-muted:  #94a3b8;
       --text-dim:    #64748b;
 
-      --font-sans:   'Inter', -apple-system, sans-serif;
+      --font-sans:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono:   'JetBrains Mono', monospace;
 
       --radius-sm:   6px;
       --radius-md:   10px;
-      --radius-lg:   14px;
-      --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+      --radius-lg:   16px;
+      --shadow-card: 0 10px 32px rgba(0, 0, 0, 0.48);
     }
 
     body {
@@ -71,7 +80,7 @@
       inset: 0;
       background-image:
         radial-gradient(circle at 15% 20%, rgba(0, 212, 255, 0.04) 0%, transparent 40%),
-        radial-gradient(circle at 85% 65%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 65%, rgba(168, 85, 247, 0.04) 0%, transparent 40%),
         linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
       background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
@@ -82,40 +91,42 @@
     /* Top Sub-Header Bar */
     .design-topbar {
       position: sticky;
-      top: 0;
+      top: 48px; /* Below system nav-bar */
       z-index: 900;
-      background: rgba(8, 14, 26, 0.95);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
+      background: rgba(8, 14, 26, 0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 2px solid var(--blue);
       padding: 0.85rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 1rem;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
     }
 
     .design-title-group {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
     .design-title-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(99, 102, 241, 0.3));
-      border: 1px solid var(--cyan);
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.25));
+      border: 1px solid var(--blue);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
-      box-shadow: 0 0 16px var(--cyan-glow);
+      font-size: 1.3rem;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+      flex-shrink: 0;
     }
 
     .design-title-text h1 {
-      font-size: 1.1rem;
+      font-size: 1.12rem;
       font-weight: 700;
       color: #fff;
       display: flex;
@@ -132,46 +143,107 @@
     .topbar-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
+      flex-wrap: wrap;
     }
 
     .btn-topbar {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
+      padding: 6px 13px;
       border-radius: var(--radius-sm);
       font-size: 0.8rem;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s;
       cursor: pointer;
+      border: 1px solid transparent;
     }
-
-    .btn-topbar-primary {
+    .btn-topbar.primary {
       background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(99, 102, 241, 0.25));
-      border: 1px solid var(--cyan);
+      border-color: var(--cyan);
       color: var(--cyan);
     }
-    .btn-topbar-primary:hover {
+    .btn-topbar.primary:hover {
       background: linear-gradient(135deg, rgba(0, 212, 255, 0.35), rgba(99, 102, 241, 0.4));
       transform: translateY(-1px);
+      box-shadow: 0 0 14px var(--cyan-glow);
     }
+    .btn-topbar.purple {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.25));
+      border-color: var(--purple);
+      color: #e9d5ff;
+    }
+    .btn-topbar.purple:hover {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(99, 102, 241, 0.4));
+      transform: translateY(-1px);
+      box-shadow: 0 0 14px var(--purple-glow);
+    }
+
+    /* ── Quick Tier Launch Banner ────────────────────────────────────────── */
+    .tier-quick-banner {
+      background: rgba(13, 22, 39, 0.9);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.65rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: auto;
+      gap: 1rem;
+      position: sticky;
+      top: calc(48px + 62px);
+      z-index: 850;
+      backdrop-filter: blur(10px);
+    }
+    .tier-quick-banner::-webkit-scrollbar { height: 3px; }
+    .tier-quick-banner::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    .tier-links-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .tier-badge-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+    }
+    .tier-badge-link:hover {
+      transform: translateY(-1px);
+      color: #fff;
+    }
+    .tier-badge-link.t1:hover { border-color: #06b6d4; background: rgba(6,182,212,0.15); }
+    .tier-badge-link.t2:hover { border-color: #c084fc; background: rgba(192,132,252,0.15); }
+    .tier-badge-link.t3:hover { border-color: #10b981; background: rgba(16,185,129,0.15); }
+    .tier-badge-link.t4:hover { border-color: #f59e0b; background: rgba(245,158,11,0.15); }
+    .tier-badge-link.t5:hover { border-color: #a855f7; background: rgba(168,85,247,0.15); }
+    .tier-badge-link.ops:hover{ border-color: #00e5ff; background: rgba(0,229,255,0.15); }
 
     /* Layout Container */
     .design-layout {
       position: relative;
       z-index: 1;
-      max-width: 1440px;
+      max-width: 1460px;
       width: 100%;
       margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
+      padding: 1.5rem 1.75rem 4rem;
       display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 2rem;
+      grid-template-columns: 290px 1fr;
+      gap: 2.25rem;
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1040px) {
       .design-layout {
         grid-template-columns: 1fr;
       }
@@ -182,28 +254,22 @@
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 1.25rem;
+      padding: 1.25rem 1rem;
       position: sticky;
-      top: 60px;
+      top: calc(48px + 62px + 44px + 12px);
       height: fit-content;
-      max-height: calc(100vh - 80px);
+      max-height: calc(100vh - 180px);
       overflow-y: auto;
       box-shadow: var(--shadow-card);
     }
-
-    .doc-sidebar::-webkit-scrollbar {
-      width: 4px;
-    }
-    .doc-sidebar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-    }
+    .doc-sidebar::-webkit-scrollbar { width: 4px; }
+    .doc-sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
 
     .sidebar-heading {
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--cyan);
+      color: var(--blue);
       font-family: var(--font-mono);
       font-weight: 700;
       margin-bottom: 0.85rem;
@@ -215,29 +281,41 @@
     }
 
     .doc-nav-link {
-      display: block;
-      padding: 0.55rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.52rem 0.75rem;
       color: var(--text-muted);
       font-size: 0.82rem;
       text-decoration: none;
       border-radius: var(--radius-sm);
-      transition: all 0.18s;
-      margin-bottom: 0.25rem;
+      transition: all 0.15s;
+      margin-bottom: 0.2rem;
       border-left: 2px solid transparent;
     }
-
     .doc-nav-link:hover {
       color: #fff;
-      background: rgba(0, 212, 255, 0.08);
-      border-left-color: var(--cyan);
+      background: rgba(56, 189, 248, 0.08);
+      border-left-color: var(--blue);
       transform: translateX(3px);
     }
-
     .doc-nav-link.active {
-      color: var(--cyan);
-      background: rgba(0, 212, 255, 0.12);
-      border-left-color: var(--cyan);
+      color: var(--blue);
+      background: rgba(56, 189, 248, 0.14);
+      border-left-color: var(--blue);
       font-weight: 600;
+    }
+    .nav-badge-pill {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-dim);
+    }
+    .doc-nav-link.active .nav-badge-pill {
+      background: rgba(56, 189, 248, 0.25);
+      color: #bae6fd;
     }
 
     /* Document Body */
@@ -245,19 +323,17 @@
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 2.25rem;
+      padding: 2.5rem;
       box-shadow: var(--shadow-card);
     }
-
     @media (max-width: 768px) {
-      .doc-body { padding: 1.25rem; }
+      .doc-body { padding: 1.4rem; }
     }
 
     .doc-section {
-      margin-bottom: 3rem;
-      scroll-margin-top: 80px;
+      margin-bottom: 3.5rem;
+      scroll-margin-top: 130px;
     }
-
     .doc-section:last-child {
       margin-bottom: 0;
     }
@@ -267,19 +343,19 @@
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.6rem;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-
     .doc-section-header h2 {
-      font-size: 1.35rem;
-      font-weight: 700;
+      font-size: 1.4rem;
+      font-weight: 800;
       color: #fff;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      letter-spacing: -0.01em;
     }
 
     .doc-section p {
@@ -299,15 +375,14 @@
       text-align: center;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-
     .doc-figure-card:hover {
-      border-color: rgba(0, 212, 255, 0.35);
+      border-color: rgba(56, 189, 248, 0.35);
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
     }
 
     .doc-figure-img {
       max-width: 100%;
-      max-height: 440px;
+      max-height: 480px;
       object-fit: contain;
       border-radius: var(--radius-sm);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -315,7 +390,6 @@
       cursor: zoom-in;
       transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
     .doc-figure-img:hover {
       transform: scale(1.018);
     }
@@ -327,7 +401,6 @@
       line-height: 1.55;
       text-align: left;
     }
-
     .doc-figure-caption strong {
       color: #fff;
     }
@@ -336,27 +409,24 @@
     .bom-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1rem 0 2rem;
+      margin: 1.25rem 0 2rem;
       font-size: 0.85rem;
     }
-
     .bom-table th, .bom-table td {
       padding: 0.85rem 1rem;
       border: 1px solid var(--border-subtle);
       text-align: left;
     }
-
     .bom-table th {
-      background: rgba(0, 212, 255, 0.08);
-      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--blue);
       font-weight: 700;
       font-family: var(--font-mono);
       font-size: 0.8rem;
       letter-spacing: 0.03em;
     }
-
     .bom-table tbody tr:hover {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.025);
     }
 
     /* Badges */
@@ -366,21 +436,29 @@
       gap: 4px;
       padding: 3px 10px;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       font-family: var(--font-mono);
     }
-
     .badge-cyan {
       background: rgba(0, 212, 255, 0.15);
       color: var(--cyan);
       border: 1px solid var(--border-glow);
     }
-
+    .badge-purple {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid var(--purple-glow);
+    }
     .badge-emerald {
       background: rgba(16, 185, 129, 0.15);
       color: var(--emerald);
       border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
     /* Sub-nav quick launch pills */
@@ -388,8 +466,8 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
-      border-radius: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
       text-decoration: none;
       font-size: 0.8rem;
       font-weight: 600;
@@ -397,25 +475,55 @@
     }
     .btn-launch-pill:hover {
       transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
 
-    /* Image Lightbox Modal */
+    /* Code blocks in doc */
+    .doc-code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+    }
+
+    /* Callout Boxes */
+    .doc-callout {
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-left: 4px solid;
+    }
+    .doc-callout.info {
+      background: rgba(56, 189, 248, 0.08);
+      border-left-color: var(--blue);
+    }
+    .doc-callout.security {
+      background: rgba(168, 85, 247, 0.08);
+      border-left-color: var(--purple);
+    }
+    .doc-callout.warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-left-color: var(--amber);
+    }
+
+    /* Lightbox Modal */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(4, 8, 16, 0.92);
-      backdrop-filter: blur(12px);
+      background: rgba(4, 8, 16, 0.94);
+      backdrop-filter: blur(14px);
       z-index: 100000;
       align-items: center;
       justify-content: center;
       padding: 2rem;
     }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
+    .modal-overlay.active { display: flex; }
     .modal-content {
       max-width: 94vw;
       max-height: 92vh;
@@ -425,7 +533,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     .modal-img {
       max-width: 100%;
       max-height: 78vh;
@@ -434,7 +541,6 @@
       box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9);
       object-fit: contain;
     }
-
     .modal-caption {
       color: #fff;
       margin-top: 1rem;
@@ -442,31 +548,49 @@
       max-width: 850px;
       line-height: 1.5;
     }
-
     .modal-close {
       position: absolute;
-      top: -46px;
-      right: 0;
+      top: -46px; right: 0;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #fff;
       font-size: 1.8rem;
       line-height: 1;
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       transition: all 0.2s;
     }
-
     .modal-close:hover {
       background: rgba(244, 63, 94, 0.3);
       border-color: var(--rose);
       color: var(--rose);
       transform: rotate(90deg);
+    }
+    .designer-hdr-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.25));
+      border: 1px solid rgba(245,158,11,0.45);
+      border-radius: 6px;
+      color: #fef3c7;
+      font-size: 0.82rem;
+    }
+    .designer-hdr-pill strong {
+      color: #fbbf24;
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+    [data-theme="light"] .designer-hdr-pill {
+      background: #fef3c7 !important;
+      border: 1.5px solid #d97706 !important;
+      color: #78350f !important;
+    }
+    [data-theme="light"] .designer-hdr-pill strong {
+      color: #92400e !important;
     }
   </style>
 </head>
@@ -475,32 +599,46 @@
   <!-- Top Sub-Header Bar -->
   <header class="design-topbar">
     <div class="design-title-group">
-      <div class="design-title-icon" style="background:rgba(255,255,255,0.08); border-color:rgba(245,158,11,0.4); padding:3px; width:42px; height:42px;">
-        <img src="assets/images/westcliff_icon_192.png" alt="Westcliff University Logo" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">
-      </div>
+      <div class="design-title-icon">📖</div>
       <div class="design-title-text">
         <h1>
-          <span>Technical Design &amp; Hardware BOM</span>
-          <span class="badge badge-cyan">Comprehensive Course Reference</span>
+          <span>Technical Design &amp; System Architecture Reference</span>
         </h1>
         <p style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;">
-          <span>TECH 300: Internet of Things</span>
+          <span>End-to-End IoT Demo System</span>
           <span style="color:var(--text-dim);">·</span>
-          <span style="color:#94a3b8; font-weight:500;">Westcliff University</span>
-          <span style="color:var(--text-dim);">·</span>
-          <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.25)); border:1px solid rgba(245,158,11,0.45); border-radius:6px; color:#fef3c7; font-size:0.82rem;">
-            Course Director &amp; Lead Architect: <strong style="color:#fbbf24; font-size:0.92rem; font-weight:800;">Prof. Liang Li</strong>
+          <span class="designer-hdr-pill">
+            Course and Demo Designer: <strong>Prof. Liang Li</strong>
           </span>
         </p>
       </div>
     </div>
     <div class="topbar-actions">
-      <a href="dashboard.html" class="btn-topbar btn-topbar-primary">
+      <a href="app.html" class="btn-topbar purple">
+        <span>📱 Open Mobile App Console</span>
+        <span>→</span>
+      </a>
+      <a href="dashboard.html" class="btn-topbar primary">
         <span>🖥️ Live Operations Dashboard</span>
         <span>→</span>
       </a>
     </div>
   </header>
+
+  <!-- Quick Tier Launch Ribbon -->
+  <nav class="tier-quick-banner">
+    <div style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; display:flex; align-items:center; gap:6px;">
+      <span>🔗 Active Tier Consoles:</span>
+    </div>
+    <div class="tier-links-group">
+      <a href="perception.html" class="tier-badge-link t1">🎛️ Tier 1: Perception (ESP32)</a>
+      <a href="proximity.html" class="tier-badge-link t2">📶 Tier 2: Proximity (BLE 5.0)</a>
+      <a href="gateway.html" class="tier-badge-link t3">📟 Tier 3: Edge Gateway (Pi 4)</a>
+      <a href="aws-cloud.html" class="tier-badge-link t4">☁️ Tier 4: AWS Cloud (IoT Core)</a>
+      <a href="app.html" class="tier-badge-link t5">📱 Tier 5: Mobile App (Kotlin)</a>
+      <a href="dashboard.html" class="tier-badge-link ops">🖥️ Operations Dashboard</a>
+    </div>
+  </nav>
 
   <!-- Layout: Sidebar + Document Body -->
   <main class="design-layout">
@@ -509,18 +647,56 @@
     <aside class="doc-sidebar">
       <div class="sidebar-heading">
         <span>Table of Contents</span>
-        <span style="font-size:0.65rem; color:var(--text-dim);">10 Sections</span>
+        <span class="nav-badge-pill">12 Sections</span>
       </div>
-      <a href="#doc-sec-overview" class="doc-nav-link active">1. Overview &amp; Learning Objectives</a>
-      <a href="#doc-sec-topology" class="doc-nav-link">2. System Topology (Figs 1 &amp; 1a)</a>
-      <a href="#doc-sec-hardware" class="doc-nav-link">3. Perception Layer Hardware (Figs 2-3)</a>
-      <a href="#doc-sec-protocol" class="doc-nav-link">4. Wireless Protocol Matrix (Fig 4)</a>
-      <a href="#doc-sec-gateway" class="doc-nav-link">5. Edge Gateway Layer (Figs 5a-5b)</a>
-      <a href="#doc-sec-aws" class="doc-nav-link">6. AWS Cloud Architecture (Figs 6-8)</a>
-      <a href="#doc-sec-ui" class="doc-nav-link">7. Mobile &amp; Presentation UI (Figs 9a-c)</a>
-      <a href="#doc-sec-sw-platforms" class="doc-nav-link">8. Required Software Platforms</a>
-      <a href="#doc-sec-bom" class="doc-nav-link">9. Consolidated Bill of Materials</a>
-      <a href="#doc-sec-checklist" class="doc-nav-link">10. Phased Bring-Up Checklist</a>
+      <a href="#doc-sec-overview" class="doc-nav-link active">
+        <span>1. Introduction &amp; Objectives</span>
+        <span class="nav-badge-pill">Overview</span>
+      </a>
+      <a href="#doc-sec-topology" class="doc-nav-link">
+        <span>2. System Topology (Figs 1 &amp; 1a)</span>
+        <span class="nav-badge-pill">Architecture</span>
+      </a>
+      <a href="#doc-sec-hardware" class="doc-nav-link">
+        <span>3. Perception Tier (Figs 2-3)</span>
+        <span class="nav-badge-pill">ESP32</span>
+      </a>
+      <a href="#doc-sec-protocol" class="doc-nav-link">
+        <span>4. Wireless Protocol Matrix (Fig 4)</span>
+        <span class="nav-badge-pill">BLE 5.0</span>
+      </a>
+      <a href="#doc-sec-gateway" class="doc-nav-link">
+        <span>5. Edge Gateway Layer (Figs 5a-b)</span>
+        <span class="nav-badge-pill">Pi 4</span>
+      </a>
+      <a href="#doc-sec-aws" class="doc-nav-link">
+        <span>6. AWS Cloud Backend (Figs 6-8)</span>
+        <span class="nav-badge-pill">AWS</span>
+      </a>
+      <a href="#doc-sec-mobile" class="doc-nav-link">
+        <span>7. Mobile App Tier 5 (Figs 9a-c)</span>
+        <span class="nav-badge-pill" style="color:var(--purple);font-weight:700;">Kotlin MVI</span>
+      </a>
+      <a href="#doc-sec-security" class="doc-nav-link">
+        <span>8. End-to-End Security Architecture</span>
+        <span class="nav-badge-pill">Zero-Trust</span>
+      </a>
+      <a href="#doc-sec-contracts" class="doc-nav-link">
+        <span>9. Data Contracts &amp; Wire Formats</span>
+        <span class="nav-badge-pill">JSON/mTLS</span>
+      </a>
+      <a href="#doc-sec-sw-platforms" class="doc-nav-link">
+        <span>10. Software Platforms &amp; Tools</span>
+        <span class="nav-badge-pill">Stack</span>
+      </a>
+      <a href="#doc-sec-bom" class="doc-nav-link">
+        <span>11. Consolidated Bill of Materials</span>
+        <span class="nav-badge-pill">BOM</span>
+      </a>
+      <a href="#doc-sec-checklist" class="doc-nav-link">
+        <span>12. Phased Checklist &amp; Milestones</span>
+        <span class="nav-badge-pill">Week 1–8</span>
+      </a>
     </aside>
 
     <!-- Main Technical Design Document Body -->
@@ -529,21 +705,21 @@
       <!-- Section 1: Overview & Objectives -->
       <section id="doc-sec-overview" class="doc-section">
         <div class="doc-section-header">
-          <h2>1. Introduction &amp; Learning Objectives</h2>
-          <span class="badge badge-cyan">Academic Foundation</span>
+          <h2>1. Introduction, Pedagogical Context &amp; Objectives</h2>
+          <span class="badge badge-cyan">Academic Reference</span>
         </div>
         <p>
-          Rather than treating IoT as a single isolated technology, the <strong>TECH 300</strong> course project is deliberately scoped to touch every tier of a production IoT stack — embedded firmware, short-range wireless networking, edge computing, cloud services, and a presentation client — so that students leave the course with practical, integration-level experience.
+          Rather than treating the Internet of Things (IoT) as a single isolated technology, the <strong>IoT Demo System</strong> project is deliberately scoped to touch every tier of a production IoT stack — embedded firmware, short-range wireless networking, edge computing, cloud services, and a presentation client — so that students leave the course with practical, integration-level experience rather than single-layer siloed knowledge.
         </p>
         <p>
-          Students design, build, and operate a working, end-to-end IoT demonstration system over the course of the term. The learning objectives emphasize:
+          Students design, build, and operate a working, end-to-end IoT demonstration system over the course of the academic term. The learning objectives emphasize:
         </p>
         <ul style="color:var(--text-muted); font-size:0.9rem; line-height:1.75; padding-left:1.5rem; margin-bottom:1rem;">
-          <li>Configuring low-power <strong>ESP32 microcontrollers</strong> with environmental and motion sensing under deep sleep duty cycles.</li>
-          <li>Operating short-range <strong>BLE 5.0 GATT connections</strong> and advertising packets with low power consumption.</li>
-          <li>Building a resilient <strong>Edge Gateway</strong> on Linux (Raspberry Pi 4) executing protocol translation and SQLite store-and-forward caching during network partitions.</li>
+          <li>Configuring low-power <strong>ESP32-WROOM-32D microcontrollers</strong> with environmental and kinetic transducers under RTC deep sleep duty cycles.</li>
+          <li>Operating short-range <strong>Bluetooth Low Energy (BLE 5.0) GATT connections</strong> and advertising packets with rigorous battery budgeting.</li>
+          <li>Building a resilient <strong>Edge Gateway</strong> on Linux (Raspberry Pi 4 Model B) executing protocol translation and SQLite store-and-forward caching during network partitions.</li>
           <li>Connecting securely to <strong>AWS IoT Core</strong> via mutual TLS (mTLS on port 8883), with serverless rule routing into DynamoDB and Lambda anomaly alerting.</li>
-          <li>Operating closed-loop reverse actuation from a native <strong>Mobile Application</strong> and <strong>Web Operations Dashboard</strong> down to physical actuators.</li>
+          <li>Operating closed-loop reverse actuation from a native <strong>Android Mobile Application (Kotlin/Compose)</strong> and <strong>Web Operations Dashboard</strong> down to physical actuators.</li>
         </ul>
       </section>
 
@@ -572,15 +748,75 @@
         <div class="doc-figure-card" style="margin-top:1.5rem; border-color:rgba(0, 212, 255, 0.35);">
           <img src="assets/images/fig1a_system_architecture_design.png" alt="Figure 1a. End-to-End System Implementation Architecture" class="doc-figure-img" style="max-height:540px;">
           <div class="doc-figure-caption">
-            <strong>Figure 1a. Concrete End-to-End System Implementation Architecture (TECH 300 Complete Demo Design).</strong> Comprehensive 5-tier deployment architecture spanning ESP32 field nodes (Perception), BLE 5.0 proximity link (Southbound), Raspberry Pi 4 edge protocol bridge &amp; store-and-forward buffer (Gateway), AWS IoT Core + Lambda + DynamoDB serverless backend (Cloud), and dual presentation clients (Android Mobile App &amp; Web Operations Center) interconnected via real-time BroadcastChannel simulation bus.
+            <strong>Figure 1a. Concrete End-to-End System Implementation Architecture (End-to-End IoT Demo Design).</strong> Comprehensive 5-tier deployment architecture spanning ESP32 field nodes (Perception), BLE 5.0 proximity link (Southbound), Raspberry Pi 4 edge protocol bridge &amp; store-and-forward buffer (Gateway), AWS IoT Core + Lambda + DynamoDB serverless backend (Cloud), and dual presentation clients (Android Mobile App &amp; Web Operations Center) interconnected via real-time BroadcastChannel simulation bus.
           </div>
+        </div>
+
+        <!-- End-to-End Latency Budget SLA Table -->
+        <div style="margin-top:1.5rem;">
+          <h3 style="color:#fff; font-size:1.05rem; margin-bottom:0.75rem;">⚡ End-to-End Data Flow &amp; Latency Budget SLA</h3>
+          <table class="bom-table" style="margin-bottom:0.5rem;">
+            <thead>
+              <tr>
+                <th>Hop / Transition</th>
+                <th>Source Tier &rarr; Destination Tier</th>
+                <th>Transport Protocol</th>
+                <th>Budgeted Latency</th>
+                <th>Engineering Mitigations</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hop 1: Ingestion</td>
+                <td>Tier 1 (Perception) &rarr; Tier 2 (Proximity)</td>
+                <td>I²C Bus (400 kHz) + BLE 5.0 GATT Notification</td>
+                <td>12–18 ms</td>
+                <td>Zero-allocation binary ring buffers, DMA transfers.</td>
+              </tr>
+              <tr>
+                <td>Hop 2: Translation</td>
+                <td>Tier 2 (Proximity) &rarr; Tier 3 (Edge Gateway)</td>
+                <td>BlueZ HCI / <code>bleak</code> async Python daemon</td>
+                <td>8–15 ms</td>
+                <td>Asynchronous event loop, pre-warmed connection pool.</td>
+              </tr>
+              <tr>
+                <td>Hop 3: Cloud Ingest</td>
+                <td>Tier 3 (Edge Gateway) &rarr; Tier 4 (AWS Cloud)</td>
+                <td>TLS 1.2/1.3 mTLS over TCP 8883 (AWS IoT Core)</td>
+                <td>22–38 ms</td>
+                <td>Persistent keep-alive, TCP session reuse, QoS 1.</td>
+              </tr>
+              <tr>
+                <td>Hop 4: Serverless</td>
+                <td>Tier 4 (AWS Rules Engine &rarr; Lambda/DynamoDB)</td>
+                <td>AWS Internal Microservices (API Gateway / STS)</td>
+                <td>15–25 ms</td>
+                <td>DynamoDB On-Demand capacity, pre-warmed Lambda containers.</td>
+              </tr>
+              <tr>
+                <td>Hop 5: Presentation</td>
+                <td>Tier 4 (AWS IoT Core) &rarr; Tier 5 (Mobile Client)</td>
+                <td>Paho MQTT over WSS (Port 443) with SigV4</td>
+                <td>18–28 ms</td>
+                <td>Jetpack Compose hardware acceleration, StateFlow reactivity.</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:rgba(0,212,255,0.08); font-weight:700;">
+                <td colspan="3" style="text-align:right; color:#fff;">Total Round-Trip Telemetry Budget (Sensor &rarr; Mobile UI):</td>
+                <td style="color:var(--cyan); font-family:var(--font-mono);">&lt; 120 ms</td>
+                <td style="color:var(--text-dim); font-size:0.75rem;">Typical bench verified: 75–94 ms</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </section>
 
       <!-- Section 3: Perception Layer Hardware & Firmware Architecture -->
       <section id="doc-sec-hardware" class="doc-section">
         <div class="doc-section-header">
-          <h2>3. Perception Layer — Hardware, Firmware &amp; Testing Architecture</h2>
+          <h2>3. Perception Layer — Hardware, Firmware &amp; Power Architecture</h2>
           <a href="perception.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.25)); border:1px solid #06b6d4; color:#06b6d4;">
             <span>🎛️ Open Perception Layer Firmware &amp; Testing Console (perception.html)</span>
             <span>↗</span>
@@ -601,211 +837,131 @@
           </div>
         </div>
 
-        <!-- Subsection 3.1: FreeRTOS SMP Multitasking Architecture -->
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--cyan); margin:1.5rem 0 0.6rem; display:flex; align-items:center; gap:8px;">
-          <span>3.1 FreeRTOS SMP Multitasking &amp; Core Pinning Architecture</span>
-        </h3>
-        <p>
-          To prevent time-critical wireless protocol operations from starving sensor acquisition or causing jitter, firmware is architected on a dual-core FreeRTOS Symmetric Multiprocessing (SMP) model with strict core pinning:
-        </p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1rem; margin-bottom:1.25rem;">
-          <div style="background:rgba(7,10,18,0.7); border:1px solid rgba(0,212,255,0.25); border-radius:var(--radius-md); padding:1rem;">
-            <div style="font-weight:700; color:var(--cyan); font-size:0.9rem; margin-bottom:6px;">Core 0: Protocol &amp; Radio Stack (PRO_CPU)</div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li><code>TaskBleServer</code> (Priority 5, 4096B stack): Runs NimBLE Bluetooth 5.0 stack, manages non-connected <code>ADV_IND</code> broadcasting, handles GATT connection events, and processes reverse downlink write notifications.</li>
-              <li>RTC Watchdog Timer (WDT) and low-level Wi-Fi/BLE baseband interrupt servicing.</li>
-            </ul>
+        <!-- Power Budgeting and Battery Endurance Calculations -->
+        <div class="doc-callout info">
+          <h4 style="color:var(--cyan); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <span>🔋 Power Optimization &amp; Duty-Cycle Mathematical Model</span>
+          </h4>
+          <p style="margin-bottom:8px;">
+            Because constrained perception nodes are powered by a 3.7V 1200 mAh LiPo battery, continuous active radio listening (80–120 mA) would deplete the cell within 12–15 hours. The firmware instead operates an aggressive RTC-driven deep sleep duty cycle where average current draw is governed by:
+          </p>
+          <div class="doc-code-block" style="margin:8px 0; color:#38bdf8;">
+            I_avg = ((I_active * t_active) + (I_sleep * t_sleep)) / (t_active + t_sleep)
           </div>
-          <div style="background:rgba(7,10,18,0.7); border:1px solid rgba(16,185,129,0.25); border-radius:var(--radius-md); padding:1rem;">
-            <div style="font-weight:700; color:var(--emerald); font-size:0.9rem; margin-bottom:6px;">Core 1: Sensing &amp; Power Control (APP_CPU)</div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li><code>TaskSensorSample</code> (Priority 3, 3072B stack): Executes calibrated burst reads over I²C bus every 2000 ms, applies polynomial calibration compensation, and pushes data to an inter-core FreeRTOS queue.</li>
-              <li><code>TaskPowerManager</code> (Priority 2, 2048B stack): Monitors battery rail voltage via ADC1_CH0 (GPIO 36) and manages dynamic frequency scaling (80MHz/240MHz) and deep-sleep sequencing.</li>
-            </ul>
-          </div>
+          <p style="margin-bottom:0;">
+            Where \(I_{\text{active}} \approx 80\,\text{mA}\) for \(t_{\text{active}} \approx 120\,\text{ms}\) (wake, sample I²C, broadcast BLE frame), and \(I_{\text{sleep}} \approx 10\,\mu\text{A}\) during deep sleep.
+          </p>
         </div>
 
-        <!-- Subsection 3.2: Sensor Transducers & Electrical Circuit Design -->
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--cyan); margin:1.5rem 0 0.6rem; display:flex; align-items:center; gap:8px;">
-          <span>3.2 Sensor Transducers, Bus Electrical Schematics &amp; Addressing</span>
-        </h3>
-        <p>
-          Sensor modules interface with the ESP32 via a shared 400 kHz Fast-Mode I²C hardware bus (SDA on GPIO 21, SCL on GPIO 22). To ensure high signal integrity across capacitive prototype breadboard traces:
-        </p>
-        <ul style="color:var(--text-muted); font-size:0.88rem; line-height:1.7; padding-left:1.4rem; margin-bottom:1rem;">
-          <li><strong>Pull-Up Resistors:</strong> Calculated 4.7 kΩ metal film pull-up resistors connect SDA and SCL lines to the 3.3V power rail, satisfying the maximum rise time \(t_r \le 300\,\text{ns}\) specified by NXP I²C Fast-Mode standards for ~50 pF bus capacitance.</li>
-          <li><strong>Decoupling Capacitors:</strong> Each sensor IC includes a local 100 nF ceramic MLCC bypass capacitor placed within 5 mm of its VDD pin, supplemented by a 10 µF tantalum capacitor at the MCU power entry header to suppress transient voltage droops during radio TX pulses.</li>
-          <li><strong>Bosch Sensortec BME280 (I²C Address <code>0x76</code>):</strong> Captures precision temperature (±0.5°C, 20-bit resolution), relative humidity (±3% RH), and barometric pressure (±1.0 hPa) with integrated factory factory-calibrated trim registers.</li>
-          <li><strong>InvenSense MPU6050 / LSM6DSV16X (I²C Address <code>0x68</code>):</strong> 6-axis MEMS accelerometer (±2g/±4g) and gyroscope (±250°/s) monitoring machinery vibration with an active-high hardware interrupt output connected to ESP32 GPIO 19.</li>
-        </ul>
-
-        <!-- Subsection 3.3: BLE 5.0 GATT Services & Characteristic Mapping -->
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--cyan); margin:1.5rem 0 0.6rem; display:flex; align-items:center; gap:8px;">
-          <span>3.3 Bluetooth 5.0 GATT Hierarchy &amp; Packet Framing</span>
-        </h3>
-        <p>
-          Field nodes expose standardized Bluetooth SIG adopted UUID services alongside custom reverse actuation endpoints:
-        </p>
-        <table class="bom-table" style="margin-bottom:1.25rem;">
+        <table class="bom-table" style="margin-bottom:1.5rem;">
           <thead>
             <tr>
-              <th>GATT Entity</th>
-              <th>UUID</th>
-              <th>Properties</th>
-              <th>Format &amp; Scale</th>
-              <th>Function</th>
+              <th>Wake Interval (\(t_{\text{sleep}}\))</th>
+              <th>Duty Cycle (%)</th>
+              <th>Average Current Draw (\(I_{\text{avg}}\))</th>
+              <th>Expected Battery Longevity (1200 mAh)</th>
+              <th>Operating Profile Suitability</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="color:var(--cyan); font-weight:600;">Environmental Sensing</td>
-              <td><code>0x181A</code></td>
-              <td>Primary Service</td>
-              <td>Bluetooth SIG Standard</td>
-              <td>Root service container for environmental telemetry</td>
+              <td>5 seconds</td>
+              <td>2.34%</td>
+              <td>1.88 mA</td>
+              <td><strong>26.5 Days</strong> (~3.8 Weeks)</td>
+              <td>Rapid laboratory testing and dynamic motion tracking.</td>
+            </tr>
+            <tr style="background:rgba(16,185,129,0.06);">
+              <td><strong>10 seconds (Standard)</strong></td>
+              <td><strong>1.18%</strong></td>
+              <td><strong>0.95 mA</strong></td>
+              <td><strong>52.6 Days</strong> (~7.5 Weeks)</td>
+              <td><strong>Standard IoT demo baseline (balanced latency &amp; power).</strong></td>
             </tr>
             <tr>
-              <td>├─ Temperature</td>
-              <td><code>0x2A6E</code></td>
-              <td>Read, Notify</td>
-              <td>16-bit Signed Int (0.01°C)</td>
-              <td>Example: <code>0x095A</code> = 2394 = 23.94°C</td>
+              <td>30 seconds</td>
+              <td>0.40%</td>
+              <td>0.33 mA</td>
+              <td><strong>151.5 Days</strong> (~5.0 Months)</td>
+              <td>Eco HVAC monitoring and cold storage facilities.</td>
             </tr>
             <tr>
-              <td>├─ Humidity</td>
-              <td><code>0x2A6F</code></td>
-              <td>Read, Notify</td>
-              <td>16-bit Unsigned Int (0.01%)</td>
-              <td>Example: <code>0x1338</code> = 4920 = 49.20% RH</td>
-            </tr>
-            <tr>
-              <td>└─ Pressure</td>
-              <td><code>0x2A6D</code></td>
-              <td>Read, Notify</td>
-              <td>32-bit Unsigned Int (0.1 Pa)</td>
-              <td>Example: <code>0x000F7060</code> = 1011808 = 1011.8 hPa</td>
-            </tr>
-            <tr style="background:rgba(245,158,11,0.06);">
-              <td style="color:var(--amber); font-weight:600;">Reverse Actuation</td>
-              <td><code>0xFFE0</code></td>
-              <td>Custom Service</td>
-              <td>Proprietary Vendor</td>
-              <td>Closed-loop downlink control service</td>
-            </tr>
-            <tr style="background:rgba(245,158,11,0.06);">
-              <td>└─ Relay / Actuator</td>
-              <td><code>0xFFE2</code></td>
-              <td>Write, Notify</td>
-              <td>1-byte UInt8 (<code>0x00</code>=OFF, <code>0x01</code>=ON)</td>
-              <td>Downlink command sent by Edge Gateway to toggle physical relay (GPIO 23)</td>
+              <td>60 seconds</td>
+              <td>0.20%</td>
+              <td>0.17 mA</td>
+              <td><strong>294.1 Days</strong> (~9.8 Months)</td>
+              <td>Ultra-low-power environmental data logging.</td>
             </tr>
           </tbody>
         </table>
-
-        <!-- Subsection 3.4: Power Profiling & Battery Longevity -->
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--cyan); margin:1.5rem 0 0.6rem; display:flex; align-items:center; gap:8px;">
-          <span>3.4 Energy Budgeting, Power States &amp; Battery Longevity Analysis</span>
-        </h3>
-        <p>
-          Field nodes operating on battery power cycle between four discrete operational states. Laboratory power profiling yielded the following benchmark metrics:
-        </p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem; margin-bottom:1.25rem;">
-          <div style="background:rgba(7,10,18,0.7); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:0.85rem; text-align:center;">
-            <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Deep Sleep</div>
-            <div style="font-size:1.3rem; font-weight:800; color:var(--emerald); font-family:var(--font-mono);">15 µA</div>
-            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">ULP coprocessor off, RTC on</div>
-          </div>
-          <div style="background:rgba(7,10,18,0.7); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:0.85rem; text-align:center;">
-            <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Light Sleep</div>
-            <div style="font-size:1.3rem; font-weight:800; color:var(--cyan); font-family:var(--font-mono);">0.8 mA</div>
-            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">RAM retained, clock gated</div>
-          </div>
-          <div style="background:rgba(7,10,18,0.7); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:0.85rem; text-align:center;">
-            <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">Active Sampling</div>
-            <div style="font-size:1.3rem; font-weight:800; color:var(--amber); font-family:var(--font-mono);">6.5 mA</div>
-            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">CPU 80MHz, I²C burst (120ms)</div>
-          </div>
-          <div style="background:rgba(7,10,18,0.7); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:0.85rem; text-align:center;">
-            <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase;">BLE TX Burst</div>
-            <div style="font-size:1.3rem; font-weight:800; color:var(--rose); font-family:var(--font-mono);">130 mA</div>
-            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Peak +9 dBm RF (25ms burst)</div>
-          </div>
-        </div>
-        <p style="font-size:0.88rem; color:var(--text-muted);">
-          Under a standard 10-second reporting duty cycle (9.75s Deep Sleep @ 15 µA + 0.225s Active/TX @ 28 mA average), the weighted average current consumption is <strong>0.347 mA</strong>. Powered by a single 3.7V 1200 mAh LiPo battery (derated to 85% effective capacity), expected operating lifespan is <strong>144 days (~4.8 months)</strong> without external charging. At a 60-second reporting interval, operating life extends to <strong>588 days (~1.6 years)</strong>.
-        </p>
-
-        <!-- Subsection 3.5: Testing & Fault Injection Bench -->
-        <h3 style="font-size:1.05rem; font-weight:700; color:var(--cyan); margin:1.5rem 0 0.6rem; display:flex; align-items:center; gap:8px;">
-          <span>3.5 Hardware-in-the-Loop Testing &amp; Diagnostic Fault Injection</span>
-        </h3>
-        <p>
-          The perception layer features automated hardware diagnostic routines accessible directly through the interactive <a href="perception.html" target="_blank" style="color:var(--cyan); text-decoration:underline;">Perception Console</a>:
-        </p>
-        <ul style="color:var(--text-muted); font-size:0.88rem; line-height:1.7; padding-left:1.4rem; margin-bottom:0.5rem;">
-          <li><strong>Simulated I²C Bus Scanner:</strong> Automatically sweeps addresses <code>0x01</code> through <code>0x7F</code>, reliably detecting active ACK responses from the MPU6050 (<code>0x68</code>) and BME280 (<code>0x76</code>).</li>
-          <li><strong>I²C Bus NACK Fault Injection:</strong> Simulates an intermittent transducer disconnection or pull-up fault, validating firmware automated 3-attempt bus recovery sequence before error signaling.</li>
-          <li><strong>Thermal Runaway Trip Point:</strong> Simulates rapid thermal escalation (&gt;35°C), verifying that critical alert bitflags are immediately encoded into outbound BLE frames and processed by cloud safety rules.</li>
-          <li><strong>Low-Voltage Brownout Reset:</strong> Emulates battery voltage decay below 3.4V, verifying that the ESP32 internal brownout detector safely writes critical calibration parameters to non-volatile SPIFFS storage prior to shutdown.</li>
-        </ul>
       </section>
 
-      <!-- Section 4: Wireless Protocol Selection Matrix -->
+      <!-- Section 4: Wireless Protocol Selection -->
       <section id="doc-sec-protocol" class="doc-section">
         <div class="doc-section-header">
-          <h2>4. Wireless Protocol Selection Matrix</h2>
-          <span class="badge badge-cyan">Southbound Connectivity</span>
+          <h2>4. Local Wireless Protocol Selection &amp; Southbound Matrix</h2>
+          <a href="proximity.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(168,85,247,0.2), rgba(99,102,241,0.25)); border:1px solid #a855f7; color:#c084fc;">
+            <span>📶 Open Proximity Network (BLE 5.0) Console (proximity.html)</span>
+            <span>↗</span>
+          </a>
         </div>
         <p>
-          Selecting an optimal wireless protocol for resource-constrained field nodes requires balancing power consumption, range, throughput, and hardware complexity. Bluetooth Low Energy (BLE 5.0) was selected for the primary south-bound sensor connection due to its ultra-low deep-sleep power profile, native support on commodity edge hardware, and high enough throughput (1–2 Mbps) for rich telemetry.
+          Selecting an appropriate proximity protocol requires balancing throughput, transceiver power draw, physical range, and infrastructure cost. <strong>Figure 4</strong> shows the comparative analysis of candidate short-range wireless technologies (BLE 5.0, Wi-Fi 4/5, Zigbee 3.0, and LoRaWAN).
         </p>
+
         <div class="doc-figure-card">
-          <img src="assets/images/fig4_ble_comparison.png" alt="Figure 4. BLE Comparison" class="doc-figure-img">
-          <div class="doc-figure-caption"><strong>Figure 4. Comparative analysis</strong> of passive BLE broadcasting versus connected GATT operation. (Professor Liang Li, TECH 300).</div>
+          <img src="assets/images/fig4_ble_comparison.png" alt="Figure 4. Comparative analysis of wireless protocols" class="doc-figure-img" style="max-height:460px;">
+          <div class="doc-figure-caption">
+            <strong>Figure 4. Comparative Analysis of Wireless Protocols for IoT Sensor Nodes.</strong> Evaluates BLE 5.0 against Wi-Fi, Zigbee, and LoRa across data rate, power draw, topology, hardware unit cost, and stack complexity. BLE 5.0 GATT with connectionless advertising was chosen for our perception nodes.
+          </div>
         </div>
 
-        <!-- Protocol Comparison Table -->
         <table class="bom-table">
           <thead>
             <tr>
-              <th>Protocol</th>
-              <th>Standard</th>
+              <th>Protocol Standard</th>
+              <th>PHY / Modulation</th>
               <th>Frequency Band</th>
-              <th>Data Rate</th>
-              <th>Battery Longevity</th>
-              <th>Topology</th>
+              <th>Peak Data Rate</th>
+              <th>Nominal Range</th>
+              <th>Typical Battery Life</th>
+              <th>Network Topology</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="background:rgba(0,212,255,0.06); font-weight:bold;">
-              <td style="color:var(--cyan);">BLE 5.0 (Selected)</td>
-              <td>IEEE 802.15.1</td>
+            <tr style="background:rgba(168,85,247,0.08);">
+              <td style="color:#c084fc; font-weight:700;">BLE 5.0 (Adopted)</td>
+              <td>GFSK / 2M PHY &amp; Coded</td>
               <td>2.4 GHz ISM</td>
-              <td>1–2 Mbps</td>
+              <td>1.0–2.0 Mbps</td>
+              <td>10–50 m</td>
               <td>Months–Years</td>
-              <td>Star / Mesh</td>
+              <td>Star / Broadcast Mesh</td>
             </tr>
             <tr>
-              <td>Wi-Fi 4/5</td>
-              <td>IEEE 802.11 b/g/n</td>
-              <td>2.4 / 5 GHz</td>
+              <td>Wi-Fi 4/5 (802.11 b/g/n)</td>
+              <td>DSSS, CCK, OFDM</td>
+              <td>2.4 / 5.0 GHz</td>
               <td>54–433 Mbps</td>
+              <td>30–100 m</td>
               <td>Days–Weeks</td>
-              <td>Star (AP)</td>
+              <td>Star (Access Point)</td>
             </tr>
             <tr>
-              <td>Zigbee 3.0</td>
-              <td>IEEE 802.15.4</td>
+              <td>Zigbee 3.0 (802.15.4)</td>
+              <td>O-QPSK</td>
               <td>2.4 GHz</td>
               <td>250 kbps</td>
+              <td>10–75 m</td>
               <td>Years</td>
               <td>Mesh</td>
             </tr>
             <tr>
               <td>LoRaWAN</td>
-              <td>Proprietary Chirp</td>
-              <td>Sub-GHz (915 MHz)</td>
+              <td>Chirp Spread Spectrum (CSS)</td>
+              <td>Sub-GHz (915 MHz US)</td>
               <td>0.3–50 kbps</td>
+              <td>2–15 km</td>
               <td>5–10 Years</td>
               <td>Star-of-Stars</td>
             </tr>
@@ -816,7 +972,7 @@
       <!-- Section 5: Edge Gateway Layer Hardware -->
       <section id="doc-sec-gateway" class="doc-section">
         <div class="doc-section-header">
-          <h2>5. Edge Gateway Layer Hardware</h2>
+          <h2>5. Edge Gateway Layer Hardware &amp; Store-and-Forward Engine</h2>
           <a href="gateway.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(16,185,129,0.2), rgba(0,212,255,0.25)); border:1px solid var(--emerald); color:var(--emerald);">
             <span>📟 Open Edge Gateway Operations Console (gateway.html)</span>
             <span>↗</span>
@@ -825,6 +981,7 @@
         <p>
           The edge gateway bridges the constrained local BLE network and the wide-area cloud IP network. It runs a headless Linux environment managing concurrent BLE GATT central connections, translating binary sensor frames into structured JSON payloads, maintaining a resilient SQLite store-and-forward buffer during WAN disconnects, and authenticating to AWS IoT Core over mutual TLS 8883.
         </p>
+
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
           <div class="doc-figure-card" style="margin:0;">
             <img src="assets/images/fig5a_raspberry_pi4.png" alt="Figure 5a. Raspberry Pi 4" class="doc-figure-img">
@@ -840,7 +997,7 @@
       <!-- Section 6: AWS Cloud Backend Architecture -->
       <section id="doc-sec-aws" class="doc-section">
         <div class="doc-section-header">
-          <h2>6. AWS Cloud Backend Architecture</h2>
+          <h2>6. AWS Cloud Backend Architecture &amp; Serverless Pipeline</h2>
           <a href="aws-cloud.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(255,153,0,0.2), rgba(245,158,11,0.25)); border:1px solid #ff9900; color:#ff9900;">
             <span>☁️ Open AWS Cloud Operations Console (aws-cloud.html)</span>
             <span>↗</span>
@@ -854,21 +1011,19 @@
         <div class="doc-figure-card">
           <img src="assets/images/fig6_aws_cloud_overview.png" alt="Figure 6. Designed AWS IoT Cloud Operations Console" class="doc-figure-img" style="max-height:450px;">
           <div class="doc-figure-caption">
-            <strong>Figure 6. AWS IoT Cloud Operations Console Overview (Designed TECH 300 Cloud Dashboard).</strong> Live fleet telemetry indicators (Messages Ingested, Active MQTT Devices, DynamoDB Record Count, Lambda Alerts, and Average Ingestion Rate), active service status indicators, and the interactive 5-tier pipeline topology.
+            <strong>Figure 6. AWS IoT Cloud Operations Console Overview (Designed Cloud Dashboard).</strong> Live fleet telemetry indicators (Messages Ingested, Active MQTT Devices, DynamoDB Record Count, Lambda Alerts, and Average Ingestion Rate), active service status indicators, and the interactive 5-tier pipeline topology.
           </div>
         </div>
 
         <!-- Figures 7 & 8 in 2-column grid -->
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
-          <!-- Figure 7: Rules Engine -->
           <div class="doc-figure-card" style="margin:0;">
             <img src="assets/images/fig7_aws_rules_engine.png" alt="Figure 7. Designed AWS IoT Rules Engine" class="doc-figure-img" style="max-height:420px;">
             <div class="doc-figure-caption">
-              <strong>Figure 7. AWS IoT Rules Engine Implementation (Designed Console).</strong> Active SQL rule (<code>SELECT device_id, temp, humidity, pressure, vibration, battery, timestamp() AS ingest_time FROM 'tech300/telemetry/+' WHERE temp &gt; 0</code>) evaluating incoming payloads, dispatching PutItem writes to DynamoDB, and invoking Lambda alerting on <code>temp &gt; 30.0°C</code>.
+              <strong>Figure 7. AWS IoT Rules Engine Implementation (Designed Console).</strong> Active SQL rule (<code>SELECT device_id, temp, humidity, pressure, vibration, battery, timestamp() AS ingest_time FROM 'iot/telemetry/+' WHERE temp &gt; 0</code>) evaluating incoming payloads, dispatching PutItem writes to DynamoDB, and invoking Lambda alerting on <code>temp &gt; 30.0°C</code>.
             </div>
           </div>
 
-          <!-- Figure 8: DynamoDB Pipeline -->
           <div class="doc-figure-card" style="margin:0;">
             <img src="assets/images/fig8_aws_dynamodb_pipeline.png" alt="Figure 8. Designed Amazon DynamoDB Pipeline" class="doc-figure-img" style="max-height:420px;">
             <div class="doc-figure-caption">
@@ -879,16 +1034,16 @@
       </section>
 
       <!-- Section 7: Mobile & Presentation UI Styling Pattern -->
-      <section id="doc-sec-ui" class="doc-section">
+      <section id="doc-sec-mobile" class="doc-section">
         <div class="doc-section-header">
-          <h2>7. Mobile &amp; Presentation UI Styling Pattern</h2>
-          <a href="app.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(0,200,255,0.2), rgba(99,102,241,0.25)); border:1px solid var(--cyan); color:var(--cyan);">
-            <span>📱 Launch Live Mobile App (app.html)</span>
+          <h2>7. Mobile Application (Tier 5) Architecture &amp; Presentation</h2>
+          <a href="app.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(168,85,247,0.2), rgba(99,102,241,0.25)); border:1px solid var(--purple); color:#c084fc;">
+            <span>📱 Launch Interactive Mobile App Workbench (app.html)</span>
             <span>↗</span>
           </a>
         </div>
         <p>
-          The presentation layer bridges field hardware telemetry and cloud intelligence to end users. In this project, the presentation tier was implemented around the <strong>IoT Sense Android Mobile App</strong> (<code>app.html</code>) designed for ergonomic touch-first field monitoring and climate actuation, complemented by the <strong>TECH 300 Web Operations Center</strong> (<code>dashboard.html</code>).
+          The presentation layer bridges field hardware telemetry and cloud intelligence directly to end users. In this project, the presentation tier was implemented around the <strong>IoT Sense Android Mobile Application</strong> (<code>app.html</code>) designed for ergonomic touch-first field monitoring and climate actuation, complemented by the <strong>Web Operations Center</strong> (<code>dashboard.html</code>).
         </p>
 
         <!-- 3-Column Mobile App Screens Showcase -->
@@ -920,48 +1075,182 @@
 
         </div>
 
-        <!-- UI/UX Styling Pattern & Design System Specification Matrix -->
-        <div style="background:rgba(7,10,18,0.7); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem; margin-top:1.5rem;">
-          <h3 style="color:var(--cyan); font-size:1.05rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:8px;">
-            <span>🎨 UI/UX Design System &amp; Interaction Patterns</span>
-          </h3>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; font-size:0.85rem;">
-            <div style="background:rgba(255,255,255,0.02); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.05);">
-              <div style="color:var(--text-main); font-weight:700; margin-bottom:4px;">📱 Handheld Ergonomics &amp; Viewport</div>
-              <p style="color:var(--text-muted); line-height:1.5; margin:0;">
-                Engineered for modern 390×844px mobile viewports (iPhone/Android 6.1" display standard). Utilizes a 4-tab thumb-friendly bottom navigation bar (Home, AC Control, Analytics, Settings) with fixed status bar, notch accommodation, and 48px minimum touch target compliance.
-              </p>
+        <!-- Tier 5 Engineering Specification Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1rem; margin-top:1.5rem;">
+          <div style="background:rgba(7,10,18,0.75); border:1px solid rgba(168,85,247,0.3); border-radius:var(--radius-md); padding:1.25rem;">
+            <div style="font-weight:700; color:var(--purple); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+              <span>📱 Clean Architecture &amp; MVI Pattern</span>
             </div>
-            <div style="background:rgba(255,255,255,0.02); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.05);">
-              <div style="color:var(--text-main); font-weight:700; margin-bottom:4px;">🌌 Cyberpunk Obsidian Color System</div>
-              <p style="color:var(--text-muted); line-height:1.5; margin:0;">
-                OLED-optimized deep obsidian background (<code>#0a0e1a</code>) paired with multi-layer elevated cards (<code>#1a2235</code>) and glowing accent tokens: Electric Cyan (<code>#00c8ff</code> for cooling/link), Emerald Green (<code>#10b981</code> for normal state), Amber (<code>#f59e0b</code> for heat/caution), and Rose Crimson (<code>#f43f5e</code> for alerts).
-              </p>
+            <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.6; margin:0;">
+              Constructed in Kotlin 1.9+ and Jetpack Compose utilizing Unidirectional Data Flow (UDF). Composable functions observe an immutable <code>TelemetryUiState</code> emitted via Kotlin Coroutines <code>StateFlow</code>. Prevents race conditions across parallel telemetry streams.
+            </p>
+          </div>
+
+          <div style="background:rgba(7,10,18,0.75); border:1px solid rgba(0,212,255,0.3); border-radius:var(--radius-md); padding:1.25rem;">
+            <div style="font-weight:700; color:var(--cyan); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+              <span>⚡ Dual-Path Ingestion Pipeline</span>
             </div>
-            <div style="background:rgba(255,255,255,0.02); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.05);">
-              <div style="color:var(--text-main); font-weight:700; margin-bottom:4px;">⚡ Micro-Interactions &amp; Actuation Feedback</div>
-              <p style="color:var(--text-muted); line-height:1.5; margin:0;">
-                Dynamic SVG radial meter with stroke-dashoffset transitions, pulsing LED status beacons, haptic-style button click feedback, toggle switches with glow halos, and instant optimistic state updates corroborated by cloud Device Shadow acknowledgments.
-              </p>
+            <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.6; margin:0;">
+              Combines a sub-50ms streaming path (Paho MQTT over WSS on port 443 with Cognito STS SigV4 tokens) for live radial gauges and actuation, with an on-demand historical query path (Retrofit2 HTTPS to API Gateway / DynamoDB) for 24h trendlines.
+            </p>
+          </div>
+
+          <div style="background:rgba(7,10,18,0.75); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-md); padding:1.25rem;">
+            <div style="font-weight:700; color:var(--emerald); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+              <span>❄️ Smart Hysteresis AC Cooling Loop</span>
             </div>
-            <div style="background:rgba(255,255,255,0.02); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.05);">
-              <div style="color:var(--text-main); font-weight:700; margin-bottom:4px;">🔄 Closed-Loop Automated AC Control</div>
-              <p style="color:var(--text-muted); line-height:1.5; margin:0;">
-                When autonomous cooling mode is engaged, telemetry readings surpassing 26.0°C trigger an automated reverse command sequence through AWS IoT Core down to the ESP32 relay/fan, seamlessly represented on both mobile dial state and desktop actuation panels.
-              </p>
-            </div>
+            <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.6; margin:0;">
+              Dual-threshold supervisor activates cooling when \(T \ge 26.0^\circ\text{C}\) and disengages when \(T \le 24.0^\circ\text{C}\). Eliminates rapid mechanical relay chatter, supported by optimistic switch UI states and a 3.5 s rollback timeout safety watcher.
+            </p>
           </div>
         </div>
       </section>
 
-      <!-- Section 8: Required Software Platforms & Toolchains -->
-      <section id="doc-sec-sw-platforms" class="doc-section">
+      <!-- Section 8: End-to-End Security Architecture (Zero-Trust) -->
+      <section id="doc-sec-security" class="doc-section">
         <div class="doc-section-header">
-          <h2>8. Required Software Platforms &amp; Toolchains</h2>
-          <span class="badge badge-emerald">Full-Stack Software Ecosystem</span>
+          <h2>8. End-to-End Zero-Trust Security Architecture</h2>
+          <span class="badge badge-purple">Zero-Trust Model</span>
         </div>
         <p>
-          Delivering an end-to-end IoT demonstration system requires a cohesive software ecosystem spanning five specialized execution tiers: embedded microcontrollers, edge gateway hosts, cloud backend infrastructure, native mobile applications, and web diagnostic centers. The complete inventory of mandatory and recommended software platforms, runtime engines, SDKs, and development toolchains is detailed below.
+          Security in production IoT cannot be bolted on as an afterthought or confined to a single tier. The system enforces defense-in-depth across the physical, link, transport, cloud identity, and application presentation layers.
+        </p>
+
+        <table class="bom-table">
+          <thead>
+            <tr>
+              <th>Architecture Layer</th>
+              <th>Cryptographic Mechanism</th>
+              <th>Key Standard &amp; Length</th>
+              <th>Threat Vector Mitigated</th>
+              <th>Implementation Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--cyan); font-weight:600;">1. Perception Hardware</td>
+              <td>Flash Encryption &amp; Secure Boot v2</td>
+              <td>AES-XTS 256-bit + RSA-3072</td>
+              <td>Physical memory dumping, malicious firmware tampering.</td>
+              <td>ESP32 eFuse OTP registers burned; firmware signed with private RSA key.</td>
+            </tr>
+            <tr>
+              <td style="color:#c084fc; font-weight:600;">2. Southbound Proximity</td>
+              <td>BLE 5.0 Link-Layer Encryption</td>
+              <td>AES-128 CCM (Cipher Block Chaining)</td>
+              <td>Over-the-air RF sniffing, replay attacks, man-in-the-middle (MITM).</td>
+              <td>BLE Secure Connections pairing; randomized advertising address rotation.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--emerald); font-weight:600;">3. Northbound Transport</td>
+              <td>Mutual TLS (mTLS on Port 8883)</td>
+              <td>X.509 RSA-2048 / ECC SECP256R1 + SHA-256</td>
+              <td>Rogue gateway spoofing, traffic interception, DNS hijacking.</td>
+              <td>Per-device client certificate &amp; private key signed by Amazon Root CA 1.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--amber); font-weight:600;">4. Cloud Authorization</td>
+              <td>Least-Privilege AWS IoT Policy</td>
+              <td>AWS IAM Policy Evaluation Engine</td>
+              <td>Privilege escalation, unauthorized topic publication/subscription.</td>
+              <td>Thing-scoped policy restricts <code>iot:Connect</code> to unique client ID and <code>iot/*</code> topics.</td>
+            </tr>
+            <tr>
+              <td style="color:var(--rose); font-weight:600;">5. Mobile Client Auth</td>
+              <td>Amazon Cognito Federated Identities</td>
+              <td>OpenID Connect (OIDC) + AWS STS SigV4</td>
+              <td>Embedding permanent AWS secrets in distributed mobile APKs.</td>
+              <td>Exchanges Cognito token for 60-minute short-lived STS credentials for WebSocket upgrade.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Code Callout: Least Privilege IoT Policy -->
+        <div class="doc-callout security">
+          <div style="font-weight:700; color:var(--purple); margin-bottom:6px;">
+            🔒 Production AWS IoT Least-Privilege Scoped Policy (Appendix A)
+          </div>
+          <div class="doc-code-block" style="margin:0; max-height:220px;">
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": "arn:aws:iot:us-east-1:*:client/${iot:Connection.Thing.ThingName}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Subscribe", "iot:Receive"],
+      "Resource": "arn:aws:iot:us-east-1:*:topic/iot/*"
+    }
+  ]
+}
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 9: Data Schema Contracts & Wire Formats -->
+      <section id="doc-sec-contracts" class="doc-section">
+        <div class="doc-section-header">
+          <h2>9. Data Schema Contracts &amp; Multi-Tier Wire Formats</h2>
+          <span class="badge badge-cyan">Wire Specifications</span>
+        </div>
+        <p>
+          To maintain zero deserialization crashes across heterogeneous hardware (C++ embedded MCU, Python gateway, AWS JSON, and Kotlin Android), the system enforces deterministic schema contracts at every tier boundary.
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
+          
+          <!-- Format 1: Packed Binary BLE -->
+          <div>
+            <h4 style="color:var(--cyan); margin-bottom:8px; font-size:0.92rem;">1. Perception &rarr; Gateway (12-Byte Packed Binary Struct)</h4>
+            <div class="doc-code-block" style="margin:0; color:#38bdf8;">
+struct __attribute__((packed)) TelemetryFrame {
+    uint8_t  node_id;       // 1 byte:  Node numeric index (1-3)
+    int16_t  temp_c_x10;    // 2 bytes: Temp * 10 (e.g. 254 = 25.4°C)
+    uint16_t hum_pct_x10;   // 2 bytes: Humidity * 10 (e.g. 582 = 58.2%)
+    uint16_t pres_hpa;      // 2 bytes: Barometric pressure in hPa
+    int16_t  vib_mg;        // 2 bytes: Kinetic vibration in milli-g
+    uint8_t  battery_pct;   // 1 byte:  LiPo percentage (0-100)
+    uint16_t crc16;         // 2 bytes: Frame checksum
+}; // Total payload = Exactly 12 bytes
+            </div>
+          </div>
+
+          <!-- Format 2: Normalized MQTT JSON -->
+          <div>
+            <h4 style="color:var(--purple); margin-bottom:8px; font-size:0.92rem;">2. Gateway &rarr; AWS IoT Core (Normalized MQTT JSON)</h4>
+            <div class="doc-code-block" style="margin:0; color:#c084fc;">
+{
+  "device_id": "sensor_node_01",
+  "timestamp": 1775736042,
+  "temp": 25.4,
+  "humidity": 58.2,
+  "pressure": 1013.25,
+  "vibration": 0.042,
+  "battery": 94,
+  "rssi": -64,
+  "actuator_state": {
+    "relay": false,
+    "fan_pwm": 0,
+    "led_mode": "BLINK"
+  }
+}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Section 10: Required Software Platforms & Toolchains -->
+      <section id="doc-sec-sw-platforms" class="doc-section">
+        <div class="doc-section-header">
+          <h2>10. Required Software Platforms, SDKs &amp; Toolchains</h2>
+          <span class="badge badge-emerald">Software Ecosystem</span>
+        </div>
+        <p>
+          Delivering an end-to-end IoT demonstration system requires a cohesive software ecosystem spanning five specialized execution tiers: embedded microcontrollers, edge gateway hosts, cloud backend infrastructure, native mobile applications, and web diagnostic centers.
         </p>
 
         <!-- Consolidated Software Platform Table -->
@@ -978,144 +1267,76 @@
           <tbody>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">1. Perception Firmware</td>
-              <td><strong>Espressif ESP-IDF / Arduino ESP32 Core</strong></td>
+              <td><strong>Espressif ESP-IDF / Arduino Core</strong></td>
               <td>ESP-IDF v5.2+ / Arduino Core 3.0+ (C++17)</td>
-              <td><code>NimBLE-Arduino</code> (BLE 5.0 GATT Server), <code>Wire.h</code> (I²C sensor bus), <code>DHT-sensor-library</code>, FreeRTOS kernel with RTC deep-sleep timers</td>
-              <td>ESP32-WROOM-32 / Nordic nRF52840 (Bare-Metal / RTOS)</td>
+              <td><code>NimBLE-Arduino</code> (BLE 5.0 GATT), <code>Wire.h</code> (I²C), <code>Adafruit_BME280</code>, FreeRTOS kernel with RTC timers</td>
+              <td>ESP32-WROOM-32 / nRF52840</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">2. Edge Gateway OS</td>
               <td><strong>Raspberry Pi OS Lite / Linux BlueZ</strong></td>
               <td>64-bit Debian 12 (Bookworm) / BlueZ 5.66+</td>
-              <td>Headless Linux kernel with Bluetooth subsystem, <code>systemd</code> service daemon management, D-Bus IPC, <code>wpa_supplicant</code> / <code>NetworkManager</code></td>
-              <td>Raspberry Pi 4 Model B (4GB) / Advantech UNO-220</td>
+              <td>Headless Linux kernel, <code>systemd</code> daemon manager, D-Bus IPC, <code>wpa_supplicant</code> / NetworkManager</td>
+              <td>Raspberry Pi 4 Model B (4GB) / UNO-220</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">3. Edge Middleware</td>
               <td><strong>Python Gateway Runtime &amp; AWS SDK</strong></td>
               <td>Python 3.10+ / 3.12 (asyncio)</td>
-              <td><code>bleak</code> (async BLE client for GATT characteristic polling/notifications), <code>awsiotsdk</code> / <code>paho-mqtt</code> (MQTT v3.1.1/v5 mTLS client), <code>cryptography</code></td>
+              <td><code>bleak</code> (async BLE client), <code>awsiotsdk</code> / <code>paho-mqtt</code> (MQTT v3.1.1/v5 mTLS client), <code>sqlite3</code></td>
               <td>Linux Edge Host (venv or systemd daemon)</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">4. Cloud IoT Broker</td>
               <td><strong>AWS IoT Core Platform</strong></td>
               <td>Fully Managed Serverless (MQTT 3.1.1/5.0)</td>
-              <td>X.509 Mutual TLS on Port 8883, Device Shadows (Digital Twin JSON), IoT Rules Engine SQL routing, Topic Namespacing (<code>tech300/*</code>)</td>
-              <td>Amazon Web Services (AWS Cloud, us-east-1)</td>
+              <td>X.509 Mutual TLS Port 8883, Device Shadows (Digital Twin), SQL Rules Engine, Topic Namespacing (<code>iot/*</code>)</td>
+              <td>Amazon Web Services (us-east-1)</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">5. Cloud Serverless</td>
               <td><strong>AWS Lambda &amp; Serverless Compute</strong></td>
               <td>Python 3.12 / Node.js 20 LTS</td>
-              <td>Real-time alert evaluation (<code>temp > 30°C</code>), automated reverse command publishing to MQTT actuation topics, REST API payload handling</td>
+              <td>Real-time alert evaluation (<code>temp > 30°C</code>), automated reverse command publishing, SNS push notifications</td>
               <td>AWS Serverless Execution Engine</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">6. Cloud Database</td>
               <td><strong>Amazon DynamoDB &amp; Amazon S3</strong></td>
               <td>NoSQL Key-Value / Time-Series Store</td>
-              <td>Partition Key: <code>device_id</code> (String), Sort Key: <code>timestamp</code> (Number), sub-10ms read/write latency, cold archival telemetry bucket in S3</td>
+              <td>Partition Key: <code>device_id (S)</code>, Sort Key: <code>timestamp (N)</code>, sub-10ms read/write latency, cold archival telemetry bucket</td>
               <td>AWS Managed Storage Infrastructure</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">7. Cloud API &amp; Auth</td>
               <td><strong>Amazon API Gateway &amp; AWS Cognito</strong></td>
               <td>REST HTTPS / WebSockets &amp; OAuth 2.0</td>
-              <td>Secure REST endpoints (<code>GET /telemetry/history</code>), AppSync GraphQL real-time push channel, Cognito Identity Pools for mobile authentication</td>
+              <td>Secure REST endpoints (<code>GET /telemetry/history</code>), AppSync GraphQL real-time push channel, Cognito Identity Pools</td>
               <td>AWS Managed Edge API Services</td>
             </tr>
-            <tr>
-              <td style="color:var(--cyan); font-weight:600;">8. Mobile Client App</td>
-              <td><strong>Android Studio &amp; Android SDK</strong></td>
+            <tr style="background:rgba(168,85,247,0.06);">
+              <td style="color:var(--purple); font-weight:600;">8. Mobile Client App</td>
+              <td><strong>Android Studio &amp; Jetpack Compose</strong></td>
               <td>Target SDK 34+ (Android 14), Kotlin 1.9+</td>
-              <td><code>Retrofit 2</code> &amp; <code>OkHttp 4</code> (REST API), <code>Eclipse Paho MQTT</code> (live WebSocket updates), <code>MPAndroidChart</code> (telemetry graphs), Material Design 3</td>
+              <td><code>Retrofit 2</code> &amp; <code>OkHttp 4</code>, <code>Eclipse Paho MQTT</code> (WebSocket updates), Material 3, StateFlow MVI</td>
               <td>Android Handheld Devices &amp; Emulators</td>
             </tr>
             <tr>
               <td style="color:var(--cyan); font-weight:600;">9. Web Ops Center</td>
               <td><strong>Modern Web Platform (HTML5 / ES2024)</strong></td>
               <td>Native Modern Web Standards (No Node required)</td>
-              <td><code>Chart.js 4.4+</code> (streaming canvas time-series), <code>BroadcastChannel API</code> (zero-server cross-tab sync), CSS3 Custom Properties Design System</td>
-              <td>Chromium / Firefox / Safari (Desktop &amp; Presentation)</td>
-            </tr>
-            <tr>
-              <td style="color:var(--cyan); font-weight:600;">10. Diagnostic Tools</td>
-              <td><strong>Nordic nRF Connect &amp; MQTT X</strong></td>
-              <td>Desktop &amp; Mobile Utilities</td>
-              <td><code>nRF Connect</code> (BLE advertising/GATT inspector), <code>MQTT X</code> / AWS IoT MQTT Test Client (packet verification), <code>Wireshark</code> (traffic capture)</td>
-              <td>Cross-Platform Developer Workstations</td>
+              <td><code>Chart.js 4.4+</code> (streaming canvas time-series), <code>BroadcastChannel API</code> (cross-tab sync), CSS3 Custom Properties</td>
+              <td>Chromium / Firefox / Safari (Desktop)</td>
             </tr>
           </tbody>
         </table>
-
-        <!-- 4 Tier Software Architecture Cards -->
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
-          
-          <!-- Card 1: Firmware & Gateway -->
-          <div style="background:rgba(7,10,18,0.75); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
-            <div style="font-weight:700; color:var(--cyan); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-              <span>⚙️ Embedded &amp; Edge Platform Stack</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.7; padding-left:1.2rem; margin:0;">
-              <li><strong>IDE:</strong> VS Code with Espressif IDF Extension or Arduino IDE 2.3+</li>
-              <li><strong>Flasher:</strong> <code>esptool.py</code> via USB-to-UART CP2102/CH340</li>
-              <li><strong>OS:</strong> Raspberry Pi OS Lite (64-bit Debian, headless)</li>
-              <li><strong>BLE Driver:</strong> Linux BlueZ 5.66+ over HCI controller (<code>hci0</code>)</li>
-              <li><strong>Python Engine:</strong> Python 3.10+ with <code>bleak</code> &amp; <code>paho-mqtt</code></li>
-            </ul>
-          </div>
-
-          <!-- Card 2: AWS Cloud Platform -->
-          <div style="background:rgba(7,10,18,0.75); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
-            <div style="font-weight:700; color:var(--amber); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-              <span>☁️ AWS Cloud Services Ecosystem</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.7; padding-left:1.2rem; margin:0;">
-              <li><strong>Broker:</strong> AWS IoT Core with X.509 mTLS Certificate Authority</li>
-              <li><strong>Compute:</strong> AWS Lambda serverless function runtime (Python 3.12)</li>
-              <li><strong>Storage:</strong> DynamoDB NoSQL (On-Demand auto-scaling) + S3</li>
-              <li><strong>APIs:</strong> API Gateway REST HTTP API &amp; AppSync GraphQL</li>
-              <li><strong>Monitoring:</strong> CloudWatch Metrics, Alarms, and Log Groups</li>
-            </ul>
-          </div>
-
-          <!-- Card 3: Mobile & Frontend Platform -->
-          <div style="background:rgba(7,10,18,0.75); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
-            <div style="font-weight:700; color:var(--emerald); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-              <span>📱 Mobile &amp; Frontend Platform Stack</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.7; padding-left:1.2rem; margin:0;">
-              <li><strong>Mobile IDE:</strong> Android Studio Hedgehog / Iguana / Jellyfish</li>
-              <li><strong>Language:</strong> Kotlin 1.9+ with Coroutines &amp; Jetpack components</li>
-              <li><strong>Networking:</strong> Retrofit 2 + OkHttp 4 + Paho MQTT Client</li>
-              <li><strong>Visualization:</strong> MPAndroidChart 3.1+ (Real-time line charts)</li>
-              <li><strong>Web Presentation:</strong> Chart.js 4.4+, HTML5, BroadcastChannel API</li>
-            </ul>
-          </div>
-
-          <!-- Card 4: Security & DevOps -->
-          <div style="background:rgba(7,10,18,0.75); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.25rem;">
-            <div style="font-weight:700; color:var(--purple); font-size:0.95rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-              <span>🔐 Security, Diagnostics &amp; DevOps</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.7; padding-left:1.2rem; margin:0;">
-              <li><strong>Security:</strong> OpenSSL 3.0, 2048-bit RSA / ECC SECP256R1 keys</li>
-              <li><strong>BLE Diagnostics:</strong> Nordic nRF Connect Mobile &amp; Desktop</li>
-              <li><strong>MQTT Diagnostics:</strong> MQTT X GUI Client &amp; AWS MQTT Test Client</li>
-              <li><strong>Traffic Inspection:</strong> Wireshark with Linux <code>btmon</code> Bluetooth monitor</li>
-              <li><strong>Identity:</strong> Amazon Cognito User Pools &amp; AWS IAM policies</li>
-            </ul>
-          </div>
-
-        </div>
       </section>
 
-      <!-- Section 9: Consolidated Bill of Materials (BOM) -->
+      <!-- Section 11: Consolidated Bill of Materials (BOM) -->
       <section id="doc-sec-bom" class="doc-section">
         <div class="doc-section-header">
-          <h2>9. Consolidated Hardware Bill of Materials (BOM) &amp; Procurement Reference</h2>
-          <span class="badge badge-cyan">Procurement &amp; Parts</span>
+          <h2>11. Consolidated Hardware Bill of Materials (BOM) &amp; Procurement Reference</h2>
+          <span class="badge badge-cyan">Procurement Reference</span>
         </div>
         <p>
           The consolidated bill of materials is structured across the perception layer, edge gateway infrastructure, power management circuits, and electromechanical actuation for provisioning a physical course prototype or multi-node laboratory testbed (3 active sensor nodes + 1 gateway hub).
@@ -1269,19 +1490,16 @@
             </tr>
           </tfoot>
         </table>
-        <p style="font-size:0.8rem; color:var(--text-dim); margin-top:-0.5rem; margin-bottom:1.5rem;">
-          * Note: Prices reflect average authorized distributor volume rates (DigiKey, Mouser, Adafruit, Amazon Business) as of Q3 2026. The industrial alternative Advantech UNO-220 gateway evaluated in Section 5 adds ~$280.00 for hazardous/factory deployments requiring fanless IP40 metal DIN-rail housings and wide 10–36V DC inputs.
-        </p>
       </section>
 
-      <!-- Section 10: Phased Bring-Up Checklist -->
+      <!-- Section 12: Phased Bring-Up Checklist & Milestones -->
       <section id="doc-sec-checklist" class="doc-section">
         <div class="doc-section-header">
-          <h2>10. Phased System Bring-Up &amp; Hardware Fault Testing Checklist</h2>
-          <span class="badge badge-emerald">5-Stage Integration Protocol</span>
+          <h2>12. Phased System Bring-Up Checklist &amp; Course Milestones</h2>
+          <span class="badge badge-emerald">Summative Milestones</span>
         </div>
         <p>
-          To systematically bring up the end-to-end IoT demonstration system without cascading multi-tier debugging issues, engineering teams and students must follow this rigorous 5-stage sequential verification checklist:
+          To systematically bring up the end-to-end IoT demonstration system without cascading multi-tier debugging issues, engineering teams and students must follow this rigorous 5-stage sequential verification checklist spanning Weeks 1 through 8:
         </p>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1rem;">
@@ -1290,7 +1508,7 @@
           <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(0,212,255,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-weight:700; color:var(--cyan); font-size:0.95rem;">Phase 1: MCU Hardware &amp; Sensor Bus Bring-Up</span>
-              <span class="badge" style="background:rgba(0,212,255,0.15); color:var(--cyan); font-size:0.65rem;">PERCEPTION TIER</span>
+              <span class="badge" style="background:rgba(0,212,255,0.15); color:var(--cyan); font-size:0.65rem;">WEEKS 1–2</span>
             </div>
             <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
               <li>Flash <code>main.cpp</code> using <code>esptool.py --port /dev/ttyUSB0 write_flash</code>.</li>
@@ -1305,7 +1523,7 @@
           <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(16,185,129,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-weight:700; color:var(--emerald); font-size:0.95rem;">Phase 2: Gateway Ingestion &amp; Buffer Verification</span>
-              <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); font-size:0.65rem;">EDGE TIER</span>
+              <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); font-size:0.65rem;">WEEKS 3–4</span>
             </div>
             <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
               <li>Verify Linux BlueZ Bluetooth subsystem is active (<code>systemctl status bluetooth</code>).</li>
@@ -1320,12 +1538,12 @@
           <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(168,85,247,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-weight:700; color:var(--purple); font-size:0.95rem;">Phase 3: AWS Cloud Pipeline &amp; Security Validation</span>
-              <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); font-size:0.65rem;">CLOUD TIER</span>
+              <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); font-size:0.65rem;">WEEKS 5–6</span>
             </div>
             <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
               <li>Validate X.509 device certificate, private key, and Amazon Root CA1 on gateway host.</li>
               <li>Test mTLS handshake to AWS IoT Core custom endpoint over port 8883.</li>
-              <li>Verify MQTT ingestion under topic namespace <code>tech300/{device_id}/telemetry</code>.</li>
+              <li>Verify MQTT ingestion under topic namespace <code>iot/{device_id}/telemetry</code>.</li>
               <li>Inspect DynamoDB table: confirm record insertion latency &lt; 15 ms with valid partition/sort keys.</li>
               <li>Verify AWS Lambda rule execution and CloudWatch log output on payload evaluation.</li>
             </ul>
@@ -1334,13 +1552,13 @@
           <!-- Phase 4 -->
           <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--amber); font-size:0.95rem;">Phase 4: Full-Loop Reverse Actuation Validation</span>
-              <span class="badge" style="background:rgba(245,158,11,0.15); color:var(--amber); font-size:0.65rem;">PRESENTATION TIER</span>
+              <span style="font-weight:700; color:var(--amber); font-size:0.95rem;">Phase 4: Mobile App &amp; Reverse Actuation Validation</span>
+              <span class="badge" style="background:rgba(245,158,11,0.15); color:var(--amber); font-size:0.65rem;">WEEK 7</span>
             </div>
             <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li>Connect Web Operations Dashboard (<code>dashboard.html</code>) and Android Mobile App (<code>app.html</code>).</li>
-              <li>Verify real-time Chart.js streaming gauges update synchronously via BroadcastChannel.</li>
-              <li>Trigger reverse control command: toggle Relay (GPIO 23) from presentation UI.</li>
+              <li>Launch Android Mobile App (<code>app.html</code>) and Web Operations Dashboard (<code>dashboard.html</code>).</li>
+              <li>Verify real-time SVG radial gauges and streaming sparklines update synchronously via WebSocket.</li>
+              <li>Trigger reverse control command: toggle SSR Relay (GPIO 23) from mobile switch.</li>
               <li>Verify downlink MQTT command route: Cloud &rarr; Gateway &rarr; BLE GATT Write &rarr; Physical Relay.</li>
               <li>Benchmark round-trip actuation latency: confirm sub-200 ms end-to-end turnaround.</li>
             </ul>
@@ -1349,14 +1567,14 @@
           <!-- Phase 5 -->
           <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(244,63,94,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--rose); font-size:0.95rem;">Phase 5: Hardware-in-the-Loop Fault Injection</span>
-              <span class="badge" style="background:rgba(244,63,94,0.15); color:var(--rose); font-size:0.65rem;">RELIABILITY BENCH</span>
+              <span style="font-weight:700; color:var(--rose); font-size:0.95rem;">Phase 5: Fault Testing &amp; Summative Assessment</span>
+              <span class="badge" style="background:rgba(244,63,94,0.15); color:var(--rose); font-size:0.65rem;">WEEK 8</span>
             </div>
             <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
               <li><strong>I²C NACK Fault:</strong> Disconnect SDA pin; verify firmware logs <code>0x02</code> timeout and recovers.</li>
               <li><strong>Thermal Runaway:</strong> Inject &gt;30°C temperature anomaly; verify AWS Lambda triggers automated AC cooling within 2 seconds.</li>
               <li><strong>Vibration Shock:</strong> Inject &gt;0.6g accelerometer spike; verify high-priority security alarm toast dispatches.</li>
-              <li><strong>Brownout Protection:</strong> Simulate VDD &lt; 3.4V; verify ESP32 saves persistent state before sleep.</li>
+              <li><strong>Summative Verification:</strong> Present live hardware demo to Professor Liang Li against course rubric.</li>
             </ul>
           </div>
 
@@ -1412,7 +1630,7 @@
       window.addEventListener('scroll', () => {
         let current = '';
         sections.forEach(section => {
-          const sectionTop = section.offsetTop - 120;
+          const sectionTop = section.offsetTop - 160;
           if (window.scrollY >= sectionTop) {
             current = section.getAttribute('id');
           }

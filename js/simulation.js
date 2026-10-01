@@ -141,7 +141,7 @@ class IoTSimulationEngine {
         pressure: +(1013.2 + (Math.random() * 0.8 - 0.4)).toFixed(1),
         vibration: +(0.03 + Math.random() * 0.03).toFixed(3),
         battery: +(95 - i * 0.02).toFixed(1),
-        topic: `tech300/telemetry/${nId}`
+        topic: `iot/telemetry/${nId}`
       };
       this.dynamoDbRecords.push(rec);
     }
@@ -252,7 +252,7 @@ class IoTSimulationEngine {
       target_device: nodeId,
       action: action, // 'fan', 'relay', 'led', 'sleep_interval'
       value: value,
-      origin: 'tech300/presentation/web_client',
+      origin: 'iot/presentation/web_client',
       timestamp: Date.now()
     };
 
@@ -395,7 +395,7 @@ class IoTSimulationEngine {
       timestamp: blePacket.timestamp
     };
 
-    const topic = `tech300/telemetry/${mqttPayload.device_id}`;
+    const topic = `iot/telemetry/${mqttPayload.device_id}`;
 
     this.emit('pipelineStage', { 
       stage: 'GATEWAY_TRANSLATION', 
@@ -418,7 +418,7 @@ class IoTSimulationEngine {
     this.totalPacketsIngested++;
 
     // 1. IoT Rules Engine Evaluation:
-    // SELECT device_id, temp, humidity, timestamp FROM 'tech300/telemetry/+' WHERE temp > 0
+    // SELECT device_id, temp, humidity, timestamp FROM 'iot/telemetry/+' WHERE temp > 0
     const ruleMatch = payload.temp > 0;
     
     // 2. Alert condition: temp > 30.0°C triggers AWS Lambda

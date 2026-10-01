@@ -61,7 +61,7 @@
       duration: 5000,
       tab: 'aws',
       title: '☁️ Tier 4 — AWS IoT Core Rules Engine',
-      body: 'Every MQTT packet is evaluated against the SQL rule: SELECT * FROM \'tech300/telemetry/+\' WHERE temp > 0. Normal readings route straight to DynamoDB.',
+      body: 'Every MQTT packet is evaluated against the SQL rule: SELECT * FROM \'iot/telemetry/+\' WHERE temp > 0. Normal readings route straight to DynamoDB.',
       highlight: '.rule-sql-block'
     },
     {

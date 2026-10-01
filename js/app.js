@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (evt.stage === 'MQTT_DISPATCHED') {
       line.className += ' cmd-sent';
-      line.innerHTML = `[${timeStr}] 📤 <strong>PUB</strong> tech300/commands/${evt.packet.target_device}: { action: "${evt.packet.action}", value: ${evt.packet.value} } (QoS 1)`;
+      line.innerHTML = `[${timeStr}] 📤 <strong>PUB</strong> iot/commands/${evt.packet.target_device}: { action: "${evt.packet.action}", value: ${evt.packet.value} } (QoS 1)`;
     } else if (evt.stage === 'GATEWAY_DOWNLINK') {
       line.className += ' gateway-ack';
       line.innerHTML = `[${timeStr}] 🔀 <strong>GW-ACK</strong> Raspberry Pi 4 received downlink; converting to BLE GATT Write Characteristic (UUID: 0xFFE2)`;
@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const gwMqttBox = document.getElementById('t3-mqtt-packet');
       if (gwMqttBox) {
         gwMqttBox.textContent = JSON.stringify({
-          topic: `tech300/telemetry/${record.device_id}`,
+          topic: `iot/telemetry/${record.device_id}`,
           qos: 1,
           payload: {
             device_id: record.device_id,
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `TECH300_IoT_Telemetry_${Date.now()}.csv`);
+      link.setAttribute('download', `IoT_Telemetry_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
