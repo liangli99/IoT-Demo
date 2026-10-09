@@ -2,3 +2,4 @@
 *.zip
 .tempmediaStorage/
 scratch/
+*_original.png

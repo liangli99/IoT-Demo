@@ -808,21 +808,29 @@
     .m-node-chips::-webkit-scrollbar { display: none; }
     .m-chip {
       flex-shrink: 0;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 18px;
-      font-size: 0.72rem;
+      font-size: 0.74rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.18s ease;
       border: 1px solid var(--border-subtle);
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.05);
       color: var(--text-muted);
+      user-select: none;
     }
-    .m-chip.active {
-      background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25));
+    .m-chip:hover {
+      background: rgba(168, 85, 247, 0.2);
       border-color: var(--app-purple);
-      color: #e9d5ff;
-      box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+      color: #ffffff;
+    }
+    .m-chip:active,
+    .m-chip.active {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+      border: 1.5px solid #a855f7 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 12px rgba(124, 58, 237, 0.5) !important;
     }
 
     /* Temperature Gauge Card */
@@ -1275,6 +1283,197 @@
       background: var(--app-purple);
       border-color: var(--app-purple);
       color: #fff;
+    }
+
+    /* ── High-Contrast Light Theme Overrides for Mobile App Console ────── */
+    [data-theme="light"] body {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .phone-simulator-frame {
+      background: #0f172a !important;
+      border: 4px solid #334155 !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16) !important;
+    }
+    [data-theme="light"] .phone-content {
+      background: #f8fafc !important;
+    }
+    [data-theme="light"] .app-bar {
+      background: #ffffff !important;
+      border-bottom: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .app-title-text {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .app-subtitle-text {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .app-bar-btn {
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .app-bar-btn:hover {
+      background: #e2e8f0 !important;
+    }
+
+    /* Active & Inactive Node Filter Chips in Light Theme */
+    [data-theme="light"] .m-chip {
+      background: #f1f5f9 !important;
+      border: 1.5px solid #cbd5e1 !important;
+      color: #334155 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .m-chip:hover {
+      background: #e2e8f0 !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .m-chip:active,
+    [data-theme="light"] .m-chip.active {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+      border: 1.5px solid #5b21b6 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: 0 3px 12px rgba(124, 58, 237, 0.35) !important;
+    }
+
+    /* Gauge & Telemetry Cards in Light Theme */
+    [data-theme="light"] .m-gauge-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .m-gauge-label {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .m-gauge-val {
+      color: #0f172a !important;
+      font-weight: 900 !important;
+    }
+    [data-theme="light"] .m-gauge-node-tag {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .m-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    }
+    [data-theme="light"] .m-card-val {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .m-card-lbl {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .m-sparkline-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    }
+    [data-theme="light"] .m-sparkline-title {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+
+    /* AC Control Panel & Buttons in Light Theme */
+    [data-theme="light"] .m-ac-panel {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .m-ac-title {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .m-mode-switch {
+      background: #f1f5f9 !important;
+      border: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .m-mode-btn {
+      color: #475569 !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .m-mode-btn:hover {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .m-mode-btn:active,
+    [data-theme="light"] .m-mode-btn.active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+    }
+
+    /* Bottom Phone Navigation in Light Theme */
+    [data-theme="light"] .bottom-nav {
+      background: #ffffff !important;
+      border-top: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .m-nav-btn {
+      color: #64748b !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .m-nav-btn:hover {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .m-nav-btn:active,
+    [data-theme="light"] .m-nav-btn.active {
+      color: #7c3aed !important;
+      font-weight: 800 !important;
+    }
+
+    /* Sensor Stress & Anomaly Injection Pad Buttons in Light Theme */
+    [data-theme="light"] .btn-inject {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .btn-inject:hover,
+    [data-theme="light"] .btn-inject:active,
+    [data-theme="light"] .btn-inject.active {
+      background: #f8fafc !important;
+      border-color: #7c3aed !important;
+      color: #6d28d9 !important;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2) !important;
+    }
+    [data-theme="light"] .btn-inject.hot:hover,
+    [data-theme="light"] .btn-inject.hot:active {
+      background: #fff1f2 !important;
+      border-color: #f43f5e !important;
+      color: #be123c !important;
+    }
+    [data-theme="light"] .btn-inject.cold:hover,
+    [data-theme="light"] .btn-inject.cold:active {
+      background: #f0f9ff !important;
+      border-color: #0284c7 !important;
+      color: #0369a1 !important;
+    }
+
+    /* Workbench Panels & Utility Action Buttons */
+    [data-theme="light"] .bench-panel {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .bench-panel-title {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .btn-action.secondary,
+    [data-theme="light"] .btn-chassis {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .btn-action.secondary:hover,
+    [data-theme="light"] .btn-chassis:hover,
+    [data-theme="light"] .btn-chassis:active {
+      background: #e2e8f0 !important;
+      color: #0284c7 !important;
     }
   </style>
 </head>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Technical Design & Hardware BOM Reference — IoT Demo System</title>
-  <meta name="description" content="Official Technical Design Document and Consolidated Hardware Bill of Materials Reference for the IoT Demo System (Westcliff University, Professor Liang Li). Complete 5-tier architecture, schematics, protocols, software platforms, and bring-up checklist.">
+  <meta name="description" content="Official Technical Design Document and Consolidated Hardware Bill of Materials Reference for the IoT Demo System (Professor Liang Li). Complete 5-tier architecture, schematics, protocols, software platforms, and Hardware Bill of Materials (BOM).">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -538,6 +538,7 @@
       max-height: 78vh;
       border-radius: var(--radius-md);
       border: 1px solid rgba(0, 212, 255, 0.3);
+      background: #ffffff;
       box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9);
       object-fit: contain;
     }
@@ -604,24 +605,10 @@
         <h1>
           <span>Technical Design &amp; System Architecture Reference</span>
         </h1>
-        <p style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;">
-          <span>End-to-End IoT Demo System</span>
-          <span style="color:var(--text-dim);">·</span>
-          <span class="designer-hdr-pill">
-            Course and Demo Designer: <strong>Prof. Liang Li</strong>
-          </span>
+        <p style="margin-top:2px; font-size:0.82rem; color:var(--text-muted);">
+          5-Tier Architecture Specifications, Protocol Matrix &amp; Hardware BOM Reference
         </p>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <a href="app.html" class="btn-topbar purple">
-        <span>📱 Open Mobile App Console</span>
-        <span>→</span>
-      </a>
-      <a href="dashboard.html" class="btn-topbar primary">
-        <span>🖥️ Live Operations Dashboard</span>
-        <span>→</span>
-      </a>
     </div>
   </header>
 
@@ -647,7 +634,7 @@
     <aside class="doc-sidebar">
       <div class="sidebar-heading">
         <span>Table of Contents</span>
-        <span class="nav-badge-pill">12 Sections</span>
+        <span class="nav-badge-pill">11 Sections</span>
       </div>
       <a href="#doc-sec-overview" class="doc-nav-link active">
         <span>1. Introduction &amp; Objectives</span>
@@ -692,10 +679,6 @@
       <a href="#doc-sec-bom" class="doc-nav-link">
         <span>11. Consolidated Bill of Materials</span>
         <span class="nav-badge-pill">BOM</span>
-      </a>
-      <a href="#doc-sec-checklist" class="doc-nav-link">
-        <span>12. Phased Checklist &amp; Milestones</span>
-        <span class="nav-badge-pill">Week 1–8</span>
       </a>
     </aside>
 
@@ -849,16 +832,16 @@
             I_avg = ((I_active * t_active) + (I_sleep * t_sleep)) / (t_active + t_sleep)
           </div>
           <p style="margin-bottom:0;">
-            Where \(I_{\text{active}} \approx 80\,\text{mA}\) for \(t_{\text{active}} \approx 120\,\text{ms}\) (wake, sample I²C, broadcast BLE frame), and \(I_{\text{sleep}} \approx 10\,\mu\text{A}\) during deep sleep.
+            Where <em>I</em><sub>active</sub> ≈ 80 mA for <em>t</em><sub>active</sub> ≈ 120 ms (wake, sample I²C, broadcast BLE frame), and <em>I</em><sub>sleep</sub> ≈ 10 µA during deep sleep.
           </p>
         </div>
 
         <table class="bom-table" style="margin-bottom:1.5rem;">
           <thead>
             <tr>
-              <th>Wake Interval (\(t_{\text{sleep}}\))</th>
+              <th>Wake Interval (<em>t</em><sub>sleep</sub>)</th>
               <th>Duty Cycle (%)</th>
-              <th>Average Current Draw (\(I_{\text{avg}}\))</th>
+              <th>Average Current Draw (<em>I</em><sub>avg</sub>)</th>
               <th>Expected Battery Longevity (1200 mAh)</th>
               <th>Operating Profile Suitability</th>
             </tr>
@@ -900,19 +883,23 @@
       <section id="doc-sec-protocol" class="doc-section">
         <div class="doc-section-header">
           <h2>4. Local Wireless Protocol Selection &amp; Southbound Matrix</h2>
-          <a href="proximity.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(168,85,247,0.2), rgba(99,102,241,0.25)); border:1px solid #a855f7; color:#c084fc;">
-            <span>📶 Open Proximity Network (BLE 5.0) Console (proximity.html)</span>
-            <span>↗</span>
-          </a>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="proximity.html" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(168,85,247,0.2), rgba(99,102,241,0.25)); border:1px solid #a855f7; color:#c084fc;">
+              <span>📶 Proximity Console (proximity.html) ↗</span>
+            </a>
+            <a href="gateway.html#panel-southbound" target="_blank" class="btn-launch-pill" style="background:linear-gradient(135deg, rgba(0,212,255,0.18), rgba(16,185,129,0.2)); border:1px solid #00d4ff; color:#38bdf8;">
+              <span>📡 Gateway Southbound BLE (gateway.html) ↗</span>
+            </a>
+          </div>
         </div>
         <p>
-          Selecting an appropriate proximity protocol requires balancing throughput, transceiver power draw, physical range, and infrastructure cost. <strong>Figure 4</strong> shows the comparative analysis of candidate short-range wireless technologies (BLE 5.0, Wi-Fi 4/5, Zigbee 3.0, and LoRaWAN).
+          Selecting an appropriate proximity protocol requires balancing throughput, transceiver power draw, physical range, and infrastructure cost. Within our perception tier, the southbound link operates under a dual-mode Bluetooth Low Energy (BLE 5.0) architecture. <strong>Figure 4</strong> details the comprehensive comparative analysis between <em>Mode A: Passive Connectionless Broadcasting</em> and <em>Mode B: Connected GATT Operations</em>, illustrating how local peripheral telemetry is ingested by the Raspberry Pi 4 edge host controller (BlueZ <code>hci0</code>), normalized through the Python translation engine, buffered in SQLite WAL, and bridged upstream into AWS IoT Core (with full-loop reverse actuation via Lambda).
         </p>
 
         <div class="doc-figure-card">
-          <img src="assets/images/fig4_ble_comparison.png" alt="Figure 4. Comparative analysis of wireless protocols" class="doc-figure-img" style="max-height:460px;">
+          <img src="assets/images/fig4_ble_comparison.png" alt="Figure 4. Southbound BLE 5.0 Ingestion Matrix & AWS IoT Pipeline Architecture" class="doc-figure-img" style="max-height:560px;">
           <div class="doc-figure-caption">
-            <strong>Figure 4. Comparative Analysis of Wireless Protocols for IoT Sensor Nodes.</strong> Evaluates BLE 5.0 against Wi-Fi, Zigbee, and LoRa across data rate, power draw, topology, hardware unit cost, and stack complexity. BLE 5.0 GATT with connectionless advertising was chosen for our perception nodes.
+            <strong>Figure 4. Southbound BLE 5.0 Ingestion Matrix &amp; AWS IoT Pipeline Architecture.</strong> In-depth architectural comparison of passive connectionless broadcasting (unidirectional beaconing with &gt;9.8 months battery life) versus connected GATT operations (full-duplex control plane with native AES-128 CCM link encryption and sub-200 ms reverse actuation), tracing the complete end-to-end data pipeline from perception sensors through edge BlueZ protocol translation to AWS IoT Core (Rules Engine, DynamoDB, and Lambda alerting).
           </div>
         </div>
 
@@ -1100,7 +1087,7 @@
               <span>❄️ Smart Hysteresis AC Cooling Loop</span>
             </div>
             <p style="color:var(--text-muted); font-size:0.84rem; line-height:1.6; margin:0;">
-              Dual-threshold supervisor activates cooling when \(T \ge 26.0^\circ\text{C}\) and disengages when \(T \le 24.0^\circ\text{C}\). Eliminates rapid mechanical relay chatter, supported by optimistic switch UI states and a 3.5 s rollback timeout safety watcher.
+              Dual-threshold supervisor activates cooling when <em>T</em> ≥ 26.0 °C and disengages when <em>T</em> ≤ 24.0 °C. Eliminates rapid mechanical relay chatter, supported by optimistic switch UI states and a 3.5 s rollback timeout safety watcher.
             </p>
           </div>
         </div>
@@ -1486,100 +1473,12 @@ struct __attribute__((packed)) TelemetryFrame {
           <tfoot>
             <tr style="border-top:2px solid var(--border-glow); background:rgba(0,212,255,0.08); font-size:0.95rem;">
               <td colspan="6" style="text-align:right; font-weight:800; color:#fff;">Total 3-Node + Gateway Physical Testbed BOM:</td>
-              <td style="text-align:right; font-weight:900; color:var(--cyan); font-family:var(--font-mono); font-size:1.05rem;">$159.90</td>
+              <td style="text-align:right; font-weight:900; color:var(--cyan); font-family:var(--font-mono); font-size:1.05rem;">$163.90</td>
             </tr>
           </tfoot>
         </table>
       </section>
 
-      <!-- Section 12: Phased Bring-Up Checklist & Milestones -->
-      <section id="doc-sec-checklist" class="doc-section">
-        <div class="doc-section-header">
-          <h2>12. Phased System Bring-Up Checklist &amp; Course Milestones</h2>
-          <span class="badge badge-emerald">Summative Milestones</span>
-        </div>
-        <p>
-          To systematically bring up the end-to-end IoT demonstration system without cascading multi-tier debugging issues, engineering teams and students must follow this rigorous 5-stage sequential verification checklist spanning Weeks 1 through 8:
-        </p>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1rem;">
-          
-          <!-- Phase 1 -->
-          <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(0,212,255,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--cyan); font-size:0.95rem;">Phase 1: MCU Hardware &amp; Sensor Bus Bring-Up</span>
-              <span class="badge" style="background:rgba(0,212,255,0.15); color:var(--cyan); font-size:0.65rem;">WEEKS 1–2</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li>Flash <code>main.cpp</code> using <code>esptool.py --port /dev/ttyUSB0 write_flash</code>.</li>
-              <li>Verify 115200 baud UART serial monitor boots FreeRTOS SMP kernel on both cores.</li>
-              <li>Execute automated I²C bus sweep: verify ACK received from MPU6050 at <code>0x68</code> and BME280 at <code>0x76</code>.</li>
-              <li>Measure oscilloscope rise time on SDA/SCL: confirm \(t_r &lt; 300\,\text{ns}\) with 4.7kΩ pull-ups.</li>
-              <li>Verify BLE 5.0 advertising frames using Nordic nRF Connect mobile application.</li>
-            </ul>
-          </div>
-
-          <!-- Phase 2 -->
-          <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(16,185,129,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--emerald); font-size:0.95rem;">Phase 2: Gateway Ingestion &amp; Buffer Verification</span>
-              <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); font-size:0.65rem;">WEEKS 3–4</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li>Verify Linux BlueZ Bluetooth subsystem is active (<code>systemctl status bluetooth</code>).</li>
-              <li>Launch <code>gateway_daemon.py</code>: observe automated BLE connection &amp; GATT subscription.</li>
-              <li>Verify binary BLE packet decoding into valid JSON telemetry objects.</li>
-              <li><strong>Network Partition Test:</strong> Disconnect gateway WAN interface; verify telemetry records divert into local SQLite store-and-forward table (<code>iot_buffer.db</code>).</li>
-              <li>Reconnect WAN: verify accumulated records flush upstream to cloud in FIFO sequence.</li>
-            </ul>
-          </div>
-
-          <!-- Phase 3 -->
-          <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(168,85,247,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--purple); font-size:0.95rem;">Phase 3: AWS Cloud Pipeline &amp; Security Validation</span>
-              <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); font-size:0.65rem;">WEEKS 5–6</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li>Validate X.509 device certificate, private key, and Amazon Root CA1 on gateway host.</li>
-              <li>Test mTLS handshake to AWS IoT Core custom endpoint over port 8883.</li>
-              <li>Verify MQTT ingestion under topic namespace <code>iot/{device_id}/telemetry</code>.</li>
-              <li>Inspect DynamoDB table: confirm record insertion latency &lt; 15 ms with valid partition/sort keys.</li>
-              <li>Verify AWS Lambda rule execution and CloudWatch log output on payload evaluation.</li>
-            </ul>
-          </div>
-
-          <!-- Phase 4 -->
-          <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(245,158,11,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--amber); font-size:0.95rem;">Phase 4: Mobile App &amp; Reverse Actuation Validation</span>
-              <span class="badge" style="background:rgba(245,158,11,0.15); color:var(--amber); font-size:0.65rem;">WEEK 7</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li>Launch Android Mobile App (<code>app.html</code>) and Web Operations Dashboard (<code>dashboard.html</code>).</li>
-              <li>Verify real-time SVG radial gauges and streaming sparklines update synchronously via WebSocket.</li>
-              <li>Trigger reverse control command: toggle SSR Relay (GPIO 23) from mobile switch.</li>
-              <li>Verify downlink MQTT command route: Cloud &rarr; Gateway &rarr; BLE GATT Write &rarr; Physical Relay.</li>
-              <li>Benchmark round-trip actuation latency: confirm sub-200 ms end-to-end turnaround.</li>
-            </ul>
-          </div>
-
-          <!-- Phase 5 -->
-          <div style="background:rgba(7,10,18,0.75); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(244,63,94,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-weight:700; color:var(--rose); font-size:0.95rem;">Phase 5: Fault Testing &amp; Summative Assessment</span>
-              <span class="badge" style="background:rgba(244,63,94,0.15); color:var(--rose); font-size:0.65rem;">WEEK 8</span>
-            </div>
-            <ul style="color:var(--text-muted); font-size:0.82rem; line-height:1.65; padding-left:1.2rem; margin:0;">
-              <li><strong>I²C NACK Fault:</strong> Disconnect SDA pin; verify firmware logs <code>0x02</code> timeout and recovers.</li>
-              <li><strong>Thermal Runaway:</strong> Inject &gt;30°C temperature anomaly; verify AWS Lambda triggers automated AC cooling within 2 seconds.</li>
-              <li><strong>Vibration Shock:</strong> Inject &gt;0.6g accelerometer spike; verify high-priority security alarm toast dispatches.</li>
-              <li><strong>Summative Verification:</strong> Present live hardware demo to Professor Liang Li against course rubric.</li>
-            </ul>
-          </div>
-
-        </div>
-      </section>
 
     </article>
 
@@ -1628,7 +1527,7 @@ struct __attribute__((packed)) TelemetryFrame {
       const navLinks = document.querySelectorAll('.doc-nav-link');
 
       window.addEventListener('scroll', () => {
-        let current = '';
+        let current = sections[0]?.getAttribute('id') || '';
         sections.forEach(section => {
           const sectionTop = section.offsetTop - 160;
           if (window.scrollY >= sectionTop) {
@@ -1643,6 +1542,8 @@ struct __attribute__((packed)) TelemetryFrame {
           }
         });
       });
+      // Initial trigger to highlight first section
+      window.dispatchEvent(new Event('scroll'));
     });
   </script>
 </body>

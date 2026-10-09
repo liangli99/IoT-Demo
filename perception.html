@@ -405,6 +405,77 @@
       font-weight: 500;
     }
 
+    /* Longevity Calculator Output Card (Theme-Adaptive & High-Contrast) */
+    .calc-output-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      transition: all 0.2s ease;
+    }
+    .calc-output-title {
+      font-size: 0.74rem;
+      color: var(--pc-teal);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .calc-output-days {
+      font-size: 2.6rem;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      color: var(--pc-green);
+      letter-spacing: -0.03em;
+      margin: 4px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .calc-output-months {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .calc-output-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+    .calc-output-desc strong {
+      color: var(--pc-teal);
+    }
+
+    [data-theme="light"] .calc-output-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+      border: 1.5px solid #86efac !important;
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.14) !important;
+    }
+    [data-theme="light"] .calc-output-title {
+      color: #047857 !important;
+    }
+    [data-theme="light"] .calc-output-days {
+      color: #15803d !important;
+    }
+    [data-theme="light"] .calc-output-days .metric-hero-unit {
+      color: #047857 !important;
+    }
+    [data-theme="light"] .calc-output-months {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .calc-output-desc {
+      color: #334155 !important;
+    }
+    [data-theme="light"] .calc-output-desc strong {
+      color: #0284c7 !important;
+    }
+
     /* Tables */
     .pc-table {
       width: 100%;
@@ -1371,16 +1442,16 @@ void enter_deep_sleep_cycle(void) {
             </div>
 
             <!-- Outputs -->
-            <div style="background:#091222; border:1px solid var(--border-subtle); border-radius:10px; padding:18px; display:flex; flex-direction:column; justify-content:center;">
-              <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Calculated Longevity</div>
-              <div class="metric-hero" style="color:var(--pc-green);" id="calc-result-days">
+            <div class="calc-output-card">
+              <div class="calc-output-title">Calculated Longevity</div>
+              <div class="calc-output-days" id="calc-result-days">
                 174 <span class="metric-hero-unit">Days</span>
               </div>
-              <div style="font-size:0.85rem; color:#fff; font-weight:600; margin-bottom:8px;" id="calc-result-months">
+              <div class="calc-output-months" id="calc-result-months">
                 Approx. 5.8 Months of Continuous Operation
               </div>
-              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">
-                Average power draw: <strong id="calc-result-ma" style="color:var(--pc-teal);">2.87 mA</strong>.<br>
+              <div class="calc-output-desc">
+                Average power draw: <strong id="calc-result-ma">2.87 mA</strong>.<br>
                 Self-discharge and derating factor: 15% reserved.
               </div>
             </div>

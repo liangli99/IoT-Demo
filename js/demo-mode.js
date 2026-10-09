@@ -1,131 +1,148 @@
 /**
- * TECH 300 IoT Demo — Guided Demo Sequence (demo-mode.js)
+ * IoT Demo System — Guided Demo Sequence (demo-mode.js)
  * ─────────────────────────────────────────────────────────
  * Auto-sequences through the Dashboard, walking a live audience through
  * the entire 5-tier IoT pipeline story in ~60 seconds.
  *
  * Steps:
- *   1. Highlight Tier 1 — shows live sensor readings, BLE advertising log
- *   2. Highlight Tier 2 — BLE tab, show RSSI and ADV packets
- *   3. Highlight Tier 3 — Gateway tab, store-and-forward, MQTT translation
- *   4. Highlight Tier 4 — AWS tab, Rules Engine SQL
- *   5. INJECT ANOMALY  — temp spike → alert fires → DynamoDB + Lambda shown
- *   6. Highlight Tier 5 — AC auto-control engages, relay actuation confirmed
- *   7. Resolution      — anomaly cleared, system returns to normal
- *
- * Runs entirely on dashboard.html. No cross-page navigation needed.
+ *   1. Intro        — Overview of 5-tier pipeline
+ *   2. Tier 1       — ESP32 Sensor Nodes (Perception)
+ *   3. Tier 2       — BLE 5.0 Proximity Network (Southbound)
+ *   4. Tier 3       — Raspberry Pi 4 Edge Gateway
+ *   5. Tier 4       — AWS IoT Cloud & Rules Engine
+ *   6. Anomaly      — Inject temperature runaway (>30°C)
+ *   7. Alert        — AWS Lambda alert execution & SNS dispatch
+ *   8. Tier 5       — Reverse Actuation & Relay engagement
+ *   9. Fleet        — Live Multi-Node Telemetry Charts
+ *  10. Resolution   — Anomaly cleared, normal baseline restored
+ *  11. Done         — Guided tour complete
  */
 
 (function () {
   'use strict';
 
-  const DEMO_KEY       = 'tech300-demo-active';
-  const DEMO_STEP_KEY  = 'tech300-demo-step';
+  const DEMO_KEY      = 'tech300-demo-active';
+  const DEMO_STEP_KEY = 'tech300-demo-step';
 
   // ── Demo Script ────────────────────────────────────────────────────────
   const STEPS = [
     {
       id: 'intro',
-      duration: 3000,
-      tab: null,
-      title: '🎬 Demo Starting — TECH 300 IoT Pipeline',
-      body: 'Welcome to the end-to-end IoT demonstration. We will walk through all 5 tiers of the system in real time.',
-      highlight: null
+      duration: 3500,
+      tab: 'pipeline',
+      title: '🎬 Demo Starting — 5-Tier IoT Architecture Tour',
+      body: 'Welcome to the end-to-end IoT demonstration system. We will walk through all 5 tiers of the live telemetry & control pipeline in real time.',
+      highlight: '.pipeline-flow-container'
     },
     {
       id: 'tier1',
-      duration: 6000,
+      duration: 5500,
       tab: 'pipeline',
-      title: '🎛️ Tier 1 — ESP32 Sensor Nodes',
-      body: 'Three ESP32 nodes are awake and sampling. Each runs a 4-phase RTC duty cycle: SLEEP → WAKE → SAMPLE → BROADCAST. DHT22 and MPU6050 data is captured here.',
-      highlight: '.node-card'
+      title: '🎛️ Tier 1 — Perception Layer (ESP32 Nodes)',
+      body: 'Constrained ESP32-WROOM-32 nodes operate on FreeRTOS with RTC deep-sleep duty cycles. Transducers read environmental (BME280/DHT22) and vibration (MPU6050) telemetry.',
+      highlight: '.tier-column:nth-child(1)'
     },
     {
       id: 'tier2',
-      duration: 6000,
-      tab: 'ble',
-      title: '📶 Tier 2 — BLE 5.0 Advertisement',
-      body: 'Each node broadcasts ADV_IND packets over BLE 5.0 (IEEE 802.15.1, 2.4 GHz). Watch the live RSSI signal strength and service UUID 0x181A (Environmental Sensing).',
-      highlight: '.ble-packet-row'
+      duration: 5500,
+      tab: 'pipeline',
+      title: '📶 Tier 2 — Proximity Network (BLE 5.0 Southbound)',
+      body: 'Field nodes broadcast ADV_IND frames over 2.4 GHz BLE 5.0 (IEEE 802.15.1) with AES-128 CCM link encryption and service UUID 0x181A (Environmental Sensing).',
+      highlight: '.tier-column:nth-child(2)'
     },
     {
       id: 'tier3',
-      duration: 6000,
-      tab: 'gateway',
-      title: '🖥️ Tier 3 — Raspberry Pi 4 Edge Gateway',
-      body: 'The gateway translates raw BLE GATT frames to structured MQTT JSON payloads. Store-and-Forward ensures no data loss during WAN outages.',
-      highlight: '.gateway-card'
+      duration: 5500,
+      tab: 'pipeline',
+      title: '🖥️ Tier 3 — Edge Gateway Layer (Raspberry Pi 4)',
+      body: 'The Raspberry Pi 4 edge host translates raw BLE GATT frames into JSON payloads. A local SQLite store-and-forward engine prevents data loss during WAN partitions.',
+      highlight: '.tier-column:nth-child(3)'
     },
     {
       id: 'tier4_pre',
       duration: 5000,
       tab: 'aws',
-      title: '☁️ Tier 4 — AWS IoT Core Rules Engine',
-      body: 'Every MQTT packet is evaluated against the SQL rule: SELECT * FROM \'iot/telemetry/+\' WHERE temp > 0. Normal readings route straight to DynamoDB.',
-      highlight: '.rule-sql-block'
+      title: '☁️ Tier 4 — AWS IoT Cloud & Rules Engine',
+      body: 'Ingested MQTT packets hit AWS IoT Core (port 8883 mTLS). SQL rule evaluates incoming payloads and routes valid data directly into Amazon DynamoDB.',
+      highlight: '.code-editor-card'
     },
     {
       id: 'spike',
-      duration: 2000,
+      duration: 3000,
       tab: 'aws',
-      title: '⚠️ INJECTING TEMPERATURE ANOMALY…',
-      body: 'Simulating overheating event on sensor_node_01. Temperature will exceed 30°C threshold in 2 seconds.',
+      title: '⚠️ Injecting High-Temperature Anomaly (>30°C)…',
+      body: 'Simulating thermal runaway event on sensor_node_01. Temperature quickly crosses the 30.0°C alert threshold.',
       highlight: null,
       action: 'inject_spike'
     },
     {
       id: 'alert',
-      duration: 7000,
+      duration: 6500,
       tab: 'aws',
-      title: '🚨 Alert Pipeline Triggered!',
-      body: 'Temp > 30°C matched! Rules Engine invoked Lambda function HighTempAlertFn. SNS notification dispatched. DynamoDB record flagged as ALERT status.',
-      highlight: '.alert-row'
+      title: '🚨 AWS Lambda Alert Dispatched!',
+      body: 'Temp > 30°C condition matched! Rules Engine executes HighTempAlertFn Lambda, publishing SNS alert notification and logging to CloudWatch.',
+      highlight: '#lambda-alert-body'
     },
     {
       id: 'tier5',
       duration: 6000,
+      tab: 'actuation',
+      title: '🕹️ Tier 5 — Closed-Loop Reverse Actuation',
+      body: 'Autonomous supervisory controller detects overheat. Downlink control command dispatches via AWS IoT Core MQTT → Edge Gateway → BLE GATT → SSR Relay (GPIO 23) engaged!',
+      highlight: '.control-panel-card'
+    },
+    {
+      id: 'fleet',
+      duration: 6000,
       tab: 'fleet',
-      title: '❄️ Tier 5 — AC Auto-Control Engaged',
-      body: 'ACController detected temperature above threshold (26°C). Relay actuator commanded ON via AWS MQTT downlink → Edge Gateway → BLE GATT write → ESP32.',
-      highlight: '.actuator-card'
+      title: '📊 Tier 5 — Fleet Telemetry & Live Streaming Charts',
+      body: 'Continuous 60fps canvas sparklines stream multi-node telemetry. All 3 field nodes maintain synchronization with sub-200 ms end-to-end latency.',
+      highlight: '.fleet-cards-grid'
     },
     {
       id: 'resolution',
       duration: 5000,
-      tab: 'fleet',
-      title: '✅ Resolution — System Returning to Normal',
-      body: 'AC compressor is cooling the node. Temperature dropping back below 24°C. ACController will automatically disengage the relay when threshold is reached.',
-      highlight: null,
+      tab: 'pipeline',
+      title: '✅ Anomaly Resolved — Restoring Normal Baseline',
+      body: 'Cooling active. Node temperature returns below 24°C hysteresis threshold. Hardware relay automatically disengages as system stabilizes.',
+      highlight: '.tier-column:nth-child(5)',
       action: 'clear_spike'
     },
     {
       id: 'done',
-      duration: 4000,
+      duration: 4500,
       tab: 'pipeline',
-      title: '🎓 Demo Complete — TECH 300 IoT Demo System',
-      body: 'You have seen all 5 tiers: ESP32 sensors → BLE 5.0 → Raspberry Pi Edge Gateway → AWS IoT Core → AC Auto-Control. Explore the Mobile App and AWS Cloud Console for more.',
+      title: '🎓 Guided Demo Complete!',
+      body: 'You have observed the complete 5-tier IoT demonstration system: ESP32 → BLE 5.0 → Edge Gateway → AWS IoT Core → Real-time Actuation & Dashboard.',
       highlight: null,
       action: 'done'
     }
   ];
 
   // ── State ──────────────────────────────────────────────────────────────
-  let _running    = false;
-  let _stepIndex  = 0;
-  let _timer      = null;
-  let _overlay    = null;
-  let _sim        = null;
+  let _running   = false;
+  let _stepIndex = 0;
+  let _timer     = null;
+  let _overlay   = null;
+  let _sim       = null;
 
   // ── Public API ─────────────────────────────────────────────────────────
   window.DemoMode = {
     start(sim) {
       if (_running) return;
-      _sim     = sim || (window.SimBus && window.SimBus.getSim()) || null;
+      _sim = sim || (window.SimBus && window.SimBus.getSim()) || window._tech300Sim || window.sim || null;
       _running = true;
       _stepIndex = 0;
       localStorage.setItem(DEMO_KEY, '1');
       localStorage.setItem(DEMO_STEP_KEY, '0');
-      if (window.NavBar) window.NavBar.setDemoRunning(true);
+      if (window.NavBar && window.NavBar.setDemoRunning) {
+        window.NavBar.setDemoRunning(true);
+      }
+      const demoBtn = document.getElementById('nb-demo-btn');
+      if (demoBtn) {
+        demoBtn.classList.add('running');
+        demoBtn.innerHTML = '■ <span class="nb-demo-lbl">Stop Demo</span>';
+      }
       _createOverlay();
       _runStep();
     },
@@ -135,25 +152,35 @@
       _stepIndex = 0;
       localStorage.removeItem(DEMO_KEY);
       localStorage.removeItem(DEMO_STEP_KEY);
-      if (window.NavBar) window.NavBar.setDemoRunning(false);
+      if (window.NavBar && window.NavBar.setDemoRunning) {
+        window.NavBar.setDemoRunning(false);
+      }
+      const demoBtn = document.getElementById('nb-demo-btn');
+      if (demoBtn) {
+        demoBtn.classList.remove('running');
+        demoBtn.innerHTML = '▶ <span class="nb-demo-lbl">Run Demo</span>';
+      }
       _destroyOverlay();
       if (_timer) { clearTimeout(_timer); _timer = null; }
     },
 
     toggle(sim) {
-      if (_running) { window.DemoMode.stop(); } else { window.DemoMode.start(sim); }
+      if (_running) {
+        window.DemoMode.stop();
+      } else {
+        window.DemoMode.start(sim);
+      }
     },
 
     isRunning() { return _running; }
   };
 
-  // ── Auto-start if flag is set (navigated from another page) ──────────
+  // ── Auto-start if flag is set (navigated from another page or hash) ──────
   document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem(DEMO_KEY) === '1') {
-      // Wait briefly for sim engine to be ready
+    if (localStorage.getItem(DEMO_KEY) === '1' || window.location.hash === '#demo') {
       setTimeout(() => {
         window.DemoMode.start();
-      }, 800);
+      }, 700);
     }
   });
 
@@ -168,32 +195,36 @@
     const step = STEPS[_stepIndex];
     localStorage.setItem(DEMO_STEP_KEY, String(_stepIndex));
 
+    // Ensure sim reference is fresh
+    if (!_sim) {
+      _sim = (window.SimBus && window.SimBus.getSim()) || window._tech300Sim || window.sim || null;
+    }
+
     // Switch dashboard tab
     if (step.tab) _switchTab(step.tab);
 
     // Update overlay
     _updateOverlay(step, _stepIndex + 1, STEPS.length);
 
-    // Highlight element
+    // Highlight element with smooth center scroll
     if (step.highlight) _pulse(step.highlight);
 
     // Trigger actions
     if (step.action === 'inject_spike' && _sim) {
-      _sim.triggerTempAnomaly('sensor_node_01');
+      if (_sim.triggerTempAnomaly) _sim.triggerTempAnomaly('sensor_node_01');
     } else if (step.action === 'clear_spike' && _sim) {
-      // Clear after a couple seconds into this step
       setTimeout(() => {
-        if (_sim) _sim.clearAnomaly('sensor_node_01');
-      }, 3000);
+        if (_sim && _sim.clearAnomaly) _sim.clearAnomaly('sensor_node_01');
+      }, 2500);
     } else if (step.action === 'done') {
-      // Nothing extra
+      // Completed step
     }
 
     _stepIndex++;
     _timer = setTimeout(_runStep, step.duration);
   }
 
-  // ── Tab switching (index.html) ─────────────────────────────────────────
+  // ── Tab switching ───────────────────────────────────────────────────────
   function _switchTab(tabId) {
     const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
     if (btn) btn.click();
@@ -203,58 +234,111 @@
   function _pulse(selector) {
     const el = document.querySelector(selector);
     if (!el) return;
-    el.style.transition = 'box-shadow 0.4s ease';
-    el.style.boxShadow  = '0 0 0 3px #00d4ff, 0 0 30px rgba(0,212,255,0.4)';
+    try {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (_) {}
+    el.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+    el.style.boxShadow  = '0 0 0 3px #00d4ff, 0 0 30px rgba(0, 212, 255, 0.45)';
     setTimeout(() => {
       el.style.boxShadow = '';
-    }, 2500);
+    }, 2800);
   }
 
   // ── Overlay (HUD) ──────────────────────────────────────────────────────
   function _createOverlay() {
+    if (_overlay) return;
     _overlay = document.createElement('div');
     _overlay.id = 'demo-mode-overlay';
-    _overlay.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999999;
-      background: rgba(4,8,16,0.95);
-      border: 1px solid rgba(0,212,255,0.3);
-      border-radius: 16px;
-      padding: 16px 22px;
-      max-width: 640px;
-      width: calc(100vw - 48px);
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 40px rgba(0,212,255,0.06);
-      font-family: 'Inter', sans-serif;
-      animation: demoSlideUp 0.35s cubic-bezier(0.4,0,0.2,1);
-      backdrop-filter: blur(20px);
-    `;
 
-    // Inject keyframe
+    // Inject styles once
     if (!document.getElementById('demo-mode-styles')) {
       const s = document.createElement('style');
       s.id = 'demo-mode-styles';
       s.textContent = `
         @keyframes demoSlideUp {
-          from { opacity:0; transform: translateX(-50%) translateY(20px); }
-          to   { opacity:1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         @keyframes demoProgress {
           from { width: 100%; }
           to   { width: 0%; }
         }
+        #demo-mode-overlay {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 999999;
+          background: rgba(8, 14, 28, 0.96);
+          border: 1.5px solid rgba(0, 212, 255, 0.35);
+          border-radius: 16px;
+          padding: 16px 22px;
+          max-width: 640px;
+          width: calc(100vw - 48px);
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          box-shadow: 0 12px 50px rgba(0, 0, 0, 0.75), 0 0 35px rgba(0, 212, 255, 0.12);
+          font-family: var(--font-sans, 'Inter', -apple-system, sans-serif);
+          animation: demoSlideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(20px);
+          color: #f8fafc;
+        }
+        [data-theme="light"] #demo-mode-overlay {
+          background: rgba(255, 255, 255, 0.98) !important;
+          border: 2px solid #cbd5e1 !important;
+          box-shadow: 0 12px 50px rgba(0, 0, 0, 0.18), 0 0 25px rgba(2, 132, 199, 0.15) !important;
+          color: #0f172a !important;
+        }
+        #demo-mode-overlay .dm-title {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: #fff;
+          margin-bottom: 5px;
+          line-height: 1.3;
+        }
+        [data-theme="light"] #demo-mode-overlay .dm-title {
+          color: #0f172a !important;
+        }
+        #demo-mode-overlay .dm-body {
+          font-size: 0.78rem;
+          color: #94a3b8;
+          line-height: 1.55;
+        }
+        [data-theme="light"] #demo-mode-overlay .dm-body {
+          color: #334155 !important;
+        }
         #demo-mode-overlay .dm-progress-bar {
           position: absolute;
-          bottom: 0; left: 0;
-          height: 3px;
+          bottom: 0;
+          left: 0;
+          height: 3.5px;
           border-radius: 0 0 16px 16px;
           background: linear-gradient(90deg, #00d4ff, #6366f1);
-          animation: demoProgress linear;
+          animation: demoProgress linear forwards;
+        }
+        [data-theme="light"] #demo-mode-overlay .dm-progress-bar {
+          background: linear-gradient(90deg, #0284c7, #7c3aed) !important;
+        }
+        #demo-mode-overlay .dm-stop-btn {
+          font-size: 0.68rem;
+          color: #64748b;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 2px 6px;
+          font-family: var(--font-mono, monospace);
+          font-weight: 600;
+          transition: color 0.15s;
+        }
+        #demo-mode-overlay .dm-stop-btn:hover {
+          color: #f43f5e;
+        }
+        [data-theme="light"] #demo-mode-overlay .dm-stop-btn {
+          color: #64748b !important;
+        }
+        [data-theme="light"] #demo-mode-overlay .dm-stop-btn:hover {
+          color: #e11d48 !important;
         }
       `;
       document.head.appendChild(s);
@@ -266,40 +350,38 @@
   function _updateOverlay(step, current, total) {
     if (!_overlay) return;
 
-    const isAlert   = step.id === 'alert' || step.id === 'spike';
-    const titleColor = isAlert ? '#f43f5e' : '#00d4ff';
+    const isAlert    = step.id === 'alert' || step.id === 'spike';
+    const titleColor = isAlert ? '#f43f5e' : 'var(--cyan, #00d4ff)';
     const icon       = _iconForStep(step.id);
 
     _overlay.innerHTML = `
-      <div style="font-size:1.6rem;flex-shrink:0;line-height:1;">${icon}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-          <span style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;font-weight:700;
-                       color:${titleColor};text-transform:uppercase;letter-spacing:0.1em;">
-            DEMO ${current}/${total}
+      <div style="font-size:1.6rem; flex-shrink:0; line-height:1; margin-top:2px;">${icon}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <span style="font-size:0.72rem; font-family:var(--font-mono, monospace); font-weight:700;
+                       color:${titleColor}; text-transform:uppercase; letter-spacing:0.1em;">
+            DEMO STEP ${current} / ${total}
           </span>
-          <span style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></span>
-          <button onclick="window.DemoMode.stop()"
-                  style="font-size:0.65rem;color:#64748b;background:none;border:none;cursor:pointer;
-                         padding:0 4px;font-family:'JetBrains Mono',monospace;">
-            [ESC] Stop
+          <span style="flex:1; height:1px; background:rgba(255,255,255,0.12);"></span>
+          <button class="dm-stop-btn" onclick="window.DemoMode.stop()" title="Stop Guided Demo Sequence">
+            [ESC] Stop Demo
           </button>
         </div>
-        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:5px;line-height:1.3;">
+        <div class="dm-title">
           ${step.title}
         </div>
-        <div style="font-size:0.78rem;color:#94a3b8;line-height:1.5;">
+        <div class="dm-body">
           ${step.body}
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-          <div style="display:flex;gap:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+          <div style="display:flex; gap:4px;">
             ${STEPS.map((_, i) => `
-              <span style="width:${i < current ? '12' : '6'}px;height:4px;border-radius:2px;
-                           background:${i < current ? '#00d4ff' : 'rgba(255,255,255,0.1)'};
+              <span style="width:${i < current ? '12' : '6'}px; height:4px; border-radius:2px;
+                           background:${i < current ? 'var(--cyan, #00d4ff)' : 'rgba(255,255,255,0.15)'};
                            transition:all 0.3s;"></span>
             `).join('')}
           </div>
-          <span style="font-size:0.68rem;color:#475569;font-family:'JetBrains Mono',monospace;">
+          <span style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono, monospace); font-weight:600;">
             Next in ${(step.duration / 1000).toFixed(0)}s
           </span>
         </div>
@@ -309,21 +391,34 @@
   }
 
   function _destroyOverlay() {
-    if (_overlay) { _overlay.remove(); _overlay = null; }
+    if (_overlay) {
+      _overlay.remove();
+      _overlay = null;
+    }
   }
 
   function _iconForStep(id) {
     const icons = {
-      intro:       '🎬', tier1: '🎛️', tier2: '📶', tier3: '🖥️',
-      tier4_pre:   '☁️', spike: '⚠️',  alert: '🚨', tier5:  '❄️',
-      resolution:  '✅', done:  '🎓'
+      intro:      '🎬',
+      tier1:      '🎛️',
+      tier2:      '📶',
+      tier3:      '🖥️',
+      tier4_pre:  '☁️',
+      spike:      '⚠️',
+      alert:      '🚨',
+      tier5:      '🕹️',
+      fleet:      '📊',
+      resolution: '✅',
+      done:       '🎓'
     };
     return icons[id] || '📡';
   }
 
   // Keyboard shortcut — Escape to stop demo
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && _running) window.DemoMode.stop();
+    if (e.key === 'Escape' && _running) {
+      window.DemoMode.stop();
+    }
   });
 
 })();

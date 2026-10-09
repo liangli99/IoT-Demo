@@ -697,242 +697,440 @@
     .bullet-dot.p { background: rgba(168,85,247,0.15); color: var(--purple); }
 
     /* Simulated phone preview */
+    /* ── Unified Phone Simulator (Matching Mobile App Sub-Page) ────────── */
     .preview-phone {
       flex-shrink: 0;
-      width: 280px;
-      height: 580px;
-      background: #0a0e1a;
-      border-radius: 36px;
-      border: 1.5px solid rgba(0,212,255,0.2);
+      width: 320px;
+      height: 650px;
+      background: #090e1a;
+      border-radius: 40px;
+      border: 3px solid #1e293b;
       box-shadow:
-        0 0 0 5px #060c18,
-        0 0 60px rgba(0,212,255,0.15),
-        0 40px 80px rgba(0,0,0,0.6);
+        0 0 0 2px #263554,
+        0 0 0 7px #0b1220,
+        0 0 50px rgba(168, 85, 247, 0.25),
+        0 35px 70px rgba(0, 0, 0, 0.85);
       position: relative;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-    }
-    .preview-phone::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 90px; height: 24px;
-      background: #04080f;
-      border-radius: 0 0 14px 14px;
-      z-index: 10;
+      user-select: none;
     }
 
-    .pph-appbar {
-      height: 52px;
-      background: rgba(10,14,26,0.9);
+    /* Dynamic Island / Notch */
+    .preview-phone .phone-notch {
+      position: absolute;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      width: 96px; height: 22px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 100;
       display: flex;
       align-items: center;
-      padding: 0 14px;
-      gap: 10px;
-      padding-top: 24px;
+      justify-content: space-between;
+      padding: 0 8px;
+    }
+    .preview-phone .notch-camera {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: #111a28;
+      border: 1px solid #1e293b;
+    }
+    .preview-phone .notch-sensor {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #0f172a;
+    }
+
+    /* Status Bar */
+    .preview-phone .status-bar {
+      height: 36px;
+      padding: 0 18px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-bottom: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      background: transparent;
+      z-index: 50;
       flex-shrink: 0;
     }
-    .pph-icon {
-      width: 28px; height: 28px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem;
-    }
-    .pph-title { font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .preview-phone .status-time { font-family: 'Inter', sans-serif; font-weight: 700; }
+    .preview-phone .status-icons { display: flex; gap: 5px; align-items: center; }
 
-    .pph-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-
-    /* Mini gauge in preview */
-    .pph-gauge {
-      background: linear-gradient(145deg, #141f33, #1a2a44);
-      border: 1px solid rgba(0,200,255,0.2);
-      border-radius: 18px;
-      padding: 16px 14px;
-      text-align: center;
-    }
-    .pph-temp {
-      font-size: 2rem;
-      font-weight: 900;
-      color: var(--cyan);
-      font-family: var(--font-mono);
-    }
-    .pph-temp-lbl { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
-    .pph-gauge-bar {
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 2px;
-      margin-top: 10px;
-      overflow: hidden;
-    }
-    .pph-gauge-fill {
-      height: 100%;
-      width: 70%;
-      background: linear-gradient(90deg, var(--emerald), var(--cyan));
-      border-radius: 2px;
-      animation: widthPulse 3s ease-in-out infinite;
-    }
-    @keyframes widthPulse {
-      0%,100%{width:65%} 50%{width:75%}
-    }
-
-    .pph-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-    .pph-card {
-      background: rgba(17,31,53,0.8);
-      border: 1px solid rgba(99,120,170,0.15);
-      border-radius: 10px;
-      padding: 10px;
-    }
-    .pph-card-val  { font-size: 1rem; font-weight: 800; }
-    .pph-card-lbl  { font-size: 0.55rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
-
-    /* Mini AC card in preview */
-    .pph-ac {
-      background: linear-gradient(145deg, #0f1c32, #162036);
-      border: 1px solid rgba(0,200,255,0.2);
-      border-radius: 14px;
-      padding: 10px 12px;
+    /* App Bar */
+    .preview-phone .app-bar {
+      height: 52px;
+      padding: 0 14px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, rgba(13, 21, 39, 0.95), rgba(17, 28, 52, 0.85));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .pph-ac-icon {
-      width: 32px; height: 32px;
+    .preview-phone .app-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-phone .app-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, #a855f7, #6366f1);
       border-radius: 8px;
-      background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(99,102,241,0.2));
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-      animation: acGlow 2s ease-in-out infinite;
+      font-size: 0.95rem;
+      box-shadow: 0 0 10px rgba(168,85,247,0.3);
     }
-    @keyframes acGlow {
-      0%,100%{box-shadow:0 0 8px rgba(6,182,212,0.3)}
-      50%{box-shadow:0 0 20px rgba(6,182,212,0.6)}
+    .preview-phone .app-title-text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
     }
-    .pph-ac-info { flex: 1; }
-    .pph-ac-val  { font-size: 0.8rem; font-weight: 700; color: var(--cyan); }
-    .pph-ac-lbl  { font-size: 0.6rem; color: var(--text-dim); }
+    .preview-phone .app-subtitle-text {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .preview-phone .app-bar-actions { display: flex; gap: 6px; }
+    .preview-phone .app-bar-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #f8fafc;
+    }
 
-    .pph-bottomnav {
-      height: 56px;
-      background: rgba(5,8,16,0.9);
-      border-top: 1px solid rgba(99,120,170,0.15);
+    /* Scrollable Phone Content */
+    .preview-phone .phone-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0 0 12px;
+      background: #090e1a;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-phone .phone-content::-webkit-scrollbar { display: none; }
+
+    .preview-phone .m-section-hdr {
+      padding: 10px 14px 4px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    /* Node Chips */
+    .preview-phone .m-node-chips {
+      display: flex;
+      gap: 6px;
+      padding: 6px 14px 4px;
+      overflow-x: auto;
+    }
+    .preview-phone .m-node-chips::-webkit-scrollbar { display: none; }
+    .preview-phone .m-chip {
+      flex-shrink: 0;
+      padding: 5px 11px;
+      border-radius: 16px;
+      font-size: 0.70rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      user-select: none;
+    }
+    .preview-phone .m-chip:hover {
+      background: rgba(168, 85, 247, 0.2);
+      border-color: #a855f7;
+      color: #ffffff;
+    }
+    .preview-phone .m-chip.active {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+      border: 1.5px solid #a855f7 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 10px rgba(124, 58, 237, 0.45) !important;
+    }
+
+    /* Radial SVG Temperature Gauge Card */
+    .preview-phone .m-gauge-card {
+      margin: 8px 14px 10px;
+      background: linear-gradient(145deg, #121d33, #182846);
+      border: 1px solid rgba(168, 85, 247, 0.28);
+      border-radius: 16px;
+      padding: 14px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+    .preview-phone .m-gauge-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .preview-phone .m-gauge-svg-wrap {
+      position: relative;
+      width: 170px;
+      height: 98px;
+    }
+    .preview-phone .m-gauge-svg {
+      width: 170px;
+      overflow: visible;
+    }
+    .preview-phone .m-gauge-track {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 11;
+      stroke-linecap: round;
+    }
+    .preview-phone .m-gauge-fill {
+      fill: none;
+      stroke-width: 11;
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.4s ease, stroke 0.3s ease;
+    }
+    .preview-phone .m-gauge-glow {
+      fill: none;
+      stroke-width: 15;
+      stroke-linecap: round;
+      opacity: 0.3;
+      filter: blur(4px);
+      transition: stroke-dasharray 0.4s ease, stroke 0.3s ease;
+    }
+    .preview-phone .m-gauge-center {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    .preview-phone .m-gauge-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+    .preview-phone .m-gauge-unit { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+    .preview-phone .m-gauge-node-tag {
+      font-size: 0.60rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    .preview-phone .m-gauge-strip {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .preview-phone .m-gs-item { text-align: center; flex: 1; }
+    .preview-phone .m-gs-val { font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .preview-phone .m-gs-lbl { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+
+    /* 4-Card Telemetry Grid */
+    .preview-phone .m-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 14px 10px;
+    }
+    .preview-phone .m-card {
+      background: #131f38;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      position: relative;
+    }
+    .preview-phone .m-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      border-radius: 2px 2px 0 0;
+    }
+    .preview-phone .m-card.purple::before { background: var(--purple); }
+    .preview-phone .m-card.cyan::before   { background: var(--cyan); }
+    .preview-phone .m-card.emerald::before{ background: var(--emerald); }
+    .preview-phone .m-card.amber::before  { background: var(--amber); }
+
+    .preview-phone .m-card-icon { font-size: 0.95rem; }
+    .preview-phone .m-card-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+    .preview-phone .m-card-unit { font-size: 0.62rem; color: var(--text-dim); font-weight: 500; }
+    .preview-phone .m-card-lbl { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px; }
+
+    /* AC Control Panel inside Phone */
+    .preview-phone .m-ac-panel {
+      background: #131f38;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 9px 12px;
+    }
+    .preview-phone .m-ac-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .preview-phone .m-ac-title {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .preview-phone .m-ac-badge {
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    .preview-phone .m-ac-badge.on  { background: rgba(0, 212, 255, 0.18); color: var(--cyan); }
+    .preview-phone .m-ac-badge.off { background: rgba(100, 116, 139, 0.2); color: var(--text-dim); }
+
+    /* Bottom Navigation Bar inside Phone */
+    .preview-phone .bottom-nav {
+      height: 52px;
+      background: rgba(13, 21, 39, 0.98);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-around;
       flex-shrink: 0;
+      padding: 0 6px;
     }
-    .pph-nav-item {
+    .preview-phone .m-nav-btn {
+      background: transparent;
+      border: none;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
-      font-size: 1.1rem;
-      opacity: 0.4;
-    }
-    .pph-nav-item.active { opacity: 1; }
-    .pph-nav-lbl { font-size: 0.5rem; color: var(--cyan); font-weight: 700; }
-
-    /* ── Pipeline section ───────────────────────────────────────────────── */
-    section.pipeline {
-      padding: 80px 24px 100px;
-      position: relative;
-      z-index: 1;
-      background: linear-gradient(180deg, transparent, rgba(14,165,233,0.03) 50%, transparent);
-    }
-
-    .pipeline-flow {
-      max-width: 1240px;
-      margin: 0 auto;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      row-gap: 28px;
-    }
-
-    .pipeline-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      width: 185px;
-    }
-
-    .pipeline-icon-box {
-      width: 78px; height: 78px;
-      border-radius: 20px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem;
-      margin-bottom: 14px;
-      border: 1.5px solid;
-      position: relative;
-      transition: transform 0.2s;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-    }
-    .pipeline-icon-box:hover { transform: scale(1.08); }
-
-    .ps1 { background:rgba(244,63,94,0.12); border-color:rgba(244,63,94,0.4); }
-    .ps2 { background:rgba(0,212,255,0.12); border-color:rgba(0,212,255,0.4); }
-    .ps3 { background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4); }
-    .ps4 { background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.4); }
-    .ps5 { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.4); }
-
-    .pipeline-step-title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 8px;
-      letter-spacing: -0.01em;
-    }
-    .pipeline-step-sub {
-      font-size: 0.86rem;
+      gap: 2px;
+      color: var(--text-dim);
+      font-size: 0.60rem;
       font-weight: 600;
-      color: var(--text-muted);
-      line-height: 1.6;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: all 0.15s;
     }
+    .preview-phone .m-nav-btn:hover { color: var(--text-muted); }
+    .preview-phone .m-nav-btn.active {
+      color: #c084fc;
+      font-weight: 800;
+    }
+    .preview-phone .m-nav-btn .nav-icon { font-size: 1.05rem; }
 
-    .pipeline-arrow {
-      font-size: 1.6rem;
-      color: #0284c7;
-      padding: 0 4px;
-      margin-top: 24px;
-      flex-shrink: 0;
-      font-weight: 700;
-      animation: arrowPulse 1.8s ease-in-out infinite;
-    }
-    @keyframes arrowPulse {
-      0%,100%{opacity:0.3;transform:translateX(0)}
-      50%{opacity:0.8;transform:translateX(4px)}
-    }
-
-    /* ── Light Mode Pipeline & Footer Overrides ── */
-    [data-theme="light"] .pipeline-step-title {
-      color: #0f172a !important;
-      font-size: 1.05rem !important;
-      font-weight: 800 !important;
-    }
-    [data-theme="light"] .pipeline-step-sub {
-      color: #1e293b !important;
-      font-size: 0.86rem !important;
-      font-weight: 600 !important;
-      line-height: 1.6 !important;
-    }
-    [data-theme="light"] .pipeline-arrow {
-      color: #0284c7 !important;
-      font-size: 1.6rem !important;
-      font-weight: 700 !important;
-    }
-    [data-theme="light"] .pipeline-icon-box {
+    /* ── Light Mode Overrides for Unified Phone Simulator ────────────── */
+    [data-theme="light"] .preview-phone {
       background: #ffffff !important;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06) !important;
+      border: 3px solid #cbd5e1 !important;
+      box-shadow:
+        0 0 0 2px #e2e8f0,
+        0 0 0 7px #f1f5f9,
+        0 20px 50px rgba(0, 0, 0, 0.12) !important;
     }
+    [data-theme="light"] .preview-phone .phone-notch {
+      background: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .status-bar {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .status-time {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .app-bar {
+      background: #ffffff !important;
+      border-bottom: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .preview-phone .app-title-text {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .app-subtitle-text {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .preview-phone .app-bar-btn {
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .phone-content {
+      background: #f8fafc !important;
+    }
+    [data-theme="light"] .preview-phone .m-gauge-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .preview-phone .m-gauge-label {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .preview-phone .m-gauge-val {
+      color: #0f172a !important;
+      font-weight: 900 !important;
+    }
+    [data-theme="light"] .preview-phone .m-gauge-node-tag {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .preview-phone .m-gs-val {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .m-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    }
+    [data-theme="light"] .preview-phone .m-card-val {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .m-card-lbl {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .preview-phone .m-ac-panel {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    }
+    [data-theme="light"] .preview-phone .m-ac-title {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .preview-phone .bottom-nav {
+      background: #ffffff !important;
+      border-top: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .preview-phone .m-nav-btn {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .preview-phone .m-nav-btn.active {
+      color: #7c3aed !important;
+    }
+
     [data-theme="light"] .footer-title-strong {
       color: #0f172a !important;
       font-size: 0.95rem !important;
@@ -942,7 +1140,6 @@
       color: #d97706 !important;
       font-weight: 700 !important;
     }
-
     /* ── CTA Section ────────────────────────────────────────────────────── */
     section.cta-section {
       padding: 80px 24px 100px;
@@ -1093,7 +1290,7 @@
         🖥️ Open Full Dashboard
       </a>
       <a href="design.html" class="btn-secondary-hero">
-        📖 Technical Design &amp; BOM
+        📖 Technical Design
       </a>
     </div>
 
@@ -1267,95 +1464,139 @@
         </a>
       </div>
 
-      <!-- Simulated phone mockup -->
+      <!-- Unified Mobile App Phone Simulator (matching Mobile App sub-page) -->
       <div class="preview-phone reveal">
-        <div class="pph-appbar">
-          <div class="pph-icon">🌡️</div>
-          <div class="pph-title">IoT Sense</div>
+        <!-- Dynamic Island / Notch -->
+        <div class="phone-notch">
+          <div class="notch-camera"></div>
+          <div class="notch-sensor"></div>
         </div>
-        <div class="pph-content">
-          <div class="pph-gauge">
-            <div class="pph-temp" id="prev-temp">24.2°C</div>
-            <div class="pph-temp-lbl">Ambient Temperature · sensor_node_01</div>
-            <div class="pph-gauge-bar">
-              <div class="pph-gauge-fill"></div>
-            </div>
-          </div>
-          <div class="pph-grid">
-            <div class="pph-card">
-              <div class="pph-card-val" style="color:var(--cyan)" id="prev-hum">52.8%</div>
-              <div class="pph-card-lbl">💧 Humidity</div>
-            </div>
-            <div class="pph-card">
-              <div class="pph-card-val" style="color:var(--purple)" id="prev-pres">1013 hPa</div>
-              <div class="pph-card-lbl">⏲️ Pressure</div>
-            </div>
-            <div class="pph-card">
-              <div class="pph-card-val" style="color:var(--amber)" id="prev-vib">0.041 g</div>
-              <div class="pph-card-lbl">📳 Vibration</div>
-            </div>
-            <div class="pph-card">
-              <div class="pph-card-val" style="color:var(--emerald)" id="prev-batt">94%</div>
-              <div class="pph-card-lbl">🔋 Battery</div>
-            </div>
-          </div>
-          <div class="pph-ac">
-            <div class="pph-ac-icon">❄️</div>
-            <div class="pph-ac-info">
-              <div class="pph-ac-val" id="prev-ac">AC: STANDBY</div>
-              <div class="pph-ac-lbl">Auto-mode active · threshold 26°C</div>
-            </div>
+
+        <!-- Android / Mobile Status Bar -->
+        <div class="status-bar">
+          <span class="status-time" id="prev-status-time">09:41</span>
+          <div class="status-icons">
+            <span style="font-size:0.68rem;color:#10b981;font-weight:700;">5G</span>
+            <span>📶</span>
+            <span id="prev-status-batt">94%</span>
           </div>
         </div>
-        <div class="pph-bottomnav">
-          <div class="pph-nav-item active">🏠<div class="pph-nav-lbl">Home</div></div>
-          <div class="pph-nav-item">❄️<div class="pph-nav-lbl">Control</div></div>
-          <div class="pph-nav-item">🚨<div class="pph-nav-lbl">Alerts</div></div>
-          <div class="pph-nav-item">⚙️<div class="pph-nav-lbl">Settings</div></div>
+
+        <!-- App Bar -->
+        <div class="app-bar">
+          <div class="app-bar-left">
+            <div class="app-icon">📱</div>
+            <div>
+              <div class="app-title-text">IoT Sense</div>
+              <div class="app-subtitle-text" id="app-bar-sub">AWS IoT Core • Live Stream</div>
+            </div>
+          </div>
+          <div class="app-bar-actions">
+            <button class="app-bar-btn" title="Live Stream Active">⚡</button>
+          </div>
         </div>
+
+        <!-- Scrollable Phone Content Area -->
+        <div class="phone-content">
+          <!-- Active Sensor Node Selector with Chips -->
+          <div class="m-section-hdr">Active Sensor Node</div>
+          <div class="m-node-chips">
+            <div class="m-chip active" id="prev-chip-node1" data-node="sensor_node_01">Node 01 (HVAC)</div>
+            <div class="m-chip" id="prev-chip-node2" data-node="sensor_node_02">Node 02 (Cold Store)</div>
+            <div class="m-chip" id="prev-chip-node3" data-node="actuator_node_03">Node 03 (Machine)</div>
+          </div>
+
+          <!-- Circular Radial Temperature Gauge Card -->
+          <div class="m-gauge-card">
+            <div class="m-gauge-label">Ambient Temperature</div>
+            <div class="m-gauge-svg-wrap">
+              <svg class="m-gauge-svg" viewBox="0 0 200 120">
+                <path class="m-gauge-track" d="M 25 105 A 75 75 0 1 1 175 105" pathLength="100"/>
+                <path class="m-gauge-glow" id="prev-gauge-glow" d="M 25 105 A 75 75 0 1 1 175 105" pathLength="100" stroke-dasharray="38 62" stroke="#00d4ff"/>
+                <path class="m-gauge-fill" id="prev-gauge-fill" d="M 25 105 A 75 75 0 1 1 175 105" pathLength="100" stroke-dasharray="38 62" stroke="#00d4ff"/>
+              </svg>
+              <div class="m-gauge-center">
+                <div class="m-gauge-val" id="prev-temp">24.5<span class="m-gauge-unit">°C</span></div>
+                <div class="m-gauge-node-tag" id="prev-node-tag">sensor_node_01</div>
+              </div>
+            </div>
+
+            <div class="m-gauge-strip">
+              <div class="m-gs-item">
+                <div class="m-gs-val" id="prev-strip-hum">52.8%</div>
+                <div class="m-gs-lbl">Humidity</div>
+              </div>
+              <div class="m-gs-item">
+                <div class="m-gs-val" id="prev-strip-pres">1013</div>
+                <div class="m-gs-lbl">Pressure</div>
+              </div>
+              <div class="m-gs-item">
+                <div class="m-gs-val" id="prev-strip-batt" style="color:var(--emerald);">94%</div>
+                <div class="m-gs-lbl">Battery</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Telemetry Metrics Grid -->
+          <div class="m-grid">
+            <div class="m-card cyan">
+              <div class="m-card-icon">💧</div>
+              <div class="m-card-val" id="prev-hum">52.8<span class="m-card-unit">%</span></div>
+              <div class="m-card-lbl">Rel. Humidity</div>
+            </div>
+            <div class="m-card purple">
+              <div class="m-card-icon">🌪️</div>
+              <div class="m-card-val" id="prev-pres">1013<span class="m-card-unit">hPa</span></div>
+              <div class="m-card-lbl">Barometric</div>
+            </div>
+            <div class="m-card amber">
+              <div class="m-card-icon">📳</div>
+              <div class="m-card-val" id="prev-vib">0.041<span class="m-card-unit">g</span></div>
+              <div class="m-card-lbl">Kinetic Vib.</div>
+            </div>
+            <div class="m-card emerald">
+              <div class="m-card-icon">🔋</div>
+              <div class="m-card-val" id="prev-batt">94<span class="m-card-unit">%</span></div>
+              <div class="m-card-lbl">LiPo Level</div>
+            </div>
+          </div>
+
+          <!-- AC Auto-Control Status Card -->
+          <div class="m-ac-panel" style="margin: 0 14px 10px;">
+            <div class="m-ac-header">
+              <div>
+                <div class="m-ac-title">Cooling Compressor</div>
+                <div style="font-size:0.62rem;color:var(--text-dim);font-family:var(--font-mono);">SSR Relay • GPIO 23</div>
+              </div>
+              <span class="m-ac-badge off" id="prev-ac">STANDBY</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Navigation Bar inside Phone -->
+        <nav class="bottom-nav">
+          <button class="m-nav-btn active">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+          </button>
+          <button class="m-nav-btn">
+            <span class="nav-icon">❄️</span>
+            <span>Control</span>
+          </button>
+          <button class="m-nav-btn">
+            <span class="nav-icon">🚨</span>
+            <span>Alerts</span>
+          </button>
+          <button class="m-nav-btn">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+        </nav>
       </div>
 
     </div>
   </section>
 
-  <!-- ═══════════════════ PIPELINE ═════════════════════════════════════ -->
-  <section class="pipeline" id="pipeline">
-    <div class="section-eyebrow">System Architecture</div>
-    <h2 class="section-title">Five-Tier End-to-End Pipeline</h2>
-    <p class="section-desc">Every telemetry packet traverses all five layers — from constrained hardware through the cloud to your screen.</p>
-
-    <div class="pipeline-flow">
-      <div class="pipeline-step">
-        <div class="pipeline-icon-box ps1">🎛️</div>
-        <div class="pipeline-step-title">Perception Layer</div>
-        <div class="pipeline-step-sub">ESP32-WROOM-32<br>DHT22 / MPU6050<br>BLE Advertising</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon-box ps2">📶</div>
-        <div class="pipeline-step-title">Proximity Network</div>
-        <div class="pipeline-step-sub">BLE 5.0 (2.4 GHz)<br>IEEE 802.15.1<br>AES-128 CCM</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon-box ps3">🖥️</div>
-        <div class="pipeline-step-title">Edge Gateway</div>
-        <div class="pipeline-step-sub">Raspberry Pi 4<br>bleak + paho-mqtt<br>Store-and-Forward</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon-box ps4">☁️</div>
-        <div class="pipeline-step-title">AWS IoT Cloud</div>
-        <div class="pipeline-step-sub">IoT Core mTLS<br>Rules Engine SQL<br>DynamoDB + Lambda</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon-box ps5">📱</div>
-        <div class="pipeline-step-title">Presentation Layer</div>
-        <div class="pipeline-step-sub">WebSockets + REST<br>Live Charts<br>AC Auto-Control</div>
-      </div>
-    </div>
-  </section>
 
   <!-- ═══════════════════ CTA SECTION ══════════════════════════════════ -->
   <section class="cta-section">
@@ -1379,17 +1620,13 @@
         </div>
         <div class="footer-text">
           <strong class="footer-title-strong">IoT Demo System</strong><br>
-          <span class="footer-designer-lbl">Demo Designer: Prof. Liang Li</span>
+          <span class="footer-designer-lbl">Designer: Prof. Liang Li</span>
         </div>
       </div>
       <div class="footer-contact" style="display:flex; align-items:center; gap:16px; font-size:0.84rem; flex-wrap:wrap;">
         <span style="color:#fbbf24; font-weight:700; font-family:var(--font-mono); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em;">Contact:</span>
         <a href="mailto:liangli@westcliff.edu" style="color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;" onmouseover="this.style.color='#00d4ff'" onmouseout="this.style.color='var(--text-muted)'">
           <span style="color:var(--cyan); font-weight:600;">Email:</span> liangli@westcliff.edu
-        </a>
-        <span style="color:rgba(255,255,255,0.18);">|</span>
-        <a href="tel:949-813-7909" style="color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:color 0.2s;" onmouseover="this.style.color='#00d4ff'" onmouseout="this.style.color='var(--text-muted)'">
-          <span style="color:var(--cyan); font-weight:600;">Tel:</span> 949-813-7909
         </a>
       </div>
     </div>
@@ -1480,34 +1717,69 @@
 
     // ── Live phone preview using simulation engine ────────────────────────
     const sim = new IoTSimulationEngine();
-    const NODE = 'sensor_node_01';
+    let currentPhoneNode = 'sensor_node_01';
+
+    // Interactive node chip switching
+    document.querySelectorAll('.preview-phone .m-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.preview-phone .m-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentPhoneNode = chip.dataset.node || 'sensor_node_01';
+        const tag = document.getElementById('prev-node-tag');
+        if (tag) tag.textContent = currentPhoneNode;
+      });
+    });
 
     sim.on('telemetry', (record) => {
-      if (record.device_id !== NODE) return;
+      if (record.device_id !== currentPhoneNode) return;
       const t = document.getElementById('prev-temp');
       const h = document.getElementById('prev-hum');
       const p = document.getElementById('prev-pres');
       const v = document.getElementById('prev-vib');
       const b = document.getElementById('prev-batt');
+      const sh = document.getElementById('prev-strip-hum');
+      const sp = document.getElementById('prev-strip-pres');
+      const sb = document.getElementById('prev-strip-batt');
+      const battStatus = document.getElementById('prev-status-batt');
 
       if (t) {
-        t.textContent = `${record.temp.toFixed(1)}°C`;
-        t.style.color = record.temp > 30 ? '#f43f5e' : record.temp > 26 ? '#f59e0b' : '#00d4ff';
+        t.innerHTML = `${record.temp.toFixed(1)}<span class="m-gauge-unit">°C</span>`;
       }
-      if (h) h.textContent = `${record.humidity.toFixed(1)}%`;
-      if (p) p.textContent = `${record.pressure.toFixed(0)} hPa`;
-      if (v) v.textContent = `${(record.vibration||0).toFixed(3)} g`;
-      if (b) b.textContent = `${record.battery.toFixed(0)}%`;
+      if (h) h.innerHTML = `${record.humidity.toFixed(1)}<span class="m-card-unit">%</span>`;
+      if (p) p.innerHTML = `${record.pressure.toFixed(0)}<span class="m-card-unit">hPa</span>`;
+      if (v) v.innerHTML = `${(record.vibration||0).toFixed(3)}<span class="m-card-unit">g</span>`;
+      if (b) b.innerHTML = `${record.battery.toFixed(0)}<span class="m-card-unit">%</span>`;
 
-      // AC state based on temp
+      if (sh) sh.textContent = `${record.humidity.toFixed(1)}%`;
+      if (sp) sp.textContent = `${record.pressure.toFixed(0)}`;
+      if (sb) sb.textContent = `${record.battery.toFixed(0)}%`;
+      if (battStatus) battStatus.textContent = `${record.battery.toFixed(0)}%`;
+
+      // Update Radial Gauge SVG Arc
+      const fillArc = document.getElementById('prev-gauge-fill');
+      const glowArc = document.getElementById('prev-gauge-glow');
+      const tempVal = record.temp;
+      const pct = Math.min(100, Math.max(5, ((tempVal - 15) / 25) * 100));
+      const strokeColor = tempVal > 30 ? '#f43f5e' : tempVal > 26 ? '#f59e0b' : tempVal < 18 ? '#10b981' : '#00d4ff';
+
+      if (fillArc) {
+        fillArc.setAttribute('stroke-dasharray', `${pct.toFixed(1)} ${(100 - pct).toFixed(1)}`);
+        fillArc.setAttribute('stroke', strokeColor);
+      }
+      if (glowArc) {
+        glowArc.setAttribute('stroke-dasharray', `${pct.toFixed(1)} ${(100 - pct).toFixed(1)}`);
+        glowArc.setAttribute('stroke', strokeColor);
+      }
+
+      // AC Compressor state based on temp
       const acEl = document.getElementById('prev-ac');
       if (acEl) {
         if (record.temp >= 26) {
-          acEl.textContent = '❄️ AC: COOLING ACTIVE';
-          acEl.style.color = '#00d4ff';
+          acEl.textContent = 'COOLING';
+          acEl.className = 'm-ac-badge on';
         } else {
-          acEl.textContent = 'AC: STANDBY';
-          acEl.style.color = '#64748b';
+          acEl.textContent = 'STANDBY';
+          acEl.className = 'm-ac-badge off';
         }
       }
     });
