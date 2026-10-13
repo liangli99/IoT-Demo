@@ -107,37 +107,71 @@
          ======================================================== -->
     <section id="tab-pipeline" class="tab-panel active">
       
-      <!-- Sleek Interactive Scenario Test Bench Strip -->
-      <div class="scenario-test-bench" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; background:linear-gradient(135deg, rgba(14,22,38,0.85), rgba(20,32,54,0.8)); border:1px solid rgba(0,212,255,0.22); border-radius:var(--radius-md); padding:0.55rem 1rem; margin-bottom:1.25rem; box-shadow:0 4px 20px rgba(0,0,0,0.35);">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1.1rem;">⚡</span>
-          <span style="font-weight:700; color:#fff; font-size:0.82rem; white-space:nowrap;">Interactive Scenario Tests:</span>
-          <span style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono);">[Inject faults &amp; triggers across the pipeline]</span>
+      <!-- Interactive Scenario Test Bench & Guided Demo Console (Two Distinct Rows) -->
+      <div class="scenario-test-bench" style="display:flex; flex-direction:column; gap:12px; background:linear-gradient(135deg, rgba(14,22,38,0.88), rgba(20,32,54,0.82)); border:1px solid rgba(0,212,255,0.25); border-radius:var(--radius-md); padding:0.85rem 1.15rem; margin-bottom:1.25rem; box-shadow:0 6px 24px rgba(0,0,0,0.4);">
+        
+        <!-- Row 1: Pipeline Condition & Fault Injection (Setting Conditions) -->
+        <div class="stb-row" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div class="stb-meta" style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.25rem; line-height:1;">⚡</span>
+            <div>
+              <div style="font-weight:700; font-size:0.83rem; color:var(--text-main, #fff); display:flex; align-items:center; gap:8px;">
+                <span>Pipeline Condition &amp; Fault Injection</span>
+                <span class="badge" style="font-size:0.62rem; padding:1px 6px; background:rgba(245,158,11,0.18); color:var(--amber); border:1px solid rgba(245,158,11,0.35); border-radius:4px;">Faults &amp; Transducers</span>
+              </div>
+              <span style="display:block; font-size:0.7rem; color:var(--text-dim, #94a3b8); font-family:var(--font-mono, monospace); margin-top:2px;">
+                Set conditions: Manually inject thermal runaway, WAN partitions, burst load &amp; toggle hardware relay.
+              </span>
+            </div>
+          </div>
+
+          <div class="stb-buttons" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <button id="sb-btn-temp-spike" class="btn btn-danger" style="padding:0.36rem 0.72rem; font-size:0.74rem; font-weight:700;" title="Inject abnormal temperature >30°C to trigger AWS Lambda rule and SNS alert">
+              🚨 Temp Spike (&gt;30°C)
+            </button>
+            <button id="sb-btn-toggle-relay" class="btn btn-primary" style="padding:0.36rem 0.72rem; font-size:0.74rem; font-weight:700;" title="Dispatch reverse command down through AWS IoT Core and Edge Gateway to ESP32 relay">
+              ⚡ Toggle Relay (GPIO 23)
+            </button>
+            <button id="sb-btn-wan-toggle" class="btn" style="padding:0.36rem 0.72rem; font-size:0.74rem; font-weight:700; border-color:rgba(245,158,11,0.4); color:var(--amber);" title="Simulate WAN network partition: edge stores frames in SQLite buffer and flushes on reconnect">
+              🔌 Toggle Gateway WAN
+            </button>
+            <button id="sb-btn-burst-test" class="btn" style="padding:0.36rem 0.72rem; font-size:0.74rem; font-weight:700; border-color:rgba(168,85,247,0.4); color:var(--purple);" title="Inject high-speed 50-packet burst to benchmark ingestion throughput">
+              🌊 50-Pkt Burst Ingest
+            </button>
+            <button id="sb-btn-reset-baseline" class="btn" style="padding:0.36rem 0.72rem; font-size:0.74rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
+              🔄 Reset Normal Baseline
+            </button>
+          </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          <button id="sb-btn-temp-spike" class="btn btn-danger" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Inject abnormal temperature >30°C to trigger AWS Lambda rule and SNS alert">
-            🚨 Temp Spike (&gt;30°C)
-          </button>
-          <button id="sb-btn-toggle-relay" class="btn btn-primary" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Dispatch reverse command down through AWS IoT Core and Edge Gateway to ESP32 relay">
-            ⚡ Toggle Relay (GPIO 23)
-          </button>
-          <button id="sb-btn-wan-toggle" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; border-color:rgba(245,158,11,0.4); color:var(--amber);" title="Simulate WAN network partition: edge stores frames in SQLite buffer and flushes on reconnect">
-            🔌 Toggle Gateway WAN
-          </button>
-          <button id="sb-btn-burst-test" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; border-color:rgba(168,85,247,0.4); color:var(--purple);" title="Inject high-speed 50-packet burst to benchmark ingestion throughput">
-            🌊 50-Pkt Burst Ingest
-          </button>
-          <button id="sb-btn-reset-baseline" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
-            🔄 Reset Normal Baseline
-          </button>
-          <button id="sb-btn-app-fan-demo" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(168,85,247,0.25), rgba(0,212,255,0.25)); border-color:var(--cyan); color:#fff;" title="Demonstrate step-by-step reverse downlink: Press cell app button -> AWS -> Gateway -> BLE 5.0 -> ESP32 Fan">
-            📱 Cell App ➔ Fan Actuation Flow
-          </button>
-          <button id="sb-btn-guided-demo" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(16,185,129,0.2)); border-color:var(--emerald); color:#fff;" title="Start 5-step automated guided demo tour">
-            ▶️ Run Guided Demo
-          </button>
+        <!-- Distinct Separation Divider -->
+        <div style="height:1px; background:linear-gradient(90deg, rgba(0,212,255,0.3), rgba(255,255,255,0.08), transparent);"></div>
+
+        <!-- Row 2: Automated End-to-End Guided Demos (Setting the Run Demo) -->
+        <div class="stb-row" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div class="stb-meta" style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.25rem; line-height:1;">🎬</span>
+            <div>
+              <div style="font-weight:700; font-size:0.83rem; color:var(--cyan); display:flex; align-items:center; gap:8px;">
+                <span>Automated Guided Demos &amp; Tours</span>
+                <span class="badge" style="font-size:0.62rem; padding:1px 6px; background:rgba(0,212,255,0.18); color:var(--cyan); border:1px solid rgba(0,212,255,0.35); border-radius:4px;">Pop-Out HUD Overlays</span>
+              </div>
+              <span style="display:block; font-size:0.7rem; color:var(--text-dim, #94a3b8); font-family:var(--font-mono, monospace); margin-top:2px;">
+                Run guided demos: Autonomous step-by-step presentation walkthroughs with floating HUD cards &amp; stage focus.
+              </span>
+            </div>
+          </div>
+
+          <div class="stb-buttons" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <button id="sb-btn-app-fan-demo" class="btn" style="padding:0.42rem 0.88rem; font-size:0.76rem; font-weight:800; background:linear-gradient(135deg, rgba(168,85,247,0.3), rgba(0,212,255,0.3)); border-color:var(--cyan); color:#fff; box-shadow:0 0 12px rgba(0,212,255,0.22);" title="Run step-by-step reverse downlink demo with HUD overlay: Cell Phone App -> AWS -> Edge -> BLE 5.0 -> ESP32 Fan">
+              📱 Cell App ➔ Fan Actuation Flow (5 Steps)
+            </button>
+            <button id="sb-btn-guided-demo" class="btn" style="padding:0.42rem 0.88rem; font-size:0.76rem; font-weight:800; background:linear-gradient(135deg, rgba(0,212,255,0.22), rgba(16,185,129,0.25)); border-color:var(--emerald); color:#fff; box-shadow:0 0 12px rgba(16,185,129,0.22);" title="Start comprehensive 13-step automated tour across all 5 tiers of the IoT pipeline">
+              ▶️ Run Full 5-Tier Guided Demo (13 Steps)
+            </button>
+          </div>
         </div>
+
       </div>
 
       <div class="section-header">
