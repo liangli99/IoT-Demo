@@ -135,6 +135,55 @@
     }
   ];
 
+  // ── Sensor -> Cell App Forward Uplink Steps (5 Tiers) ──────────────────
+  const UPLINK_STEPS = [
+    {
+      id: 'uplink_t1',
+      duration: 3800,
+      tab: 'pipeline',
+      title: '🎛️ Tier 1 — Perception Layer (ESP32 Sensor Sampling)',
+      body: 'ESP32-WROOM-32 wakes from RTC deep-sleep, samples DHT22/MPU6050 environmental sensors (Temp: 24.2°C, Humidity: 52.8%, Pressure: 1013.4 hPa, Vibration: 0.041g), consuming 68 mA sampling current.',
+      highlight: '.tier-column:nth-child(1)',
+      action: 'uplink_t1'
+    },
+    {
+      id: 'uplink_t2',
+      duration: 3800,
+      tab: 'pipeline',
+      title: '📶 Tier 2 — Proximity Network (BLE 5.0 Broadcast)',
+      body: 'ESP32 broadcasts ADV_IND telemetry advertising frames over 2.4 GHz BLE 5.0 (IEEE 802.15.1) with AES-128 CCM link encryption and Environmental Sensing UUID 0x181A.',
+      highlight: '.tier-column:nth-child(2)',
+      action: 'uplink_t2'
+    },
+    {
+      id: 'uplink_t3',
+      duration: 3800,
+      tab: 'pipeline',
+      title: '🖥️ Tier 3 — Edge Gateway Layer (Raspberry Pi 4)',
+      body: 'Raspberry Pi 4 BlueZ daemon receives raw BLE advertisement frames, deserializes payload into structured JSON, and buffers locally via SQLite store-and-forward engine.',
+      highlight: '.tier-column:nth-child(3)',
+      action: 'uplink_t3'
+    },
+    {
+      id: 'uplink_t4',
+      duration: 3800,
+      tab: 'pipeline',
+      title: '☁️ Tier 4 — AWS IoT Cloud Broker & DynamoDB Ingress',
+      body: 'Ingested MQTT packet reaches AWS IoT Core over mTLS port 8883 (topic: iot/telemetry/sensor_node_01). SQL rules engine evaluates telemetry and persists records into Amazon DynamoDB.',
+      highlight: '.tier-column:nth-child(4)',
+      action: 'uplink_t4'
+    },
+    {
+      id: 'uplink_t5',
+      duration: 5000,
+      tab: 'pipeline',
+      title: '📱 Tier 5 — Presentation Layer (Cell Phone App Live Telemetry)',
+      body: 'IoTSense mobile app receives live telemetry stream via secure WebSockets: updates ambient temperature (24.2°C), humidity, pressure, and battery status with sub-150ms round-trip latency!',
+      highlight: '.tier-column:nth-child(5)',
+      action: 'uplink_t5'
+    }
+  ];
+
   // ── Cell App -> Fan Reverse Downlink Steps (5 Tiers) ───────────────────
   const DOWNLINK_STEPS = [
     {
@@ -217,6 +266,24 @@
     startDownlinkDemo(sim) {
       if (_running) window.DemoMode.stop();
       _activeSteps = DOWNLINK_STEPS;
+      _sim = sim || (window.SimBus && window.SimBus.getSim()) || window._tech300Sim || window.sim || null;
+      _running = true;
+      _stepIndex = 0;
+      if (window.NavBar && window.NavBar.setDemoRunning) {
+        window.NavBar.setDemoRunning(true);
+      }
+      const demoBtn = document.getElementById('nb-demo-btn');
+      if (demoBtn) {
+        demoBtn.classList.add('running');
+        demoBtn.innerHTML = '■ <span class="nb-demo-lbl">Stop Demo</span>';
+      }
+      _createOverlay();
+      _runStep();
+    },
+
+    startUplinkDemo(sim) {
+      if (_running) window.DemoMode.stop();
+      _activeSteps = UPLINK_STEPS;
       _sim = sim || (window.SimBus && window.SimBus.getSim()) || window._tech300Sim || window.sim || null;
       _running = true;
       _stepIndex = 0;
@@ -455,6 +522,66 @@
           }
         }, 600);
       }
+    } else if (step.action === 'uplink_t1') {
+      const dutySample = document.getElementById('duty-step-sample');
+      if (dutySample) dutySample.classList.add('active');
+      if (typeof playSound === 'function') playSound('click');
+      if (typeof showToast === 'function') showToast('🎛️ STEP 1 (Tier 1 Perception): ESP32 wakes from RTC deep-sleep and samples DHT22 & MPU6050 (68mA)...', 'info');
+    } else if (step.action === 'uplink_t2') {
+      const t2Box = document.getElementById('t2-ble-packet');
+      if (t2Box) {
+        t2Box.textContent = `ADV_IND [MAC: C4:4F:33:18:A2:9B]\nRSSI: -62dBm | UUID: 0x181A (Env Sensing)\nPAYLOAD: [T:24.2C H:52.8% P:1013.4hPa]\nLINK SECURITY: AES-128 CCM Encrypted`;
+      }
+      if (typeof playSound === 'function') playSound('click');
+      if (typeof showToast === 'function') showToast('📶 STEP 2 (Tier 2 Proximity): Broadcasting BLE 5.0 ADV_IND frames over 2.4GHz RF to Edge Gateway...', 'info');
+    } else if (step.action === 'uplink_t3') {
+      const t3Box = document.getElementById('t3-mqtt-packet');
+      if (t3Box) {
+        t3Box.textContent = JSON.stringify({
+          topic: "iot/telemetry/sensor_node_01",
+          qos: 1,
+          payload: {
+            device_id: "sensor_node_01",
+            temp: 24.2,
+            humidity: 52.8,
+            pressure: 1013.4,
+            vibration_g: 0.041,
+            battery_mv: 3950,
+            timestamp: Math.floor(Date.now() / 1000)
+          }
+        }, null, 2);
+      }
+      if (typeof playSound === 'function') playSound('click');
+      if (typeof showToast === 'function') showToast('🖥️ STEP 3 (Tier 3 Edge Gateway): RPi 4 translates BLE GATT frame into standard JSON and buffers in SQLite...', 'info');
+    } else if (step.action === 'uplink_t4') {
+      const t4SqlBox = document.getElementById('t4-sql-rule-box');
+      if (t4SqlBox) {
+        t4SqlBox.innerHTML = `
+          <span style="color:#00e5ff">INGRESS:</span> AWS IoT Core (Port 8883 mTLS X.509)<br>
+          <span style="color:#10b981">RULE:</span> SELECT * FROM 'iot/telemetry/+'<br>
+          <span style="color:#f43f5e">ACTION:</span> DynamoDB PutItem [COMMITTED]<br>
+          <span style="color:#64748b">-- Telemetry authenticated &amp; persisted in Cloud</span>
+        `;
+      }
+      if (typeof playSound === 'function') playSound('click');
+      if (typeof showToast === 'function') showToast('☁️ STEP 4 (Tier 4 AWS IoT Core): Received via mTLS 8883. SQL rule commits telemetry to DynamoDB...', 'info');
+    } else if (step.action === 'uplink_t5') {
+      const phoneTemp = document.getElementById('t5-phone-temp');
+      const phoneHum = document.getElementById('t5-phone-hum');
+      const phonePres = document.getElementById('t5-phone-pres');
+      if (phoneTemp) phoneTemp.textContent = '24.2';
+      if (phoneHum) phoneHum.textContent = '52.8%';
+      if (phonePres) phonePres.textContent = '1013';
+      const t5Alert = document.getElementById('t5-phone-alert');
+      const t5AlertIcon = document.getElementById('t5-phone-alert-icon');
+      const t5AlertText = document.getElementById('t5-phone-alert-text');
+      if (t5Alert) {
+        t5Alert.className = 't5-phone-alert-banner nominal';
+        if (t5AlertIcon) t5AlertIcon.textContent = '📶';
+        if (t5AlertText) t5AlertText.innerHTML = '<strong>TELEMETRY SYNC:</strong> Ingested from AWS (E2E ~148ms)';
+      }
+      if (typeof playSound === 'function') playSound('ack');
+      if (typeof showToast === 'function') showToast('📱 STEP 5 (Tier 5 Mobile App): IoTSense App displays live telemetry stream (E2E ~148ms)! All 5 Tiers Synced.', 'success');
     } else if (step.action === 'done') {
       // Completed step
     }
@@ -665,7 +792,12 @@
       downlink_t4:        '☁️',
       downlink_t3:        '🖥️',
       downlink_t2:        '📶',
-      downlink_t1:        '🌀'
+      downlink_t1:        '🌀',
+      uplink_t1:          '🎛️',
+      uplink_t2:          '📶',
+      uplink_t3:          '🖥️',
+      uplink_t4:          '☁️',
+      uplink_t5:          '📱'
     };
     return icons[id] || '📡';
   }

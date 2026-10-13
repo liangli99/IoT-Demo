@@ -452,7 +452,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1200);
   };
 
-  // Wire buttons to runAppToFanDownlinkDemo
+  // Wire buttons to runAppToFanDownlinkDemo and runSensorToAppUplinkDemo
+  const sbBtnSensorAppDemo = document.getElementById('sb-btn-sensor-app-demo');
+  if (sbBtnSensorAppDemo) {
+    sbBtnSensorAppDemo.addEventListener('click', () => {
+      if (window.DemoMode && typeof window.DemoMode.startUplinkDemo === 'function') {
+        window.DemoMode.startUplinkDemo(sim);
+      }
+    });
+  }
+
   const sbBtnAppFanDemo = document.getElementById('sb-btn-app-fan-demo');
   if (sbBtnAppFanDemo) {
     sbBtnAppFanDemo.addEventListener('click', () => {
