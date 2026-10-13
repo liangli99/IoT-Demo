@@ -441,11 +441,215 @@
     }
 
     .arch-arrow {
-      font-size: 1.35rem;
-      color: var(--cyan);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 0 4px;
+      margin-bottom: 32px;
+      user-select: none;
+    }
+    .arch-arrow .arr-up {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--emerald, #10b981);
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .arch-arrow .arr-down {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--cyan, #00d4ff);
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .arch-arrow:hover .arr-up {
+      transform: translateX(2px);
+    }
+    .arch-arrow:hover .arr-down {
+      transform: translateX(-2px);
+    }
+
+    /* ── Two-Way Bidirectional Showcase Card ────────────────────────────── */
+    .two-way-showcase-card {
+      max-width: 980px;
+      margin: 10px auto 30px auto;
+      background: linear-gradient(135deg, rgba(14,22,38,0.92), rgba(20,32,54,0.85));
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: var(--radius-lg, 16px);
+      padding: 20px 24px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.45);
+      animation: fadeUp 0.7s 0.5s ease both;
+    }
+    [data-theme="light"] .two-way-showcase-card {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08) !important;
+    }
+    .two-way-header {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .two-way-title-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .two-way-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+    [data-theme="light"] .two-way-title {
+      color: #0f172a !important;
+    }
+    .two-way-badge {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
       font-weight: 700;
-      padding: 0 6px;
-      margin-bottom: 30px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(0,212,255,0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(0,212,255,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .two-way-desc {
+      font-size: 0.8rem;
+      color: var(--text-dim, #94a3b8);
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    [data-theme="light"] .two-way-desc {
+      color: #475569 !important;
+    }
+    .two-way-lanes {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .two-way-lane {
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .two-way-lane:hover {
+      transform: translateY(-2px);
+    }
+    .two-way-lane.uplink-lane {
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.22);
+    }
+    .two-way-lane.downlink-lane {
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.22);
+    }
+    [data-theme="light"] .two-way-lane.uplink-lane {
+      background: #f0fdf4 !important;
+      border-color: #86efac !important;
+    }
+    [data-theme="light"] .two-way-lane.downlink-lane {
+      background: #f0f9ff !important;
+      border-color: #7dd3fc !important;
+    }
+    .lane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .lane-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    .lane-direction-badge {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .uplink-lane .lane-direction-badge {
+      background: rgba(16,185,129,0.18);
+      color: var(--emerald, #10b981);
+    }
+    .downlink-lane .lane-direction-badge {
+      background: rgba(0,212,255,0.18);
+      color: var(--cyan, #00d4ff);
+    }
+    .lane-demo-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .lane-demo-btn.uplink {
+      background: rgba(16,185,129,0.15);
+      color: #10b981;
+      border: 1px solid rgba(16,185,129,0.4);
+    }
+    .lane-demo-btn.uplink:hover {
+      background: #10b981;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(16,185,129,0.4);
+    }
+    .lane-demo-btn.downlink {
+      background: rgba(0,212,255,0.15);
+      color: #00e5ff;
+      border: 1px solid rgba(0,212,255,0.4);
+    }
+    .lane-demo-btn.downlink:hover {
+      background: #00d4ff;
+      color: #000;
+      box-shadow: 0 0 12px rgba(0,212,255,0.4);
+    }
+    .lane-flow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-family: var(--font-mono);
+      background: rgba(0,0,0,0.22);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    [data-theme="light"] .lane-flow {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    .lane-step {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    [data-theme="light"] .lane-step {
+      color: #1e293b !important;
+    }
+    .lane-arr {
+      font-weight: 800;
+    }
+    .uplink-lane .lane-arr {
+      color: var(--emerald, #10b981);
+    }
+    .downlink-lane .lane-arr {
+      color: var(--cyan, #00d4ff);
     }
 
     .arch-icon.t1 { background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.4); }
@@ -1279,7 +1483,7 @@
       <div class="hdb-details">
         <div class="hdb-tagline">IoT Architecture &amp; System Engineering</div>
         <div class="hdb-lead">
-          <span class="hdb-role">Course and Demo Designer:</span>
+          <span class="hdb-role">Designer:</span>
           <span class="hdb-name">Prof. Liang Li</span>
         </div>
       </div>
@@ -1294,32 +1498,110 @@
       </a>
     </div>
 
-    <!-- Architecture strip -->
+    <!-- Architecture strip (Bidirectional 5 Tiers) -->
     <div class="arch-strip">
-      <a href="perception.html" class="arch-node" title="Open Perception Layer Console (Tier 1)">
+      <a href="perception.html" class="arch-node" title="Tier 1: Perception Layer — Sensors (Uplink) & Fan/Relay Actuator (Downlink)">
         <div class="arch-icon t1">🎛️</div>
-        <div class="arch-label">Tier 1<br>ESP32 Sensor ↗</div>
+        <div class="arch-label">Tier 1<br>Sensor &amp; Fan ↗</div>
       </a>
-      <div class="arch-arrow">→</div>
-      <a href="proximity.html" class="arch-node" title="Open Proximity Network (BLE 5.0) Architecture &amp; Deployment Console (Tier 2)">
+      <div class="arch-arrow" title="Two-Way Flow: Uplink Telemetry (→) & Downlink Actuation (←)">
+        <span class="arr-up">→</span>
+        <span class="arr-down">←</span>
+      </div>
+      <a href="proximity.html" class="arch-node" title="Tier 2: Proximity Network — BLE 5.0 Broadcast (Uplink) & ATT Write (Downlink)">
         <div class="arch-icon t2">📶</div>
-        <div class="arch-label">Tier 2<br>BLE 5.0 ↗</div>
+        <div class="arch-label">Tier 2<br>BLE 5.0 Link ↗</div>
       </a>
-      <div class="arch-arrow">→</div>
-      <a href="gateway.html" class="arch-node" title="Open Edge Gateway Operations (Tier 3)">
+      <div class="arch-arrow" title="Two-Way Flow: Uplink Telemetry (→) & Downlink Actuation (←)">
+        <span class="arr-up">→</span>
+        <span class="arr-down">←</span>
+      </div>
+      <a href="gateway.html" class="arch-node" title="Tier 3: Edge Gateway — JSON Deserialization (Uplink) & GATT Translation (Downlink)">
         <div class="arch-icon t3">🖥️</div>
         <div class="arch-label">Tier 3<br>Edge Gateway ↗</div>
       </a>
-      <div class="arch-arrow">→</div>
-      <a href="aws-cloud.html" class="arch-node" title="Open AWS IoT Cloud (Tier 4)">
+      <div class="arch-arrow" title="Two-Way Flow: Uplink Telemetry (→) & Downlink Actuation (←)">
+        <span class="arr-up">→</span>
+        <span class="arr-down">←</span>
+      </div>
+      <a href="aws-cloud.html" class="arch-node" title="Tier 4: AWS IoT Cloud — DynamoDB Persist (Uplink) & MQTT Routing (Downlink)">
         <div class="arch-icon t4">☁️</div>
         <div class="arch-label">Tier 4<br>AWS IoT Core ↗</div>
       </a>
-      <div class="arch-arrow">→</div>
-      <a href="app.html" class="arch-node" title="Open Mobile App Presentation Console (Tier 5)">
+      <div class="arch-arrow" title="Two-Way Flow: Uplink Telemetry (→) & Downlink Actuation (←)">
+        <span class="arr-up">→</span>
+        <span class="arr-down">←</span>
+      </div>
+      <a href="app.html" class="arch-node" title="Tier 5: Presentation Layer — Real-Time Telemetry (Uplink) & Mobile Fan Control (Downlink)">
         <div class="arch-icon t5">📱</div>
-        <div class="arch-label">Tier 5<br>Mobile App ↗</div>
+        <div class="arch-label">Tier 5<br>Cell App &amp; Ctrl ↗</div>
       </a>
+    </div>
+
+    <!-- Two-Way Closed-Loop Interactive Showcase Card -->
+    <div class="two-way-showcase-card">
+      <div class="two-way-header">
+        <div class="two-way-title-row">
+          <span style="font-size:1.25rem;">⇄</span>
+          <span class="two-way-title">Two-Way Closed-Loop Architecture</span>
+          <span class="two-way-badge">Bidirectional Real-Time</span>
+        </div>
+        <div class="two-way-desc">
+          Complete round-trip lifecycle: Edge nodes publish sensor telemetry up to the cloud and mobile app (Uplink), while the mobile app dispatches reverse downlink actuation commands to trigger hardware cooling fans and relays (Downlink).
+        </div>
+      </div>
+
+      <div class="two-way-lanes">
+        <!-- 1. Forward Uplink Lane -->
+        <div class="two-way-lane uplink-lane">
+          <div class="lane-header">
+            <div class="lane-title-group">
+              <span style="font-size:1.05rem;">📡</span>
+              <strong style="color:var(--text-main, #fff);">1. Forward Uplink Telemetry Flow</strong>
+              <span class="lane-direction-badge">Tier 1 ➔ Tier 5</span>
+            </div>
+            <a href="dashboard.html#demo-uplink" class="lane-demo-btn uplink" title="Launch 5-Step Forward Uplink Demo on Dashboard">
+              ▶️ Run Sensor ➔ Cell App Demo (5 Steps) ↗
+            </a>
+          </div>
+          <div class="lane-flow">
+            <span class="lane-step">🎛️ ESP32 Sensors (DHT22/MPU6050)</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">📶 BLE 5.0 ADV_IND Frames</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">🖥️ RPi 4 SQLite Buffer</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">☁️ AWS IoT Core &amp; DynamoDB</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">📱 Cell App Live Stream</span>
+          </div>
+        </div>
+
+        <!-- 2. Reverse Downlink Lane -->
+        <div class="two-way-lane downlink-lane">
+          <div class="lane-header">
+            <div class="lane-title-group">
+              <span style="font-size:1.05rem;">📱</span>
+              <strong style="color:var(--text-main, #fff);">2. Reverse Downlink Actuation Flow</strong>
+              <span class="lane-direction-badge">Tier 5 ➔ Tier 1</span>
+            </div>
+            <a href="dashboard.html#demo-downlink" class="lane-demo-btn downlink" title="Launch 5-Step Reverse Downlink Demo on Dashboard">
+              🌀 Run Cell App ➔ Fan Demo (5 Steps) ↗
+            </a>
+          </div>
+          <div class="lane-flow">
+            <span class="lane-step">📱 IoTSense Mobile App Tap</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">☁️ AWS IoT Core mTLS (Port 8883)</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">🖥️ RPi 4 GATT Translation</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">📶 BLE ATT Write (AES-128 CCM)</span>
+            <span class="lane-arr">➔</span>
+            <span class="lane-step">🌀 ESP32 Fan PWM (3,200 RPM)</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

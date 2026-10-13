@@ -358,6 +358,14 @@
       setTimeout(() => {
         window.DemoMode.start();
       }, 700);
+    } else if (window.location.hash === '#demo-uplink') {
+      setTimeout(() => {
+        window.DemoMode.startUplinkDemo();
+      }, 700);
+    } else if (window.location.hash === '#demo-downlink') {
+      setTimeout(() => {
+        window.DemoMode.startDownlinkDemo();
+      }, 700);
     }
   });
 
