@@ -17,9 +17,9 @@
     })();
   </script>
   <!-- Shared bus first so SimBus is available -->
-  <script src="js/sim-bus.js"></script>
+  <script src="js/sim-bus.js?v=2.4"></script>
   <!-- Unified system navigation bar -->
-  <script src="js/nav-bar.js?v=2.3"></script>
+  <script src="js/nav-bar.js?v=2.4"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1688,7 +1688,11 @@ void configure_ble_advertising(void) {
 
     // ── Live SimBus Integration for Sniffer ─────────────────────────
     if (window.SimBus) {
-      window.SimBus.subscribe('telemetry', (data) => {
+      const subscribeSim = (typeof window.SimBus.subscribe === 'function') 
+        ? window.SimBus.subscribe.bind(window.SimBus) 
+        : (typeof window.SimBus.on === 'function' ? window.SimBus.on.bind(window.SimBus) : null);
+      if (subscribeSim) {
+        subscribeSim('telemetry', (data) => {
         const log = document.getElementById('sniffer-log');
         if (!log) return;
         const now = new Date().toISOString().substring(11, 23);
@@ -1716,6 +1720,7 @@ void configure_ble_advertising(void) {
         }
       });
     }
+  }
 
     function injectTestBlePacket() {
       const log = document.getElementById('sniffer-log');

@@ -61,7 +61,7 @@
       });
     }
 
-    // ── Subscriber API ────────────────────────────────────────────────────
+    // ── Subscriber & Publisher API ──────────────────────────────────────
     /**
      * Register a callback for cross-tab events.
      * event: 'telemetry' | 'alert' | 'actuationAck' | 'snapshot'
@@ -69,6 +69,48 @@
     on(event, callback) {
       if (!this._listeners[event]) this._listeners[event] = [];
       this._listeners[event].push(callback);
+    }
+
+    /**
+     * Subscribe to specific events or all events (wildcard).
+     * Usage:
+     *   SimBus.subscribe('telemetry', (data) => ...)
+     *   SimBus.subscribe((msg) => ...) // msg = { type, event, data }
+     */
+    subscribe(eventOrCallback, callback) {
+      if (typeof eventOrCallback === 'function') {
+        if (!this._wildcards) this._wildcards = [];
+        this._wildcards.push(eventOrCallback);
+      } else if (typeof eventOrCallback === 'string' && typeof callback === 'function') {
+        this.on(eventOrCallback, callback);
+      }
+    }
+
+    /**
+     * Publish an event locally and across tabs.
+     * Supports:
+     *   SimBus.publish('alert', data)
+     *   SimBus.publish({ type: 'actuationAck', data: ... })
+     */
+    publish(eventOrMsg, data) {
+      let evt = 'message';
+      let payload = data;
+      if (typeof eventOrMsg === 'string') {
+        evt = eventOrMsg;
+        payload = data;
+      } else if (eventOrMsg && typeof eventOrMsg === 'object') {
+        evt = eventOrMsg.type || eventOrMsg.event || 'message';
+        payload = (eventOrMsg.data !== undefined) ? eventOrMsg.data : eventOrMsg;
+      }
+      this._broadcast(evt, payload);
+      this._emit(evt, payload);
+    }
+
+    /**
+     * Alias for publish.
+     */
+    emit(event, data) {
+      this.publish(event, data);
     }
 
     /**
@@ -115,6 +157,12 @@
       (this._listeners[event] || []).forEach(cb => {
         try { cb(data); } catch (_) {}
       });
+      if (this._wildcards && this._wildcards.length) {
+        const wildcardMsg = { type: event, event: event, data: data };
+        this._wildcards.forEach(cb => {
+          try { cb(wildcardMsg); } catch (_) {}
+        });
+      }
     }
 
     _saveSnapshot(sim) {
