@@ -1471,9 +1471,6 @@
           <span id="nb-theme-icon">${isLightInitial ? '🌙' : '☀️'}</span>
           <span class="nb-theme-lbl" id="nb-theme-lbl">${isLightInitial ? 'Dark Theme' : 'Light Theme'}</span>
         </button>
-        <button class="nb-demo-btn" id="nb-demo-btn" title="Run guided demo sequence">
-          ▶ <span class="nb-demo-lbl">Run Demo</span>
-        </button>
       </div>
     `;
 
