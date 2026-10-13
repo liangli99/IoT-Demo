@@ -1459,7 +1459,7 @@
             <span class="nb-brand-name">IoT Demo System</span>
           </div>
           <div class="nb-brand-sub">
-            <span class="nb-prof-badge">Course &amp; Demo Designer: <strong>Prof. Liang Li</strong></span>
+            <span class="nb-prof-badge">Designer: <strong>Prof. Liang Li</strong></span>
           </div>
         </div>
       </a>

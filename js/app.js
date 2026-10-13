@@ -242,6 +242,231 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Tier 5 Cell Phone Overheat Alert Trigger
+  const t5BtnPhoneTrigger = document.getElementById('t5-btn-phone-trigger');
+  if (t5BtnPhoneTrigger) {
+    t5BtnPhoneTrigger.addEventListener('click', () => {
+      playSound('click');
+      const node = sim.nodes[activeNodeId] || sim.nodes.sensor_node_01;
+      if (node.anomalyActive) {
+        sim.clearAnomaly(node.id);
+        t5BtnPhoneTrigger.innerHTML = '⚡ Test Overheat Alert (&gt;30°C)';
+        t5BtnPhoneTrigger.style.color = 'var(--rose)';
+        showToast(`Cleared thermal anomaly on ${node.id}. Restoring baseline.`, 'info');
+      } else {
+        sim.triggerTempAnomaly(node.id);
+        t5BtnPhoneTrigger.innerHTML = '🔄 Clear Alert Baseline';
+        t5BtnPhoneTrigger.style.color = 'var(--emerald)';
+        showToast(`🚨 High temperature injected on ${node.id} (>30°C). Alert pushed to phone!`, 'alert');
+      }
+    });
+  }
+
+  // ── Step-by-Step Downlink Actuation Demo: Cell Phone App ➔ AWS ➔ Edge ➔ BLE ➔ ESP32 Fan ──
+  window.runAppToFanDownlinkDemo = function() {
+    if (window.DemoMode && typeof window.DemoMode.startDownlinkDemo === 'function') {
+      window.DemoMode.startDownlinkDemo(sim);
+      return;
+    }
+
+    playSound('click');
+    const node = sim.nodes[activeNodeId] || sim.nodes.sensor_node_01;
+
+    // Switch to tab 1 (5-Tier Architecture) if not active
+    const tabBtn = document.querySelector('.tab-btn[data-tab="pipeline"]');
+    if (tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+
+    // Reset previous highlights
+    document.querySelectorAll('.tier-column').forEach(c => {
+      c.classList.remove('active-stage');
+      c.style.boxShadow = '';
+    });
+
+    const col5 = document.querySelector('.tier-column:nth-child(5)');
+    const col4 = document.querySelector('.tier-column:nth-child(4)');
+    const col3 = document.querySelector('.tier-column:nth-child(3)');
+    const col2 = document.querySelector('.tier-column:nth-child(2)');
+    const col1 = document.querySelector('.tier-column:nth-child(1)');
+
+    const phoneBtn = document.getElementById('t5-btn-phone-fan');
+    const benchBtn = document.getElementById('sb-btn-app-fan-demo');
+    if (phoneBtn) {
+      phoneBtn.innerHTML = '⏳ 1. App Publishing...';
+      phoneBtn.style.borderColor = '#00e5ff';
+    }
+    if (benchBtn) {
+      benchBtn.innerHTML = '⏳ Downlink Flow Running...';
+    }
+
+    // ── STEP 1: Tier 5 (Cell App / Presentation Layer) ────────────
+    if (col5) {
+      col5.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      col5.style.boxShadow = '0 0 0 3px #00d4ff, 0 0 32px rgba(0,212,255,0.6)';
+      col5.classList.add('active-stage');
+    }
+
+    const t5Alert = document.getElementById('t5-phone-alert');
+    const t5AlertIcon = document.getElementById('t5-phone-alert-icon');
+    const t5AlertText = document.getElementById('t5-phone-alert-text');
+    if (t5Alert) {
+      t5Alert.className = 't5-phone-alert-banner alert-active';
+      if (t5AlertIcon) t5AlertIcon.textContent = '📲';
+      if (t5AlertText) t5AlertText.innerHTML = '<strong>DOWNLINK TX:</strong> Fan Actuation (PWM 100%)';
+    }
+
+    showToast('📱 STEP 1 (Tier 5 Mobile App): User pressed Fan Actuation on IoTSense App. Publishing MQTT command via AWS IoT Core...', 'info');
+
+    // ── STEP 2: Tier 4 (AWS IoT Cloud) after 1.2s ──────────────
+    setTimeout(() => {
+      if (col5) { col5.style.boxShadow = ''; col5.classList.remove('active-stage'); }
+      if (col4) {
+        col4.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        col4.style.boxShadow = '0 0 0 3px #ff9900, 0 0 32px rgba(255,153,0,0.6)';
+        col4.classList.add('active-stage');
+      }
+      playSound('click');
+      if (phoneBtn) phoneBtn.innerHTML = '⏳ 2. AWS Broker Routing...';
+      showToast('☁️ STEP 2 (Tier 4 AWS IoT Core): MQTT Broker received command on topic "iot/actuation/sensor_node_01" (mTLS 8883)...', 'info');
+
+      // ── STEP 3: Tier 3 (Edge Gateway) after 2.4s ────────────
+      setTimeout(() => {
+        if (col4) { col4.style.boxShadow = ''; col4.classList.remove('active-stage'); }
+        if (col3) {
+          col3.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          col3.style.boxShadow = '0 0 0 3px #10b981, 0 0 32px rgba(16,185,129,0.6)';
+          col3.classList.add('active-stage');
+        }
+        playSound('click');
+        if (phoneBtn) phoneBtn.innerHTML = '⏳ 3. Gateway Translating...';
+        showToast('📟 STEP 3 (Tier 3 Edge Gateway): RPi 4 translates MQTT JSON to BLE GATT Char Write (UUID 0x2A56)...', 'info');
+
+        const t3Box = document.getElementById('t3-mqtt-packet');
+        if (t3Box) {
+          t3Box.textContent = JSON.stringify({
+            downlink_action: "TRANSLATE_TO_BLE_GATT",
+            mqtt_topic: `iot/actuation/${node.id}`,
+            target_mac: "C4:4F:33:18:A2:9B",
+            gatt_handle: "0x002A",
+            gatt_uuid: "0x2A56",
+            write_value_hex: "0x64 (PWM 100%)",
+            timestamp: Math.floor(Date.now() / 1000)
+          }, null, 2);
+        }
+
+        // ── STEP 4: Tier 2 (Proximity Network - BLE 5.0) after 3.6s ───────
+        setTimeout(() => {
+          if (col3) { col3.style.boxShadow = ''; col3.classList.remove('active-stage'); }
+          if (col2) {
+            col2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            col2.style.boxShadow = '0 0 0 3px #a855f7, 0 0 32px rgba(168,85,247,0.6)';
+            col2.classList.add('active-stage');
+          }
+          playSound('click');
+          if (phoneBtn) phoneBtn.innerHTML = '⏳ 4. BLE 5.0 ATT Write...';
+          showToast('📶 STEP 4 (Tier 2 Proximity BLE 5.0): Transmitting AES-128 CCM encrypted ATT Write frame over 2.4GHz RF to ESP32...', 'info');
+
+          const t2Box = document.getElementById('t2-ble-packet');
+          if (t2Box) {
+            t2Box.textContent = `ATT_WRITE_REQ [MAC: C4:4F:33:18:A2:9B]\nUUID: 0x2A56 (Fan PWM Actuator)\nVALUE: 0x64 (100% Duty Cycle)\nENCRYPTION: AES-128 CCM Over-the-Air`;
+          }
+
+          // ── STEP 5: Tier 1 (Perception Layer - ESP32 Hardware Fan) after 4.8s ──
+          setTimeout(() => {
+            if (col2) { col2.style.boxShadow = ''; col2.classList.remove('active-stage'); }
+            if (col1) {
+              col1.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              col1.style.boxShadow = '0 0 0 3px #00e5ff, 0 0 35px rgba(0,229,255,0.7)';
+              col1.classList.add('active-stage');
+            }
+            playSound('ack');
+            showToast('🎛️ STEP 5 (Tier 1 Perception): ESP32 GPIO 18 Fan SPINS UP at 100% PWM! E2E RTT ~142ms confirmed.', 'success');
+
+            // Dispatch command in simulation
+            sim.dispatchActuatorCommand(node.id, 'fan', true);
+            sim.dispatchActuatorCommand(node.id, 'fan_pwm', 100);
+
+            // Actuate Fan UI on Tier 1
+            const fanIcon = document.getElementById('t1-fan-icon');
+            const fanPwm = document.getElementById('t1-fan-pwm');
+            const fanRpm = document.getElementById('t1-fan-rpm');
+            const fanBadge = document.getElementById('t1-fan-status-badge');
+            const powerDraw = document.getElementById('t1-power-draw');
+
+            if (fanIcon) fanIcon.classList.add('fan-spinning');
+            if (fanPwm) {
+              fanPwm.textContent = 'PWM: 100%';
+              fanPwm.style.color = 'var(--cyan)';
+            }
+            if (fanRpm) {
+              fanRpm.textContent = '3,200 RPM';
+              fanRpm.style.color = 'var(--emerald)';
+            }
+            if (fanBadge) {
+              fanBadge.textContent = 'ACTIVE (100%)';
+              fanBadge.style.background = 'rgba(0,229,255,0.2)';
+              fanBadge.style.color = 'var(--cyan)';
+            }
+            if (powerDraw) {
+              powerDraw.textContent = '128.5 mA';
+              powerDraw.style.color = 'var(--amber)';
+            }
+
+            // Update Phone App Status
+            if (phoneBtn) {
+              phoneBtn.innerHTML = '✅ FAN ACTIVE (100% PWM)';
+              phoneBtn.style.borderColor = 'var(--emerald)';
+              phoneBtn.style.color = 'var(--emerald)';
+            }
+            if (benchBtn) {
+              benchBtn.innerHTML = '📱 Cell App ➔ Fan Actuation Flow';
+            }
+            const t5Ac = document.getElementById('t5-phone-ac');
+            if (t5Ac) {
+              t5Ac.textContent = 'COOLING ACTIVE';
+              t5Ac.className = 't5-ac-badge active';
+            }
+            if (t5Alert) {
+              t5Alert.className = 't5-phone-alert-banner nominal';
+              if (t5AlertIcon) t5AlertIcon.textContent = '✅';
+              if (t5AlertText) t5AlertText.innerHTML = '<strong>ACK RECEIVED:</strong> ESP32 Fan Active (RTT ~142ms)';
+            }
+
+            // Temperature cooling effect
+            let coolCount = 0;
+            const coolInterval = setInterval(() => {
+              if (coolCount++ < 12 && node.temp > 21.0) {
+                node.temp = +(node.temp - 0.35).toFixed(1);
+              } else {
+                clearInterval(coolInterval);
+              }
+            }, 600);
+
+            // Clean up highlight after 3.5s
+            setTimeout(() => {
+              if (col1) { col1.style.boxShadow = ''; col1.classList.remove('active-stage'); }
+            }, 3500);
+
+          }, 1200);
+        }, 1200);
+      }, 1200);
+    }, 1200);
+  };
+
+  // Wire buttons to runAppToFanDownlinkDemo
+  const sbBtnAppFanDemo = document.getElementById('sb-btn-app-fan-demo');
+  if (sbBtnAppFanDemo) {
+    sbBtnAppFanDemo.addEventListener('click', () => {
+      window.runAppToFanDownlinkDemo();
+    });
+  }
+
+  const t5BtnPhoneFan = document.getElementById('t5-btn-phone-fan');
+  if (t5BtnPhoneFan) {
+    t5BtnPhoneFan.addEventListener('click', () => {
+      window.runAppToFanDownlinkDemo();
+    });
+  }
+
   // Latency Benchmarking Probe
   const btnLatencyProbe = document.getElementById('btn-run-latency-probe');
   const latencyProbeLog = document.getElementById('latency-probe-log');
@@ -450,6 +675,65 @@ document.addEventListener('DOMContentLoaded', () => {
             timestamp: record.timestamp
           }
         }, null, 2);
+      }
+
+      // Tier 5: Cell Phone App Demo Live Telemetry & Alert
+      const t5Temp = document.getElementById('t5-phone-temp');
+      const t5Card = document.getElementById('t5-phone-temp-card');
+      const t5Alert = document.getElementById('t5-phone-alert');
+      const t5AlertIcon = document.getElementById('t5-phone-alert-icon');
+      const t5AlertText = document.getElementById('t5-phone-alert-text');
+      const t5Dot = document.getElementById('t5-pnav-dot');
+      const t5Ac = document.getElementById('t5-phone-ac');
+      const t5Hum = document.getElementById('t5-phone-hum');
+      const t5Pres = document.getElementById('t5-phone-pres');
+      const t5Vib = document.getElementById('t5-phone-vib');
+      const t5Batt = document.getElementById('t5-phone-batt');
+      const t5Clock = document.getElementById('t5-phone-clock');
+      const t5NodeTag = document.getElementById('t5-phone-node-tag');
+
+      if (t5Temp) {
+        t5Temp.innerHTML = `${record.temp.toFixed(1)}<span class="unit">°C</span>`;
+      }
+
+      const isOverheat = record.temp > 30.0;
+
+      if (t5Temp) t5Temp.classList.toggle('hot', isOverheat);
+      if (t5Card) t5Card.classList.toggle('temp-overheat', isOverheat);
+
+      if (t5Alert) {
+        if (isOverheat) {
+          t5Alert.className = 't5-phone-alert-banner alert-active';
+          if (t5AlertIcon) t5AlertIcon.textContent = '🚨';
+          if (t5AlertText) t5AlertText.innerHTML = `<strong>ALERT:</strong> Overheat (${record.temp.toFixed(1)}°C &gt; 30°C)!`;
+          if (t5Dot) t5Dot.classList.add('show');
+        } else {
+          t5Alert.className = 't5-phone-alert-banner nominal';
+          if (t5AlertIcon) t5AlertIcon.textContent = '🟢';
+          if (t5AlertText) t5AlertText.textContent = 'Normal · System SLA Optimal';
+          if (t5Dot) t5Dot.classList.remove('show');
+        }
+      }
+
+      if (t5Ac) {
+        if (record.temp >= 26.0 || isOverheat) {
+          t5Ac.textContent = 'COOLING ACTIVE';
+          t5Ac.className = 't5-ac-badge active';
+        } else {
+          t5Ac.textContent = 'STANDBY';
+          t5Ac.className = 't5-ac-badge standby';
+        }
+      }
+
+      if (t5Hum) t5Hum.textContent = `${record.humidity.toFixed(1)}%`;
+      if (t5Pres) t5Pres.textContent = `${Math.floor(record.pressure)}`;
+      if (t5Vib) t5Vib.textContent = `${(record.vibration || 0).toFixed(3)}g`;
+      if (t5Batt) t5Batt.textContent = `${Math.floor(record.battery || 94)}%`;
+      if (t5NodeTag) t5NodeTag.textContent = `${record.device_id} · ${node.name || 'HVAC Lab'}`;
+
+      if (t5Clock) {
+        const d = new Date();
+        t5Clock.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       }
     }
   }

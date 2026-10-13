@@ -131,6 +131,9 @@
           <button id="sb-btn-reset-baseline" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700;" title="Clear anomalies, reset normal telemetry, and restore initial states">
             🔄 Reset Normal Baseline
           </button>
+          <button id="sb-btn-app-fan-demo" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(168,85,247,0.25), rgba(0,212,255,0.25)); border-color:var(--cyan); color:#fff;" title="Demonstrate step-by-step reverse downlink: Press cell app button -> AWS -> Gateway -> BLE 5.0 -> ESP32 Fan">
+            📱 Cell App ➔ Fan Actuation Flow
+          </button>
           <button id="sb-btn-guided-demo" class="btn" style="padding:0.38rem 0.75rem; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(16,185,129,0.2)); border-color:var(--emerald); color:#fff;" title="Start 5-step automated guided demo tour">
             ▶️ Run Guided Demo
           </button>
@@ -212,6 +215,27 @@
             <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono); margin-top:4px;">
               <span>PRES: <strong id="t1-pressure" style="color:var(--purple);">1013.4 hPa</strong></span>
               <span>VIB: <strong style="color:var(--emerald);">0.041 g</strong></span>
+            </div>
+          </div>
+
+          <!-- Hardware Actuator on Perception Layer -->
+          <div class="tier-status-box" id="t1-fan-panel" style="margin-top:0.75rem; padding:0.65rem 0.75rem; border-radius:var(--radius-sm); border:1px solid rgba(0,229,255,0.22); background:rgba(0,0,0,0.25);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+              <span style="font-size:0.68rem; color:var(--text-dim); font-family:var(--font-mono); text-transform:uppercase;">Hardware Actuator (GPIO 18)</span>
+              <span id="t1-fan-status-badge" class="badge" style="font-size:0.6rem; padding:1px 6px; background:rgba(100,116,139,0.2); color:#94a3b8; border-radius:999px;">STANDBY</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="t1-fan-icon" style="font-size:1.35rem; display:inline-block; transition:transform 0.3s;">🌀</span>
+                <div>
+                  <strong style="font-size:0.76rem; color:#fff; display:block;">Cooling Fan</strong>
+                  <span style="font-size:0.62rem; color:var(--text-dim); font-family:var(--font-mono);">PWM Motor 5V</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div id="t1-fan-pwm" style="font-family:var(--font-mono); font-weight:800; color:var(--text-dim); font-size:0.85rem;">PWM: 0%</div>
+                <div id="t1-fan-rpm" style="font-size:0.62rem; color:var(--text-dim); font-family:var(--font-mono);">0 RPM</div>
+              </div>
             </div>
           </div>
 
@@ -376,7 +400,7 @@
           <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
             SQL RULE EVALUATION:
           </div>
-          <div class="packet-box" style="color:#e2e8f0; border-color:rgba(168,85,247,0.25);">
+          <div class="packet-box" id="t4-sql-rule-box" style="color:#e2e8f0; border-color:rgba(168,85,247,0.25);">
             <span style="color:#f43f5e">SELECT</span> device_id, temp, humidity<br>
             <span style="color:#f43f5e">FROM</span> <span style="color:#10b981">'iot/telemetry/+'</span><br>
             <span style="color:#f43f5e">WHERE</span> temp &gt; 0<br>
@@ -431,21 +455,105 @@
             </div>
           </div>
 
-          <div style="font-size:0.72rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:4px;">
-            QUICK ACTUATOR STATUS:
-          </div>
-          <div class="tier-status-box" style="padding:0.75rem; border-radius:var(--radius-sm); font-size:0.8rem;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-              <span>Cooling Fan:</span>
-              <strong style="color:var(--cyan);">PWM 60% (ACTIVE)</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-              <span>Relay Switch:</span>
-              <strong style="color:var(--emerald);">ENGAGED</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between;">
-              <span>Hardware LED:</span>
-              <strong style="color:var(--amber);">SOLID BLUE</strong>
+          <!-- Tier 5 Cell Phone App Demo -->
+          <div id="tier5-phone-app" class="t5-phone-container">
+            <div class="t5-phone-frame" id="t5-phone-mockup">
+              <!-- Notch -->
+              <div class="t5-phone-notch">
+                <div class="t5-notch-pill">
+                  <span class="t5-notch-cam"></span>
+                  <span class="t5-notch-spk"></span>
+                </div>
+              </div>
+
+              <!-- Status Bar -->
+              <div class="t5-phone-statusbar">
+                <span id="t5-phone-clock">12:45</span>
+                <span>📶 5G &nbsp;🔋 <span id="t5-phone-batt">94%</span></span>
+              </div>
+
+              <!-- Screen -->
+              <div class="t5-phone-screen">
+                <!-- App Header -->
+                <div class="t5-phone-appbar">
+                  <div class="t5-app-title">
+                    <span>📱</span>
+                    <span>IoT Sense App</span>
+                  </div>
+                  <span class="t5-live-pill">● LIVE</span>
+                </div>
+
+                <!-- Alert Notification Banner (Switches to red alert on temp > 30°C) -->
+                <div id="t5-phone-alert" class="t5-phone-alert-banner nominal">
+                  <span id="t5-phone-alert-icon">🟢</span>
+                  <span id="t5-phone-alert-text">Normal · System SLA Optimal</span>
+                </div>
+
+                <!-- Temperature Readout Card -->
+                <div class="t5-phone-temp-card" id="t5-phone-temp-card">
+                  <div class="t5-temp-label">Ambient Temperature</div>
+                  <div class="t5-phone-temp-val" id="t5-phone-temp">
+                    24.2<span class="unit">°C</span>
+                  </div>
+                  <div class="t5-phone-temp-sub" id="t5-phone-node-tag">sensor_node_01 · HVAC Lab</div>
+                </div>
+
+                <!-- 3 Telemetry Metrics Strip -->
+                <div class="t5-phone-metrics-strip">
+                  <div class="t5-metric-chip">
+                    <div class="t5-chip-val" id="t5-phone-hum" style="color:var(--cyan)">52.8%</div>
+                    <div class="t5-chip-lbl">Humidity</div>
+                  </div>
+                  <div class="t5-metric-chip">
+                    <div class="t5-chip-val" id="t5-phone-pres" style="color:var(--purple)">1013</div>
+                    <div class="t5-chip-lbl">Pressure</div>
+                  </div>
+                  <div class="t5-metric-chip">
+                    <div class="t5-chip-val" id="t5-phone-vib" style="color:var(--amber)">0.04g</div>
+                    <div class="t5-chip-lbl">Vibration</div>
+                  </div>
+                </div>
+
+                <!-- AC Auto-Control Status Row -->
+                <div class="t5-phone-ac-row">
+                  <div class="t5-ac-text">
+                    <strong style="color:var(--text-main);display:block;font-size:0.72rem;">Cooling Compressor</strong>
+                    <span style="font-size:0.6rem;color:var(--text-dim);font-family:var(--font-mono);">SSR Relay • GPIO 23</span>
+                  </div>
+                  <span id="t5-phone-ac" class="t5-ac-badge standby">STANDBY</span>
+                </div>
+
+                <!-- Interactive Overheat Alert Trigger button right on phone -->
+                <button id="t5-btn-phone-trigger" class="btn" style="width:100%; padding:0.32rem 0.6rem; font-size:0.68rem; font-weight:700; border-color:rgba(244,63,94,0.4); color:var(--rose); background:rgba(244,63,94,0.08); justify-content:center;" title="Simulate overheat alert directly on cell phone">
+                  ⚡ Test Overheat Alert (&gt;30°C)
+                </button>
+
+                <!-- Direct Downlink Fan Actuation Button on Phone -->
+                <button id="t5-btn-phone-fan" class="btn" style="width:100%; padding:0.36rem 0.6rem; font-size:0.7rem; font-weight:800; border-color:var(--cyan); color:#fff; background:linear-gradient(135deg, rgba(0,212,255,0.25), rgba(99,102,241,0.25)); justify-content:center; box-shadow:0 0 10px rgba(0,212,255,0.2); margin-top:2px;" title="Trigger step-by-step reverse downlink fan actuation from mobile app">
+                  🌀 Actuate ESP32 Fan (Downlink)
+                </button>
+              </div>
+
+              <!-- Micro Bottom Nav -->
+              <div class="t5-phone-nav">
+                <div class="t5-pnav-item active">
+                  <span>🏠</span>
+                  <span>Home</span>
+                </div>
+                <div class="t5-pnav-item">
+                  <span>❄️</span>
+                  <span>Control</span>
+                </div>
+                <div class="t5-pnav-item" id="t5-nav-alert-btn">
+                  <span>🚨</span>
+                  <span>Alerts</span>
+                  <span class="t5-pnav-dot" id="t5-pnav-dot"></span>
+                </div>
+                <div class="t5-pnav-item">
+                  <span>⚙️</span>
+                  <span>Settings</span>
+                </div>
+              </div>
             </div>
           </div>
 

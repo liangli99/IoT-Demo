@@ -1258,3 +1258,423 @@ input:checked + .slider:before {
   font-size: 2rem;
   cursor: pointer;
 }
+
+/* ========================================================
+   TIER 5: COMPACT CELL PHONE APP DEMO (Operations Dashboard)
+   ======================================================== */
+.t5-phone-container {
+  margin: 0.85rem 0 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.t5-phone-frame {
+  width: 100%;
+  background: #0a0f1d;
+  border: 2px solid rgba(0, 229, 255, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 14px 35px -8px rgba(0, 0, 0, 0.7), 0 0 18px rgba(0, 229, 255, 0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.t5-phone-frame:hover {
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 16px 42px -6px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 229, 255, 0.22);
+}
+
+.t5-phone-notch {
+  height: 18px;
+  background: #060913;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.t5-notch-pill {
+  width: 58px;
+  height: 8px;
+  background: #000;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.t5-notch-cam {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #1e293b;
+}
+
+.t5-notch-spk {
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: #334155;
+}
+
+.t5-phone-statusbar {
+  padding: 3px 10px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.t5-phone-screen {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: linear-gradient(180deg, rgba(14, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%);
+}
+
+.t5-phone-appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.t5-app-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.t5-live-pill {
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--emerald);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  letter-spacing: 0.04em;
+}
+
+/* Alert Notification Banner */
+.t5-phone-alert-banner {
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+  transition: all 0.3s ease;
+}
+
+.t5-phone-alert-banner.nominal {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.t5-phone-alert-banner.alert-active {
+  background: rgba(244, 63, 94, 0.22);
+  border: 1.5px solid #f43f5e;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.4);
+  animation: t5AlertPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes t5AlertPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.25);
+    border-color: #f43f5e;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.65);
+    border-color: #fb7185;
+    background: rgba(244, 63, 94, 0.32);
+  }
+}
+
+/* Temperature Card */
+.t5-phone-temp-card {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.t5-phone-temp-card.temp-overheat {
+  border-color: rgba(244, 63, 94, 0.6);
+  background: rgba(244, 63, 94, 0.1);
+}
+
+.t5-temp-label {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.t5-phone-temp-val {
+  font-size: 1.65rem;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  color: var(--cyan);
+  line-height: 1.1;
+  margin: 3px 0 1px;
+  transition: color 0.3s ease;
+}
+
+.t5-phone-temp-val .unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.t5-phone-temp-val.hot {
+  color: #f43f5e;
+  text-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
+}
+
+.t5-phone-temp-sub {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* 3 Telemetry chips */
+.t5-phone-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.t5-metric-chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.t5-chip-val {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+.t5-chip-lbl {
+  font-size: 0.56rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* AC Actuation Panel in Phone */
+.t5-phone-ac-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+.t5-ac-text {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.t5-ac-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: all 0.25s ease;
+}
+
+.t5-ac-badge.standby {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.t5-ac-badge.active {
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  animation: t5PulseAc 1.5s infinite alternate;
+}
+
+@keyframes t5PulseAc {
+  from { opacity: 0.85; }
+  to { opacity: 1; box-shadow: 0 0 14px rgba(0, 212, 255, 0.6); }
+}
+
+/* Micro Bottom Nav in Phone */
+.t5-phone-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 6px 0 4px;
+  background: #060a14;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.t5-pnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  position: relative;
+}
+
+.t5-pnav-item.active {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.t5-pnav-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f43f5e;
+  display: none;
+}
+
+.t5-pnav-dot.show {
+  display: block;
+}
+
+/* Light Theme Overrides for Tier 5 Phone */
+[data-theme="light"] .t5-phone-frame {
+  background: #ffffff !important;
+  border: 2px solid #0284c7 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 0 16px rgba(2, 132, 199, 0.18) !important;
+}
+
+[data-theme="light"] .t5-phone-notch {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .t5-notch-pill {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .t5-phone-statusbar {
+  color: #475569 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .t5-phone-screen {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+}
+
+[data-theme="light"] .t5-app-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .t5-phone-temp-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .t5-phone-temp-card.temp-overheat {
+  background: #fff1f2 !important;
+  border-color: #f43f5e !important;
+}
+
+[data-theme="light"] .t5-phone-temp-val {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .t5-phone-temp-val.hot {
+  color: #e11d48 !important;
+}
+
+[data-theme="light"] .t5-temp-label,
+[data-theme="light"] .t5-phone-temp-sub {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .t5-metric-chip {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .t5-chip-val {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .t5-chip-lbl {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .t5-phone-ac-row {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .t5-ac-text {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .t5-phone-nav {
+  background: #f8fafc !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .t5-pnav-item {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .t5-pnav-item.active {
+  color: #0284c7 !important;
+}
+
+/* ── Hardware Actuator Fan Animation ── */
+@keyframes fanSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.fan-spinning {
+  animation: fanSpin 0.35s linear infinite !important;
+  display: inline-block !important;
+  color: #00e5ff !important;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
+}
+
+[data-theme="light"] #t1-fan-panel {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+
