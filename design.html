@@ -781,7 +781,7 @@
                 <td>Hop 5: Presentation</td>
                 <td>Tier 4 (AWS IoT Core) &rarr; Tier 5 (Mobile Client)</td>
                 <td>Paho MQTT over WSS (Port 443) with SigV4</td>
-                <td>18–28 ms</td>
+                <td>18–24 ms</td>
                 <td>Jetpack Compose hardware acceleration, StateFlow reactivity.</td>
               </tr>
             </tbody>
@@ -832,7 +832,7 @@
             I_avg = ((I_active * t_active) + (I_sleep * t_sleep)) / (t_active + t_sleep)
           </div>
           <p style="margin-bottom:0;">
-            Where <em>I</em><sub>active</sub> ≈ 80 mA for <em>t</em><sub>active</sub> ≈ 120 ms (wake, sample I²C, broadcast BLE frame), and <em>I</em><sub>sleep</sub> ≈ 10 µA during deep sleep.
+            Using the measured four-phase profile on the Perception Layer page: wake 45 mA × 15 ms, I²C sampling 68.5 mA × 120 ms, and BLE broadcast 84 mA × 250 ms (a 385 ms active window carrying 29.9 mA·s per cycle, about 77.6 mA on average), with <em>I</em><sub>sleep</sub> ≈ 10 µA during deep sleep. Battery life = 1200 mAh × 0.85 (15% derating) ÷ <em>I</em><sub>avg</sub>, the same model as the Perception Layer calculator.
           </p>
         </div>
 
@@ -849,30 +849,30 @@
           <tbody>
             <tr>
               <td>5 seconds</td>
-              <td>2.34%</td>
-              <td>1.88 mA</td>
-              <td><strong>26.5 Days</strong> (~3.8 Weeks)</td>
+              <td>7.15%</td>
+              <td>5.56 mA</td>
+              <td><strong>7.6 Days</strong> (~1.1 Weeks)</td>
               <td>Rapid laboratory testing and dynamic motion tracking.</td>
             </tr>
             <tr style="background:rgba(16,185,129,0.06);">
               <td><strong>10 seconds (Standard)</strong></td>
-              <td><strong>1.18%</strong></td>
-              <td><strong>0.95 mA</strong></td>
-              <td><strong>52.6 Days</strong> (~7.5 Weeks)</td>
+              <td><strong>3.71%</strong></td>
+              <td><strong>2.89 mA</strong></td>
+              <td><strong>14.7 Days</strong> (~2.1 Weeks)</td>
               <td><strong>Standard IoT demo baseline (balanced latency &amp; power).</strong></td>
             </tr>
             <tr>
               <td>30 seconds</td>
-              <td>0.40%</td>
-              <td>0.33 mA</td>
-              <td><strong>151.5 Days</strong> (~5.0 Months)</td>
+              <td>1.27%</td>
+              <td>0.99 mA</td>
+              <td><strong>42.8 Days</strong> (~1.4 Months)</td>
               <td>Eco HVAC monitoring and cold storage facilities.</td>
             </tr>
             <tr>
               <td>60 seconds</td>
-              <td>0.20%</td>
-              <td>0.17 mA</td>
-              <td><strong>294.1 Days</strong> (~9.8 Months)</td>
+              <td>0.64%</td>
+              <td>0.51 mA</td>
+              <td><strong>84.2 Days</strong> (~2.8 Months)</td>
               <td>Ultra-low-power environmental data logging.</td>
             </tr>
           </tbody>

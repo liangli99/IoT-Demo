@@ -1307,7 +1307,7 @@
         <div class="metrics-row">
           <div class="metric-card" style="--accent:var(--aws-orange)">
             <div class="mc-label">Messages Ingested</div>
-            <div class="mc-value" id="ov-total-msgs">1,248</div>
+            <div class="mc-value" id="ov-total-msgs">0</div>
             <div class="mc-sub">iot/telemetry/+</div>
             <div class="mc-trend up" id="ov-msg-trend">↑ Live</div>
             <span class="mc-icon-bg">📨</span>
@@ -1321,7 +1321,7 @@
           </div>
           <div class="metric-card" style="--accent:var(--purple)">
             <div class="mc-label">DynamoDB Records</div>
-            <div class="mc-value" id="ov-ddb-count">50</div>
+            <div class="mc-value" id="ov-ddb-count">0</div>
             <div class="mc-sub">SensorTelemetry table</div>
             <span class="mc-icon-bg">🗄️</span>
           </div>
@@ -1656,15 +1656,15 @@
             <span class="mc-icon-bg">📄</span>
           </div>
           <div class="metric-card" style="--accent:var(--cyan)">
-            <div class="mc-label">Read Capacity</div>
-            <div class="mc-value">5</div>
-            <div class="mc-sub">RCU (On-Demand)</div>
+            <div class="mc-label">Capacity Mode</div>
+            <div class="mc-value" style="font-size:1.1rem;">On-Demand</div>
+            <div class="mc-sub">Pay-per-request reads</div>
             <span class="mc-icon-bg">📖</span>
           </div>
           <div class="metric-card" style="--accent:var(--purple)">
-            <div class="mc-label">Write Capacity</div>
-            <div class="mc-value">5</div>
-            <div class="mc-sub">WCU (On-Demand)</div>
+            <div class="mc-label">Write Billing</div>
+            <div class="mc-value" style="font-size:1.1rem;">Per Request</div>
+            <div class="mc-sub">No provisioned WCU</div>
             <span class="mc-icon-bg">✍️</span>
           </div>
           <div class="metric-card" style="--accent:var(--amber)">
@@ -1971,6 +1971,22 @@ TOPIC_ARN  = os.environ[<span class="s">'SNS_TOPIC_ARN'</span>]
               <div class="cert-field"><span class="cf-key">Common Name</span><span class="cf-val">sensor_node_02.local</span></div>
               <div class="cert-field"><span class="cf-key">Algorithm</span><span class="cf-val">RSA-2048 / SHA-256</span></div>
               <div class="cert-field"><span class="cf-key">Fingerprint</span><span class="cf-val" style="font-size:0.65rem;">B8:27:EB:4F:91:0C:DE:A2:88:F1:77:CC:34:10:BB:AA</span></div>
+              <div class="cert-field"><span class="cf-key">Issued</span><span class="cf-val">2026-01-15</span></div>
+              <div class="cert-field"><span class="cf-key">Expires</span><span class="cf-val">2028-01-15</span></div>
+              <div class="cert-field"><span class="cf-key">Status</span><span class="cf-val" style="color:var(--emerald);">● ACTIVE</span></div>
+              <div class="cert-field"><span class="cf-key">Policy</span><span class="cf-val">IoTGatewayPolicy</span></div>
+            </div>
+          </div>
+
+          <div class="cert-card">
+            <div class="cert-card-hdr">
+              <span style="font-size:1rem;">🔑</span>
+              <span class="cert-card-title">sensor_node_03 Certificate</span>
+            </div>
+            <div class="cert-field-list">
+              <div class="cert-field"><span class="cf-key">Common Name</span><span class="cf-val">sensor_node_03.local</span></div>
+              <div class="cert-field"><span class="cf-key">Algorithm</span><span class="cf-val">RSA-2048 / SHA-256</span></div>
+              <div class="cert-field"><span class="cf-key">Fingerprint</span><span class="cf-val" style="font-size:0.65rem;">7E:19:A4:C2:5B:60:F1:3D:9A:42:E8:07:6C:D5:21:8F</span></div>
               <div class="cert-field"><span class="cf-key">Issued</span><span class="cf-val">2026-01-15</span></div>
               <div class="cert-field"><span class="cf-key">Expires</span><span class="cf-val">2028-01-15</span></div>
               <div class="cert-field"><span class="cf-key">Status</span><span class="cf-val" style="color:var(--emerald);">● ACTIVE</span></div>

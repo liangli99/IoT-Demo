@@ -42,6 +42,7 @@
     { id: 'aws',        file: 'aws-cloud.html',   label: '☁️ AWS Cloud',        color: '#ff9900' },
     { id: 'app',        file: 'app.html',         label: '📱 Mobile App',       color: '#a855f7' },
     { id: 'design',     file: 'design.html',      label: '📖 Technical Design',  color: '#38bdf8' },
+    { id: 'textbook',   file: 'https://liangli99.github.io/IoT-Demo/textbook/IoT_Education_Textbook.pdf', label: '📚 IoT Textbook', color: '#f59e0b', target: '_blank' },
   ];
 
   // ── Detect current page ─────────────────────────────────────────────────
@@ -267,6 +268,7 @@
       .nb-link[data-page="aws"].active       { --nb-active-color: #ff9900; }
       .nb-link[data-page="app"].active       { --nb-active-color: #a855f7; }
       .nb-link[data-page="design"].active    { --nb-active-color: #38bdf8; }
+      .nb-link[data-page="textbook"].active  { --nb-active-color: #f59e0b; }
 
       .nb-status {
         display: flex;
@@ -1444,7 +1446,8 @@
 
     const linksHTML = PAGES.map(p => {
       const active = p.id === currentPage ? 'active' : '';
-      return `<a class="nb-link ${active}" data-page="${p.id}" href="${_relPath(p.file, currentPage)}">${p.label}</a>`;
+      const targetAttr = p.target ? ` target="${p.target}" rel="noopener noreferrer"` : '';
+      return `<a class="nb-link ${active}" data-page="${p.id}" href="${_relPath(p.file, currentPage)}"${targetAttr}>${p.label}</a>`;
     }).join('');
 
     const isLightInitial = currentTheme === 'light';

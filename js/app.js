@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
       line.innerHTML = `[${timeStr}] 📤 <strong>PUB</strong> iot/commands/${evt.packet.target_device}: { action: "${evt.packet.action}", value: ${evt.packet.value} } (QoS 1)`;
     } else if (evt.stage === 'GATEWAY_DOWNLINK') {
       line.className += ' gateway-ack';
-      line.innerHTML = `[${timeStr}] 🔀 <strong>GW-ACK</strong> Raspberry Pi 4 received downlink; converting to BLE GATT Write Characteristic (UUID: 0xFFE2)`;
+      line.innerHTML = `[${timeStr}] 🔀 <strong>GW-ACK</strong> Raspberry Pi 4 received downlink; converting to BLE GATT Write Characteristic (UUID: ${({fan:'0xFF01', relay:'0xFF02', led:'0xFF03'})[String(evt.packet.action).toLowerCase()] || '0xFF01'})`;
     } else if (evt.stage === 'HARDWARE_CONFIRMED') {
       playSound('ack');
       line.className += ' device-ack';

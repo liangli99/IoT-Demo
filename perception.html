@@ -1376,8 +1376,8 @@ void enter_deep_sleep_cycle(void) {
                 <td style="color:var(--pc-green); font-weight:700;">1. Deep Sleep</td>
                 <td>CPU Off, Wi-Fi/BT Off, RTC Timer Active</td>
                 <td>10.0 µA (0.01 mA)</td>
-                <td>9,500 ms (Configurable)</td>
-                <td>0.095 mA·s</td>
+                <td>10,000 ms (Configurable)</td>
+                <td>0.100 mA·s</td>
               </tr>
               <tr>
                 <td style="color:var(--pc-amber); font-weight:700;">2. Wakeup &amp; Init</td>
@@ -1437,7 +1437,7 @@ void enter_deep_sleep_cycle(void) {
                   <span>Active Sensor &amp; Radio Window:</span>
                   <strong id="calc-active-val" style="color:var(--pc-cyan);">385 ms</strong>
                 </div>
-                <input type="range" id="calc-active-range" class="calc-slider" min="150" max="800" step="25" value="385">
+                <input type="range" id="calc-active-range" class="calc-slider" min="160" max="810" step="25" value="385">
               </div>
             </div>
 
@@ -1445,13 +1445,13 @@ void enter_deep_sleep_cycle(void) {
             <div class="calc-output-card">
               <div class="calc-output-title">Calculated Longevity</div>
               <div class="calc-output-days" id="calc-result-days">
-                174 <span class="metric-hero-unit">Days</span>
+                15 <span class="metric-hero-unit">Days</span>
               </div>
               <div class="calc-output-months" id="calc-result-months">
-                Approx. 5.8 Months of Continuous Operation
+                Approx. 0.5 Months of Continuous Operation
               </div>
               <div class="calc-output-desc">
-                Average power draw: <strong id="calc-result-ma">2.87 mA</strong>.<br>
+                Average power draw: <strong id="calc-result-ma">2.89 mA</strong>.<br>
                 Self-discharge and derating factor: 15% reserved.
               </div>
             </div>
